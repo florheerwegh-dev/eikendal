@@ -8,3 +8,13 @@ services:
     buildCommand: "true"
     startCommand: "python3 serve.py --no-browser"
     healthCheckPath: /health
+  # The game itself, as a website on Render (the same files as on GitHub Pages)
+  - type: web
+    name: eikendal
+    runtime: static
+    buildCommand: "true"
+    staticPublishPath: .
+    headers:
+      - path: /*.js
+        name: Cache-Control
+        value: no-cache
