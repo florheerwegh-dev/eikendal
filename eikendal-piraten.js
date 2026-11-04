@@ -51,7 +51,8 @@ ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!SH.g)return;const t=PL.t,nea
   SH.it.x=SH.x;SH.it.z=SH.z;SH.ch.x=deckPt(0,-LEN/2+5.4).x;SH.ch.z=deckPt(0,-LEN/2+5.4).z});
 function chest(){if(!SH.won||SH.chest)return;SH.chest=true;PL.gold+=2000;giveItem('piratenkompas',1,true);if(ITEMS.schatkaart)giveItem('schatkaart',2,true);if(ITEMS.gem)giveItem('gem',3,true);sfx('level');
   card('💰 De kist van de kapitein','2000 goud, drie edelstenen, het Kompas van Kapitein Haaientand en twee oude schatkaarten! Spring overboord als je weer naar huis wilt.',null,11)}
-const _bfP=buildFantasy;buildFantasy=function(){_bfP();try{const r=route();if(!r)return;SH.c=r.c;SH.R=r.R;SH.a=Math.random()*6.283;SH.g=ship();figures();
+const _bfP=buildFantasy;buildFantasy=function(){_bfP();try{const r=route();if(!r)return;SH.c=r.c;SH.R=r.R;SH.a=(Date.now()/1000*2.2/SH.R)%6.283;SH.x=SH.c.x+Math.cos(SH.a)*SH.R;SH.z=SH.c.z+Math.sin(SH.a)*SH.R;SH.rot=Math.atan2(-Math.sin(SH.a),Math.cos(SH.a));SH.g=ship();figures();
+  /* she starts out at sea, not in the middle of Eikendal (the game moves her only once you are playing) */SH.g.position.set(SH.x,-.3,SH.z);SH.g.rotation.y=SH.rot;
   SH.it={x:0,z:0,r:12,txt:()=>!SH.anchor&&!SH.won&&!PL.inCave&&Math.hypot(PL.x-SH.x,PL.z-SH.z)<12?'🏴‍☠️ Enter het piratenschip!':'',fn:board};INTER.push(SH.it);
   SH.ch={x:0,z:0,r:2.4,txt:()=>SH.anchor&&SH.won&&!SH.chest?'Open de kist van de kapitein':'',fn:chest};INTER.push(SH.ch);
   RUMORS.push({t:'Vissers zien soms een schip met zwarte zeilen en een doodshoofd voor de kust. De Zwarte Haai van Kapitein Haaientand! Wie durft er aan boord?'})}catch(e){console.warn('piraten',e)}};
