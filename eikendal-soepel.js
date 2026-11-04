@@ -37,10 +37,12 @@ ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;S.frames++;S.ft+=dt;if(S.ft>=1){
     const big=a.boss||a.titan||(a.hh||0)>4||a.flyM,want=!S.on||a===PL.mounted||Math.hypot(a.x-cam.x,a.z-cam.z)<CH*(big?3:1);if(want===!q.hid)continue;q.hid=!want;for(const [o,mk] of q.list)o.layers.mask=want?mk:0}});
 /* the distance follows how smoothly the game runs */
 function adapt(){if(!started||!S.on||paused)return;if(S.fps<24){S.lowT++;S.highT=0}else if(S.fps>45){S.highT++;S.lowT=0}else{S.lowT=0;S.highT=0}
-  if(S.lowT>=2&&S.D>110){S.D=Math.max(110,S.D-50);S.lowT=0}else if(S.highT>=4&&S.D<340){S.D=Math.min(340,S.D+30);S.highT=0}}
+  if(S.lowT>=2&&S.D>110){S.D=Math.max(110,S.D-50);S.lowT=0}else{const top=window.EIK_LIGHT&&EIK_LIGHT.on?200:340;if(S.highT>=4&&S.D<top){S.D=Math.min(top,S.D+30);S.highT=0}}}
 /* a little more haze when it draws less far, so things do not pop up at the edge */
 const _ueS=updateEnv;updateEnv=function(dt,pp){_ueS(dt,pp);if(pp!==PL||!S.on||PL.inCave||!scene.fog||scene.fog.density===undefined)return;const want=.7/(S.D*1.2);if(scene.fog.density<want)scene.fog.density=want};
 /* the switch in the pause menu */
 const _rpS=renderPause;renderPause=function(){_rpS();try{const c=$('pset');if(!c||c.querySelector('#soepel'))return;const l=document.createElement('label');l.innerHTML='<span>Automatisch soepel</span><input type="checkbox" id="soepel">';const cb=l.querySelector('input');cb.checked=S.on;
-  cb.onchange=()=>{S.on=cb.checked;try{localStorage.setItem('eikendal_soepel',S.on?'1':'0')}catch(e){}};const h3=c.querySelector('h3');c.insertBefore(l,h3?h3.nextSibling:c.firstChild)}catch(e){}};
+  cb.onchange=()=>{S.on=cb.checked;try{localStorage.setItem('eikendal_soepel',S.on?'1':'0')}catch(e){}};const h3=c.querySelector('h3');c.insertBefore(l,h3?h3.nextSibling:c.firstChild);
+  /* the light version for iPad and phone (on by itself on those devices); it takes effect after reloading */
+  const L=document.createElement('label');L.innerHTML='<span>Lichte versie (iPad/gsm) <small style="color:var(--mute)">herlaad daarna de pagina</small></span><input type="checkbox">';const lb=L.querySelector('input');lb.checked=!!(window.EIK_LIGHT&&EIK_LIGHT.on);lb.onchange=()=>{try{localStorage.setItem('eikendal_licht',lb.checked?'1':'0')}catch(e){}};l.after(L)}catch(e){}};
 })();
