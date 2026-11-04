@@ -1,0 +1,6 @@
+Sound effects (CC0, public domain), from OpenGameArt.org:
+- 50 RPG sound effects (RPG Audio) and Interface Sounds by Kenney (www.kenney.nl)
+- 80 CC0 RPG SFX, 100 CC0 SFX, 100 CC0 SFX #2, 75 CC0 breaking/falling/hit sfx and 40 CC0 water/splash/slime SFX by rubberduck
+- Monster Sound Pack (Summoning Wars)
+Converted to AAC and bundled in sfx.json.txt.
+- Sword sounds: "20 sword sound effects (attacks and clashes)" by StarNinjas, "Swishes Sound Pack", "3 melee sounds" (CC0, OpenGameArt)

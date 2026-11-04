@@ -1,0 +1,54 @@
+EIKENDAL - OPEN WERELD
+======================
+
+Starten
+-------
+Mac:      dubbelklik "Start Eikendal.command"
+Windows:  dubbelklik "Start Eikendal.bat"
+Anders:   open een terminal in deze map en typ:  python3 serve.py
+
+Het spel opent vanzelf in je browser (http://localhost:8000).
+Python 3 is nodig (https://www.python.org/downloads/). Rechtstreeks index.html openen werkt niet:
+dan laden de 3D-modellen niet.
+
+Multiplayer
+-----------
+1. Start het spel zoals hierboven. In het venster staat het adres voor vrienden, bijvoorbeeld
+   http://192.168.0.147:8000
+2. Vrienden op hetzelfde wifi openen dat adres.
+3. Iedereen kiest op het titelscherm "Multiplayer" en dezelfde servernaam (bijvoorbeeld eikendal-1).
+
+Met VS Code en Live Server (het paarse icoontje, knop "Go Live")
+-----------------------------------------------------------------
+Live Server stuurt alleen de bestanden door en kan zelf geen spelers met elkaar verbinden.
+Daarom draait er een kleine multiplayer-server naast (poort 8000). Het spel vindt die vanzelf.
+1. Open in VS Code deze map (File > Open Folder... > de map met index.html).
+2. Start de multiplayer-server: menu Terminal > Run Task... > "Eikendal multiplayer-server".
+   Of typ in de terminal van VS Code:  python3 serve.py --no-browser   (Windows: python serve.py --no-browser)
+   Laat die terminal open staan.
+3. Klik rechtsonder op "Go Live" (of rechtsklik index.html > Open with Live Server).
+4. Kies op het titelscherm "Multiplayer". Er staat dan "Multiplayer-server gevonden" en het adres voor vrienden.
+Vrienden op hetzelfde wifi openen dat adres (of het Live Server-adres met jouw IP, bv. http://192.168.0.147:5500)
+en kiezen dezelfde servernaam.
+
+In multiplayer delen jullie:
+- de tijd van de dag en het weer (de eerste speler bepaalt ze),
+- de monsters: slaan, verslaan en een groepsbonus als je in de buurt bent,
+- superkrachten (je ziet elkaars aanvallen), niveau en gezondheid boven elkaars hoofd.
+Toetsen: T = chatten, O = spelerslijst (volgen of naar iemand reizen).
+Emotes in de chat: /dans /ja /nee /zit /juich /zwaai
+
+Als artifact op claude.ai werkt multiplayer alleen als het artifact de "room"-capability heeft.
+
+Nieuw in deze versie
+--------------------
+- Titelscherm -> personage maken (rol, uiterlijk, kleding mixen) -> superkracht krijgen (animatie) of zonder spelen.
+  Zonder superkracht? De Oude Wijze Boom geeft je er later alsnog een.
+- Echte gezichten (Universal Base Characters) met ogen, wenkbrauwen en kapsels; nieuwe hoeden en helmen.
+- Nieuwe wezens: reuzenwolven, reuzenspinnen, trollen (ork), Krijgsheer Grukk (groene ork), goblins en imps
+  (Bestiary), schrikvogels, meerhaaien, 25 soorten vissen, vogels in de lucht.
+- De goblintunnels zijn helemaal vernieuwd: kamp, mijn met erts, spinnennest, ondergronds meer met
+  gloeivissen, gevangenen om te bevrijden, sjamanen en een eindbaas met fases.
+- Het Demonenrijk: stromende lava, lavarivieren met bruggen, vulkanen met lavabommen, filmische intro's.
+- De Reuzen-Vierhand heeft zijn echte textures en laat mythische buit vallen; lavaschildpadden betere buit.
+- Gesprekken: de tijd loopt door, camera op het gezicht, meer onderwerpen, vriendschap en routebeschrijving.

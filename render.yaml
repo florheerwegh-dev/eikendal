@@ -1,0 +1,10 @@
+# The Eikendal multiplayer server on Render (free). Render reads this file when you choose "New > Blueprint".
+services:
+  - type: web
+    name: eikendal-mp
+    runtime: python
+    plan: free
+    rootDir: server
+    buildCommand: "true"
+    startCommand: "python3 serve.py --no-browser"
+    healthCheckPath: /health

@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Eikendal multiplayer-server",
+      "detail": "Start de multiplayer-server naast Live Server (laat deze terminal open staan)",
+      "type": "shell",
+      "command": "python3 serve.py --no-browser",
+      "windows": { "command": "python serve.py --no-browser" },
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    }
+  ]
+}
