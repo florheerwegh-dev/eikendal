@@ -30,14 +30,21 @@ ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started)return;if(!SN.mats){
     /* snow and frost: a pale glow over leaves and grass */if(q.e){q.m.emissive.lerp(s==='winter'?TG.frost:q.e,k);q.m.emissiveIntensity=s==='winter'?.85:q.ei}}
   for(const q of SN.terr){if(!q.e)continue;const w=s==='winter';q.m.emissive.lerp(w?new T.Color(0x8a929c):q.e,k);q.m.emissiveIntensity=w?.55:q.ei;q.m.color.lerp(s==='autumn'?new T.Color(0xf0dcb8):q.c,k)}
   const W=SN.water;if(W){const w=s==='winter';W.m.color.lerp(w?new T.Color(0xdcecf6):W.c,k);W.m.roughness=w?.15:W.r;W.m.opacity=w?.97:W.o;if(W.m.emissive){if(!W.e)W.e=W.m.emissive.clone();W.m.emissive.lerp(w?new T.Color(0x9ab4c8):W.e,k)}}});
-/* falling snow, leaves or blossom around you */
-const FALL={pts:null,n:1400,v:null};
-function fallInit(){const g=new T.BufferGeometry(),p=new Float32Array(FALL.n*3);for(let i=0;i<FALL.n;i++){p[i*3]=rr(40);p[i*3+1]=Math.random()*30;p[i*3+2]=rr(40)}g.setAttribute('position',new T.BufferAttribute(p,3));
-  FALL.pts=new T.Points(g,new T.PointsMaterial({color:0xffffff,size:.22,transparent:true,opacity:.9,depthWrite:false}));FALL.pts.frustumCulled=false;scene.add(FALL.pts)}
+/* falling snow everywhere in winter; leaves and blossom only from the trees near you, as round soft flakes */
+const FALL={pts:null,n:900,trees:[],tT:0,vel:null};
+function flakeTex(){const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d'),r=g.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.55,'rgba(255,255,255,.85)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,32,32);return new T.CanvasTexture(c)}
+function fallInit(){const g=new T.BufferGeometry(),p=new Float32Array(FALL.n*3);for(let i=0;i<FALL.n;i++)p[i*3+1]=-999;g.setAttribute('position',new T.BufferAttribute(p,3));FALL.vel=new Float32Array(FALL.n);
+  FALL.pts=new T.Points(g,new T.PointsMaterial({color:0xffffff,size:.22,map:flakeTex(),transparent:true,opacity:.95,depthWrite:false,alphaTest:.05}));FALL.pts.frustumCulled=false;FALL.pts.userData.dyn=true;scene.add(FALL.pts)}
+function respawn(a,i,s){if(s==='winter'){a[i*3]=PL.x+rr(40);a[i*3+1]=PL.y+8+Math.random()*20;a[i*3+2]=PL.z+rr(40);return}
+  const L=FALL.trees;if(!L.length){a[i*3+1]=-999;return}const t=L[(Math.random()*L.length)|0],gy=groundH(t.x,t.z);a[i*3]=t.x+rr(3.2);a[i*3+1]=gy+3.5+Math.random()*4;a[i*3+2]=t.z+rr(3.2)}
 ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started)return;if(!FALL.pts)fallInit();const s=SN.cur,on=!PL.inCave&&(s==='winter'||s==='autumn'||s==='spring');FALL.pts.visible=on;if(!on)return;
-  const m=FALL.pts.material,n=s==='winter'?FALL.n:s==='autumn'?260:320;m.color.setHex(s==='winter'?0xffffff:s==='autumn'?0xd8742a:0xf6c0d8);m.size=s==='winter'?.22:.32;FALL.pts.geometry.setDrawRange(0,n);
-  const p=FALL.pts.geometry.attributes.position,a=p.array,c=camera.position,sp=s==='winter'?2.2:1.1,t=PL.t;
-  for(let i=0;i<n;i++){let y=a[i*3+1]-dt*sp;a[i*3]+=Math.sin(t+i)*dt*(s==='winter'?.3:.9);if(y<-2){y=26;a[i*3]=rr(40);a[i*3+2]=rr(40)}a[i*3+1]=y}p.needsUpdate=true;FALL.pts.position.set(c.x,c.y-8,c.z)});
+  /* the trees near you (not pines in spring: they do not blossom) */
+  FALL.tT-=dt;if(FALL.tT<=0){FALL.tT=2;try{const L=(s==='spring'?TREES.oak:TREES.oak.concat(TREES.pine)).filter(t=>!t.cut&&Math.abs(t.x-PL.x)<45&&Math.abs(t.z-PL.z)<45);FALL.trees=L.slice(0,40)}catch(e){FALL.trees=[]}}
+  const m=FALL.pts.material,n=s==='winter'?FALL.n:Math.min(FALL.trees.length*5,220);m.color.setHex(s==='winter'?0xffffff:s==='autumn'?0xd8742a:0xf6c8dc);m.size=s==='winter'?.22:.2;FALL.pts.geometry.setDrawRange(0,n);
+  const a=FALL.pts.geometry.attributes.position.array,t=PL.t,sp=s==='winter'?2.2:.9;
+  for(let i=0;i<n;i++){let y=a[i*3+1];const far=Math.abs(a[i*3]-PL.x)>48||Math.abs(a[i*3+2]-PL.z)>48;if(y<-900||far||y<groundH(a[i*3],a[i*3+2])){respawn(a,i,s);continue}
+    a[i*3+1]=y-dt*sp;a[i*3]+=Math.sin(t*1.3+i)*dt*(s==='winter'?.3:.7);a[i*3+2]+=Math.cos(t*1.1+i*.7)*dt*(s==='winter'?.3:.5)}
+  FALL.pts.geometry.attributes.position.needsUpdate=true});
 /* ---------- the farm ---------- */
 const FM={g:null,plots:[],an:[],it:[]};
 function field(px,pz){for(let i=0;i<60;i++){const a=Math.random()*6.283,r=90+i*3,x=px+Math.cos(a)*r,z=pz+Math.sin(a)*r;let ok=true;for(let k=0;k<10&&ok;k++){const qx=x+rr(18),qz=z+rr(18),h=terrainH(qx,qz);if(h<1.6||h>40||inBuilding(qx,qz,2)||siteAt(qx,qz)||roadDist(qx,qz)<5||slopeAt(qx,qz)>.3||forestDensity(qx,qz)>.3)ok=false}if(ok)return{x,z}}return null}
