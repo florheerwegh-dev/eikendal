@@ -32,7 +32,7 @@ GL.extraH=(x,z,h)=>{if(_ex)h=_ex(x,z,h);if(x<760||z>-1000||x>2700||z<-2700)retur
 const WW={x:2180,z:-1960};
 const _fdV=forestDensity;forestDensity=function(x,z){const d=_fdV(x,z);if(d<=0)return d;const k=1-smooth(110,230,Math.hypot(x-WW.x,z-WW.z));return k>0?Math.max(d,.9*k):d};
 /* ---------- places ---------- */
-const P={ravenshaven:{n:'Reuzenhaven',x:2320,z:-1480,r:64,ico:'🗿',h:3.2},arendsnest:{n:'Burcht Arendsnest',x:2010,z:-1640,r:40,ico:'🏰'},spiegelmeer:{n:'Het Spiegelmeer',x:1650,z:-1905,r:16,ico:'💧',h:4.5},
+const P={ravenshaven:{n:'Reuzenhaven',x:2320,z:-1500,r:84,ico:'🗿',h:3.2},arendsnest:{n:'Burcht Arendsnest',x:2010,z:-1640,r:40,ico:'🏰'},spiegelmeer:{n:'Het Spiegelmeer',x:1650,z:-1905,r:16,ico:'💧',h:4.5},
   oudvalkenburg:{n:'Ruïne van Oud-Valkenburg',x:1450,z:-1650,r:34,ico:'🏚️'},wolvenwoud:{n:'Jagershut in het Wolvenwoud',x:2180,z:-1960,r:16,ico:'🐺'},meeuwenklif:{n:'Meeuwenklif',x:1690,z:-1185,r:28,ico:'🐟',h:3},
   noordertand:{n:'Ertsmijn Noordertand',x:1950,z:-2280,r:24,ico:'⛏️'},reuzentrap:{n:'De Reuzentrap',x:2380,z:-2080,r:22,ico:'🪨'}};
 const autoH=(x,z,r)=>{let s=0,n=0;for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){s+=baseH(x+i*r*.4,z+j*r*.4);n++}return Math.max(2.6,s/n)};
@@ -120,6 +120,27 @@ function gHouse(cx,cz,q,o={}){const m=gm(),b=Bag2(),th=q*Math.PI/2,co=Math.cos(t
   rect(-w/2,-d/2,w/2,-d/2+t);rect(-w/2,-d/2,-w/2+t,d/2);rect(w/2-t,-d/2,w/2,d/2);rect(-w/2,d/2-t,-dw/2,d/2);rect(dw/2,d/2-t,w/2,d/2);rect(bx-2.7,bz-4.2,bx+2.7,bz+4.2);if(v%4===1){const [x,z]=W2(-w/2,d/2-1);addCircle(x,z,3.4)}if(v%4===3)rect(w/2+.4,-6,w/2+6,2);
   for(const [lx,lz] of[[-2,-3.4],[6,-3.4],[-2,-.6],[6,-.6]]){const [x,z]=W2(lx,lz);addCircle(x,z,.45)}
   return{inside:W2(0,2),door:W2(0,d/2+3),counter:W2(0,2.5)}}
+function gChurch(cx,cz,q){const m=gm(),b=Bag2(),th=q*Math.PI/2,co=Math.cos(th),si=Math.sin(th),W2=(lx,lz)=>[cx+lx*co+lz*si,cz-lx*si+lz*co];
+  const y=groundH(cx,cz),g=new T.Group();g.position.set(cx,y,cz);g.rotation.y=th;const w=22,L=40,h=16,t=1.6,dw=6,dh=11,rf=10,st=m.stone;
+  const glass=[new T.MeshStandardMaterial({color:0x3a5ab8,roughness:.2,emissive:0x2a3a8a,emissiveIntensity:.5}),new T.MeshStandardMaterial({color:0xb83a3a,roughness:.2,emissive:0x8a2a2a,emissiveIntensity:.5}),new T.MeshStandardMaterial({color:0xd8b83a,roughness:.2,emissive:0x8a6a1a,emissiveIntensity:.5})];GLASS.push(...glass);
+  /* nave: front wall at +z with the great door, back wall at -z */
+  b.box(w-2*t,.2,L-2*t,m.floor,0,.1,0);b.box(w,h,t,st,0,h/2,-L/2+t/2);for(const sx of[-1,1])b.box(t,h,L,st,sx*(w/2-t/2),h/2,0);const fw=(w-dw)/2;for(const sx of[-1,1])b.box(fw,h,t,st,sx*(dw/2+fw/2),h/2,L/2-t/2);b.box(dw,h-dh,t,st,0,dh+(h-dh)/2,L/2-t/2);
+  for(const sx of[-1,1])for(let z=-L/2+4;z<L/2-3;z+=6){b.box(1.2,h+1,1.6,st,sx*(w/2+.4),(h+1)/2,z);b.box(.12,7,2.6,glass[(Math.round(z)&1)?0:1],sx*(w/2-t/2-.0)+sx*.85,7.5,z+3);b.box(.12,7,2.6,glass[2],sx*(w/2-t/2)-sx*.85,7.5,z+3)}
+  /* roof and gables */const half=w/2+1.2,sl=Math.hypot(half,rf),ang=Math.atan2(rf,half);for(const sx of[-1,1])b.box(sl,.7,L+2,m.roofs[1],sx*half/2,h+rf/2,0,0,0,-sx*ang);
+  {const sh=new T.Shape();sh.moveTo(-w/2,0);sh.lineTo(w/2,0);sh.lineTo(0,rf-.3);sh.lineTo(-w/2,0);const gg=new T.ShapeGeometry(sh);b.add(gg,m.gable,0,h,-L/2+.05);b.add(gg,m.gable,0,h,L/2-.05)}
+  /* the rose window above the door */b.cyl(3,3,.3,glass[0],0,h+3.2,L/2+.05,20,Math.PI/2);for(let i=0;i<8;i++){const a=i/8*6.283;b.cyl(.7,.7,.32,glass[i%2?1:2],Math.cos(a)*1.9,h+3.2+Math.sin(a)*1.9,L/2+.08,10,Math.PI/2)}b.add(new T.TorusGeometry(3.1,.3,8,24),st,0,h+3.2,L/2+.1);
+  /* door frame */b.box(dw+2,1.4,2.2,st,0,dh+.7,L/2);for(const sx of[-1,1])b.box(1.2,dh,2.2,st,sx*(dw/2+.6),dh/2,L/2);
+  /* the tower with a spire and a bell, at the back */const tz=-L/2-5,TH=34;b.box(11,TH,11,st,0,TH/2,tz);b.add(new T.ConeGeometry(7.8,22,4),m.roofs[1],0,TH+11,tz,Math.PI/4);b.add(new T.SphereGeometry(.8,8,6),m.iron,0,TH+22.4,tz);b.box(.4,4,.4,MAT.gold||m.iron,0,TH+24.5,tz);b.box(2.4,.4,.4,MAT.gold||m.iron,0,TH+25,tz);
+  for(const [ox,oz] of[[0,5.55],[0,-5.55],[5.55,0],[-5.55,0]])b.box(oz?3:.2,6,oz?.2:3,m.dark,ox,TH-5,tz+oz);b.add(new T.SphereGeometry(2.2,14,10,0,6.283,0,Math.PI/2),MAT.gold||m.iron,0,TH-6,tz,0,Math.PI);b.cyl(.4,.4,2,m.iron,0,TH-3.6,tz,8);
+  /* inside: giant pews, an altar with candles, banners */for(let z=-8;z<=13;z+=4.2)for(const sx of[-1,1]){b.box(7,1.6,1.4,m.wood,sx*5.3,1.6,z);b.box(7,2.6,.4,m.wood,sx*5.3,2.6,z+.7);for(const ex of[-3.3,3.3])b.box(.5,1.6,1.2,m.wood,sx*5.3+ex,.8,z)}
+  b.box(10,1,8,st,0,.5,-L/2+6);b.box(6,3.2,2.6,m.white,0,2.6,-L/2+5);b.box(6.4,.3,3,MAT.gold||m.iron,0,4.3,-L/2+5);for(const sx of[-1.8,0,1.8]){b.cyl(.35,.35,2.4,m.linen,sx,5.6,-L/2+5,8);b.add(new T.SphereGeometry(.3,6,4),m.flame,sx,7,-L/2+5)}
+  for(const sx of[-1,1])b.add(new T.PlaneGeometry(3,7),m.red,sx*(w/2-t-.1),9,-L/2+8,sx<0?Math.PI/2:-Math.PI/2);
+  b.build(g);scene.add(g);
+  const rect=(x0,z0,x1,z1)=>{const [ax,az]=W2(x0,z0),[bx2,bz2]=W2(x1,z1);addBox(Math.min(ax,bx2),Math.min(az,bz2),Math.max(ax,bx2),Math.max(az,bz2))};
+  rect(-w/2,-L/2,w/2,-L/2+t);rect(-w/2,-L/2,-w/2+t,L/2);rect(w/2-t,-L/2,w/2,L/2);rect(-w/2,L/2-t,-dw/2,L/2);rect(dw/2,L/2-t,w/2,L/2);rect(-5.5,tz-5.5,5.5,tz+5.5);rect(-5,-L/2+2,5,-L/2+10);
+  for(let z=-8;z<=13;z+=4.2)for(const sx of[-1,1])rect(sx*5.3-3.5,z-.7,sx*5.3+3.5,z+.9);
+  return{altar:W2(0,-L/2+11),door:W2(0,L/2+3)}}
+const GLASS=[];ANIMS.push(()=>{const n=ENV.night||0;for(const gl of GLASS)gl.emissiveIntensity=.35+n*.9});
 function giantTown(){const s=S('ravenshaven'),C={x:s.x,z:s.z},m=gm(),H=[];
   for(let i=0;i<8;i++){const a=Math.PI*.33+i*(Math.PI*1.34/7),r=i===0?46:44,x=C.x+Math.cos(a)*r,z=C.z+Math.sin(a)*r,q=face(x,z,C.x,C.z);H.push(gHouse(x,z,q,i===0?{w:27,d:21,h:12,v:0}:{v:i}))}
   /* the well, the market stall and giant things lying about */const g=new T.Group(),b=Bag2(),y=s.h;g.position.set(C.x,y,C.z);
@@ -128,7 +149,7 @@ function giantTown(){const s=S('ravenshaven'),C={x:s.x,z:s.z},m=gm(),H=[];
   for(const [lx,lz,r2,h2] of[[-20,-6,1.6,3.8],[-17,-9,1.5,3.6],[16,16,1.6,3.8]]){b.cyl(r2,r2*.9,h2,m.wood,lx,h2/2,lz);addCircle(C.x+lx,C.z+lz,r2)}
   b.box(1.5,1.6,4.2,m.beam,8,.8,-14);b.box(1.5,1.6,4.2,m.beam,10.4,.8,-13.6);b.box(1.5,3.6,1.5,m.beam,8,2.6,-15.4);b.box(1.5,3.6,1.5,m.beam,10.4,2.6,-15);
   b.cyl(2.6,2.6,.6,m.wood,-6,2.6,-18,18,Math.PI/2.3,0);b.cyl(.5,.5,.8,m.iron,-6,2.6,-18,8,Math.PI/2.3,0);
-  b.build(g);scene.add(g);CAST.giants=H;
+  b.build(g);scene.add(g);CAST.giants=H;try{const cx=C.x-6,cz=C.z-76;CAST.church=gChurch(cx,cz,0)}catch(e){console.warn('reuzenkerk',e)}
   /* a pier for giants */{const d=shore(C.x,C.z,1,0);CAST.rvPier=C.x+Math.max(46,d-8);pier(CAST.rvPier,C.z,1,50,9)}}
 const GLINES=['HO HO! Een kleintje!','Pas op dat ik niet op je stap!','Welkom in Reuzenhaven, kleine vriend!','Wil je een boterham? Hij is groter dan jij!','Mijn kat is groter dan jouw paard.','Ik nies even... HATSJOE!','Kleine mensen zijn zo schattig.'];
 try{LINES.reus=GLINES}catch(e){}
@@ -153,7 +174,8 @@ const _pfV=populateFantasy;populateFantasy=function(){_pfV();
     const inn=H[0];giant(sp('innkeeper',...(inn?inn.counter:[s.x+4,s.z]),{name:'Herbergier Grom',ai:'stay',shop:shop(['bread','stew','roast','ale','cheese','fish','wine'])}));
     giant(sp('merchant',s.x-14,s.z+16,{name:'Marktreuzin Hilde',ai:'stay',face:Math.PI,shop:shop(['club_troll','axe_war','shield_knight','potion','elixir','iron','wood','bread'])}));
     for(let i=0;i<2;i++)giant(sp('villager',(CAST.rvPier||s.x+46)+12+i*16,s.z+rr(1.5),{name:'Reuzenvisser '+pick(FIRST),line:'reus',ai:'stay',face:Math.PI/2}));
-    for(const sz of[-1,1])giant(sp('guard',s.x-64,s.z+sz*6,{name:'Reuzenwacht',ai:'stay',face:-Math.PI/2}))}catch(e){console.warn(e)}
+    for(const sz of[-1,1])giant(sp('guard',s.x-64,s.z+sz*6,{name:'Reuzenwacht',ai:'stay',face:-Math.PI/2}));
+    {const ch=CAST.church;if(ch)giant(sp('priest',...ch.altar,{name:'Reuzenpriester Bertolf',ai:'stay',face:0}))}}catch(e){console.warn(e)}
   try{const s=S('arendsnest'),k=CAST.keep;sp('lord',...at(k,s.x,s.z-9),{name:'Heer Albrecht van Arendsnest',ai:'stay'});const m=CAST.smithy;sp('smith',...at(m,s.x+15,s.z+8),{name:'Smid Hildegard',ai:'stay',shop:shop(['sword_knight','axe_war','shield_knight','helm_iron','chain','bow_long','arrow'])});
     for(let i=0;i<5;i++)sp('guard',s.x+rr(14),s.z+rr(14),{name:'Valkenridder',ai:'guard',patrol:[[s.x-18,s.z-18],[s.x+18,s.z-18],[s.x+18,s.z+18],[s.x-18,s.z+18],[s.x,s.z+30]]});people('arendsnest',4)}catch(e){console.warn(e)}
   try{const s=S('spiegelmeer'),h=CAST.hermit;sp('hermit',...at(h,s.x-6,s.z),{name:'Kluizenares Ingrid',ai:'stay',shop:shop(['potion','elixir','salve','spd_potion','str_potion','skin_potion','reuzendrank','veerdrank','kikkerdrank'])});for(let i=0;i<5;i++)spawnAnimal(pick(['deer','deer','rabbit','fox'].filter(t=>ANIMALS[t])),LK.x+Math.cos(i)*(LK.r+20),LK.z+Math.sin(i)*(LK.r+20))}catch(e){console.warn(e)}
