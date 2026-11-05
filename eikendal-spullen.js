@@ -98,9 +98,9 @@ function sets(){if(SETS)return SETS;const L=[],all=Object.keys(ITEMS).filter(id=
   for(const [c,,ic] of CATS){if(c==='all')continue;const ids=all.filter(id=>catOf(ITEMS[id])===c);for(const [r,adj,base] of TIER){const g=ids.filter(id=>(ITEMS[id].rar||'')===r);if(g.length<2)continue;L.push({id:'i_'+c+'_'+(r||'g'),n:adj+' '+CATN[c],ico:ic,kind:'item',ids:g,tier:r,reward:Math.round((base+g.length*150)/50)*50})}}
   const an=creatures(true),mo=creatures(false),bo=mo.filter(t=>MON[t]&&MON[t].boss);
   L.push({id:'c_animals',n:'Alle dieren gezien',ico:'🐾',kind:'seen',ids:an,reward:5000},{id:'c_monsters',n:'Alle monsters gezien',ico:'👹',kind:'seen',ids:mo,reward:15000},{id:'c_bosses',n:'Alle eindbazen verslagen',ico:'💀',kind:'slain',ids:bo,tier:'l',reward:40000},
-    {id:'i_all',n:'Alle voorwerpen van de wereld',ico:'🌍',kind:'item',ids:all,tier:'l',reward:100000});
+    {id:'i_all',n:'Alle voorwerpen van de wereld',ico:'🌍',kind:'item',ids:all,tier:'l',reward:100000},{id:'p_all',n:'Alle plaatsen ontdekt',ico:'🗺️',kind:'place',ids:places().map(p=>p.id),tier:'e',reward:25000});
   return SETS=L}
-function have(S2,id){if(S2.kind==='item')return!!found()[id];if(S2.kind==='seen')return!!seen()[id];const k=slain()[id]||(PL.kills&&PL.kills[id])||0;return k>0}
+function have(S2,id){if(S2.kind==='place')return disc(id);if(S2.kind==='item')return!!found()[id];if(S2.kind==='seen')return!!seen()[id];const k=slain()[id]||(PL.kills&&PL.kills[id])||0;return k>0}
 const claimed=()=>{const f=FX();f.coll=f.coll||{};return f.coll};
 function checkSets(){if(!started)return;markOwned();const C=claimed();for(const S2 of sets()){if(C[S2.id])continue;if(!S2.ids.length||!S2.ids.every(id=>have(S2,id)))continue;C[S2.id]=(FX().day||0)+1;PL.gold+=S2.reward;
   try{sfx('level')}catch(e){}addLog('🏆 Verzameling compleet: '+S2.n+'! +'+S2.reward+' goud','#ffd27a');try{WD.kingdom.card('🏆 Verzameling compleet!',S2.n+': je hebt ze allemaal ('+S2.ids.length+')! Je krijgt '+S2.reward.toLocaleString('nl')+' goud.',null,9)}catch(e){}try{WD.chron.add('Verzameling compleet: '+S2.n+'.')}catch(e){}}}
@@ -109,9 +109,24 @@ function setInfo(id){const S2=sets().find(s=>s.id===id);if(!S2)return'<div class
   let h='<div class="sxbig" style="font-size:64px">'+S2.ico+'</div><h3>'+esc2(S2.n)+'</h3><div class="sxt">'+(S2.ids.length-miss.length)+' van '+S2.ids.length+' · beloning <b style="color:#ffd27a">'+S2.reward.toLocaleString('nl')+' goud</b></div>';
   if(done)return h+'<div class="sxh">✅ Compleet! Je kreeg de beloning al.</div>';if(!miss.length)return h+'<div class="sxh">✅ Compleet! De beloning komt zo.</div>';
   h+='<div class="sxw"><b>Je mist nog:</b>';for(const i of miss.slice(0,12)){if(S2.kind==='item')h+='<div>❓ '+esc2(itemHints(i)[0])+'</div>';else h+='<div>❓ '+esc2(creatureHint(i).replace(/^📍 /,''))+'</div>'}if(miss.length>12)h+='<div>... en nog '+(miss.length-12)+' meer.</div>';return h+'</div>'}
+/* ---------- places: every place in the world, with a piece of the map as its picture ---------- */
+const DIRN=['oosten','zuidoosten','zuiden','zuidwesten','westen','noordwesten','noorden','noordoosten'];
+const dirOf=(dx,dz)=>DIRN[((Math.round(Math.atan2(dz,dx)/(Math.PI/4))%8)+8)%8];
+const places=()=>SITES.filter(s=>s&&s.name&&s.id!=='bridge'&&Math.abs(s.x)<HALF+50&&Math.abs(s.z)<HALF+50);
+const disc=id=>!!(PL.discovered&&PL.discovered[id]);
+const PIC={};
+function placePic(s){if(PIC[s.id])return PIC[s.id];const ico=(typeof MAPICON!=='undefined'&&MAPICON[s.id])||'📍';let u=null;
+  try{if(typeof mapBase!=='undefined'&&mapBase){const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),R=Math.max(140,s.r*3.2)*MS;g.save();g.beginPath();g.arc(64,64,60,0,7);g.clip();g.imageSmoothingEnabled=true;
+    g.drawImage(mapBase,mpx(s.x)-R,mpx(s.z)-R,R*2,R*2,0,0,128,128);g.restore();g.lineWidth=5;g.strokeStyle='#b98a2e';g.beginPath();g.arc(64,64,60,0,7);g.stroke();
+    g.fillStyle='rgba(20,14,6,.82)';g.beginPath();g.arc(64,64,22,0,7);g.fill();g.lineWidth=2.5;g.strokeStyle='#ffd27a';g.stroke();g.font='26px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(ico,64,66);u=c.toDataURL('image/png')}}catch(e){}
+  if(!u)u=coin(ico,0x4a6a3a);if(u)PIC[s.id]=u;return u}
+function placeInfo(id){const s=places().find(p=>p.id===id);if(!s)return'<div class="sxe">Kies een plaats.</div>';const d=Math.round(Math.hypot(s.x-PL.x,s.z-PL.z)),dir=dirOf(s.x-PL.x,s.z-PL.z),ok=disc(s.id);
+  if(!ok)return'<div class="sxbig off"><img src="'+placePic(s)+'" alt=""></div><h3>???</h3><p>Deze plaats heb je nog niet ontdekt.</p><div class="sxw"><b>Waar ligt het?</b><div>📍 Ongeveer '+d+' passen naar het '+dir+' van jou. Ga op ontdekking!</div></div>';
+  return'<div class="sxbig"><img src="'+placePic(s)+'" alt=""></div><h3>'+esc2(s.name)+'</h3><div class="sxt">✅ Ontdekt</div><div class="sxh">📍 '+d+' passen naar het '+dir+' van jou</div><div style="margin-top:10px"><button class="btn pri" id="sxnav" data-id="'+s.id+'">🧭 Wijs me de weg</button></div>'}
+function placesGrid(q){return places().filter(s=>!q||(disc(s.id)&&s.name.toLowerCase().includes(q))).sort((a,b)=>(disc(b.id)?1:0)-(disc(a.id)?1:0)||Math.hypot(a.x-PL.x,a.z-PL.z)-Math.hypot(b.x-PL.x,b.z-PL.z)).map(s=>card(s.id,disc(s.id),'<img src="'+placePic(s)+'" alt="">',s.name)).join('')}
 /* ---------- the panel ---------- */
 const S={el:null,sec:'items',cat:'all',q:'',sel:{}};
-const SECS=[['items','Spullen','🎒'],['animals','Dieren','🐾'],['monsters','Monsters','👹'],['people','Mensen','🧑'],['sets','Verzamelingen','🏆']];
+const SECS=[['items','Spullen','🎒'],['animals','Dieren','🐾'],['monsters','Monsters','👹'],['people','Mensen','🧑'],['places','Plaatsen','🗺️'],['sets','Verzamelingen','🏆']];
 function setsGrid(q){const C=claimed();return sets().filter(S2=>!q||S2.n.toLowerCase().includes(q)).map(S2=>{const n=S2.ids.filter(i=>have(S2,i)).length,t=S2.ids.length,done=C[S2.id],col=S2.tier==='l'?'#ffb04a':S2.tier==='e'?'#c78aff':S2.tier==='r'?'#6ab8ff':'#e0c890';return'<button class="sxc sxrow'+(done?' done':'')+(S.sel.sets===S2.id?' sel':'')+'" data-id="'+S2.id+'"><span class="sxri">'+S2.ico+'</span><span class="sxrn"><b style="color:'+col+'">'+esc2(S2.n)+'</b><span class="sxrb"><i style="width:'+(n/t*100)+'%;background:'+col+'"></i></span><small>'+n+' / '+t+'</small></span><span class="sxrr">'+(done?'✅':'💰 '+S2.reward.toLocaleString('nl'))+'</span></button>'}).join('')}
 function itemList(){const F=found(),q=S.q.toLowerCase();return Object.keys(ITEMS).filter(id=>{const it=ITEMS[id];if(!it||!it.n)return false;if(S.cat!=='all'&&catOf(it)!==S.cat)return false;if(q&&!(F[id]&&it.n.toLowerCase().includes(q)))return false;return true})
   .sort((a,b)=>{const A=ITEMS[a],B=ITEMS[b];return CATS.findIndex(c=>c[0]===catOf(A))-CATS.findIndex(c=>c[0]===catOf(B))||(A.price||0)-(B.price||0)||A.n.localeCompare(B.n)})}
@@ -127,7 +142,7 @@ function personInfo(k){const M=FX().met||{},m=M[k];if(!m)return'<div class="sxe"
   return'<div class="sxbig">'+picHtml(key,JOBICO[m.job]||'🧑',0x3a5a7a)+'</div><h3>'+esc2(m.n)+'</h3><div class="sxt">'+esc2(jobName(m.job))+'</div><div class="sxh">🤝 Ontmoet op dag '+m.d+' in '+esc2(m.w)+'</div>'}
 function card(id,has,html,name,extra){return'<button class="sxc'+(has?'':' off')+(S.sel[S.sec]===id?' sel':'')+'" data-id="'+esc2(id)+'" title="'+(has?esc2(name):'???')+'"><span class="sxic">'+html+'</span><span class="sxnm">'+(has?esc2(name):'???')+'</span>'+(extra||'')+'</button>'}
 function render(){markOwned();try{checkSets()}catch(e){}const el=S.el,F=found(),all=Object.keys(ITEMS).filter(id=>ITEMS[id]&&ITEMS[id].n),fn=all.filter(id=>F[id]).length,sn=seen(),an=creatures(true),mo=creatures(false),met=FX().met||{};
-  const cnt={items:[fn,all.length],animals:[an.filter(t=>sn[t]).length,an.length],monsters:[mo.filter(t=>sn[t]).length,mo.length],people:[Object.keys(met).length,null],sets:[sets().filter(S2=>claimed()[S2.id]).length,sets().length]};
+  const cnt={items:[fn,all.length],animals:[an.filter(t=>sn[t]).length,an.length],monsters:[mo.filter(t=>sn[t]).length,mo.length],people:[Object.keys(met).length,null],sets:[sets().filter(S2=>claimed()[S2.id]).length,sets().length],places:[places().filter(p=>disc(p.id)).length,places().length]};
   const secs=SECS.map(([k,nm,ic])=>'<button class="sxsec'+(S.sec===k?' on':'')+'" data-s="'+k+'">'+ic+' '+nm+' <small>'+cnt[k][0]+(cnt[k][1]!=null?'/'+cnt[k][1]:'')+'</small></button>').join('');
   let sub='',grid='',info='',bar=cnt[S.sec][1]?cnt[S.sec][0]/cnt[S.sec][1]:0;const q=S.q.toLowerCase();
   if(S.sec==='items'){sub='<div class="sxtabs">'+CATS.map(([k,nm,ic])=>{const ids=k==='all'?all:all.filter(id=>catOf(ITEMS[id])===k),f=ids.filter(id=>F[id]).length;return'<button class="sxtab'+(S.cat===k?' on':'')+'" data-c="'+k+'"><span>'+ic+'</span> '+nm+' <small>'+f+'/'+ids.length+'</small></button>'}).join('')+'</div>';
@@ -135,13 +150,15 @@ function render(){markOwned();try{checkSets()}catch(e){}const el=S.el,F=found(),
   else if(S.sec==='animals'||S.sec==='monsters'){const L=(S.sec==='animals'?an:mo).filter(t=>!q||(sn[t]&&nameOf(t).toLowerCase().includes(q))).sort((a,b)=>(sn[b]?1:0)-(sn[a]?1:0)||nameOf(a).localeCompare(nameOf(b)));
     grid=L.map(t=>card(t,sn[t],picHtml('t:'+t,ico(t),ANIMALS[t]?0x4f7a3a:0x7a2a2a),nameOf(t),(slain()[t]?'<em>⚔'+slain()[t]+'</em>':'')+(MON[t]&&MON[t].boss?'<em class="b">baas</em>':''))).join('');info=creatureInfo(S.sel[S.sec])}
   else if(S.sec==='sets'){grid=setsGrid(q);info=setInfo(S.sel.sets)}
+  else if(S.sec==='places'){grid=placesGrid(q);info=placeInfo(S.sel.places)}
   else{const L=Object.entries(met).filter(([k,m])=>!q||m.n.toLowerCase().includes(q)).sort((a,b)=>a[1].d-b[1].d);grid=L.map(([k,m])=>card(k,true,picHtml('p:'+m.n+'|'+m.job,JOBICO[m.job]||'🧑',0x3a5a7a),m.n)).join('');info=personInfo(S.sel.people);
     if(!L.length)grid='<div class="sxe">Je hebt nog met niemand gepraat. Druk F bij iemand.</div>'}
   el.innerHTML='<div class="sxhd"><div><b>📚 Index</b></div><div class="sxr"><input id="sxq" placeholder="Zoek..." value="'+esc2(S.q)+'"><button class="btn" id="sxx">Sluiten</button></div></div><div class="sxsecs">'+secs+'</div><div class="sxbar"><i style="width:'+(bar*100)+'%"></i></div>'+sub+'<div class="sxbody"><div class="sxgrid">'+(grid||'<div class="sxe">Niets gevonden.</div>')+'</div><div class="sxinfo">'+info+'</div></div>';
   el.querySelector('#sxx').onclick=close;el.querySelectorAll('.sxsec').forEach(b=>b.onclick=()=>{S.sec=b.dataset.s;render()});el.querySelectorAll('.sxtab').forEach(b=>b.onclick=()=>{S.cat=b.dataset.c;render()});
-  el.querySelectorAll('.sxc').forEach(b=>b.onclick=()=>{S.sel[S.sec]=b.dataset.id;el.querySelectorAll('.sxc.sel').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');const id=b.dataset.id;el.querySelector('.sxinfo').innerHTML=S.sec==='items'?itemInfo(id):S.sec==='people'?personInfo(id):S.sec==='sets'?setInfo(id):creatureInfo(id);pump()});
+  el.querySelectorAll('.sxc').forEach(b=>b.onclick=()=>{S.sel[S.sec]=b.dataset.id;el.querySelectorAll('.sxc.sel').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');const id=b.dataset.id;el.querySelector('.sxinfo').innerHTML=S.sec==='items'?itemInfo(id):S.sec==='people'?personInfo(id):S.sec==='sets'?setInfo(id):S.sec==='places'?placeInfo(id):creatureInfo(id);navBtn();pump()});
   const qi=el.querySelector('#sxq');for(const ev of['keydown','keyup','keypress'])qi.addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&e.key==='Escape')close()});qi.oninput=()=>{S.q=qi.value;const pos=qi.selectionStart;render();const q2=S.el.querySelector('#sxq');q2.focus();try{q2.setSelectionRange(pos,pos)}catch(e){}};
-  pump()}
+  navBtn();pump()}
+function navBtn(){const b=S.el&&S.el.querySelector('#sxnav');if(!b)return;b.onclick=()=>{const p=places().find(x=>x.id===b.dataset.id);if(!p)return;PL.nav={x:p.x,z:p.z,name:p.name};addLog('🧭 Volg de pijl op je kaartje naar '+p.name+'.','#7fd0ff');close()}}
 function open(sec){if(!S.el){const d=document.createElement('div');d.className='panel';d.id='spullen';document.body.appendChild(d);S.el=d}if(sec)S.sec=sec;S.el.style.display='block';render();try{document.exitPointerLock()}catch(e){}}
 function close(){if(S.el)S.el.style.display='none'}
 function toggle(){if(S.el&&S.el.style.display==='block')close();else open()}
