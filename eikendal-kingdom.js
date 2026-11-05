@@ -390,7 +390,7 @@ let mapSend=false;
 function mapButton(){const w=$('mapw');if(!w||w.querySelector('#kgmapbtn'))return;const h=w.querySelector('h2');if(!h)return;const b=document.createElement('button');b.id='kgmapbtn';b.className='btn';b.style.marginLeft='10px';b.textContent='⚔ Stuur ridders';
   b.onclick=e=>{e.stopPropagation();mapSend=!mapSend;b.className='btn'+(mapSend?' pri':'');b.textContent=mapSend?'⚔ Klik nu op de kaart':'⚔ Stuur ridders'};h.after(b)}
 setInterval(()=>{const b=document.getElementById('kgmapbtn');const any=REALMS.some(R=>R.throne&&mine(R));if(any)mapButton();if(b)b.style.display=any&&PL.x>-2000?'':'none'},800);
-document.addEventListener('click',e=>{const c=e.target;if(!mapSend||!c||c.id!=='bigmap')return;const r=c.getBoundingClientRect(),px=(e.clientX-r.left)/r.width*c.width,py=(e.clientY-r.top)/r.height*c.height,k=c.width/MAPN,x=px/k/MS-HALF,z=py/k/MS-HALF;
+document.addEventListener('click',e=>{const c=e.target;if(!mapSend||!c||c.id!=='bigmap')return;const r=c.getBoundingClientRect(),[px,py]=(window.mapUnzoom||((u,v)=>[u,v]))((e.clientX-r.left)/r.width*c.width,(e.clientY-r.top)/r.height*c.height),k=c.width/MAPN,x=px/k/MS-HALF,z=py/k/MS-HALF;
   if(terrainH(x,z)<-.5){addLog('Daar is water. Kies een plek op het land.');return}mapSend=false;const b=document.getElementById('kgmapbtn');if(b){b.className='btn';b.textContent='⚔ Stuur ridders'}
   command(allKnights(),'goto',{x,z,label:(siteAt(x,z)||{name:'de plek op de kaart'}).name});closeModals();marker(x,z)});
 

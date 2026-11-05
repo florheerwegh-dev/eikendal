@@ -1506,15 +1506,15 @@ const MAPICON={village:'🏘️',town:'🏰',castle:'🏯',ruins:'🏚️',camp:
 function arrow(g,x,y,rot,s){g.save();g.translate(x,y);g.rotate(-rot+Math.PI);g.fillStyle='#fff';g.strokeStyle='#000';g.lineWidth=1.5;g.beginPath();g.moveTo(0,-s);g.lineTo(s*.7,s);g.lineTo(0,s*.5);g.lineTo(-s*.7,s);g.closePath();g.fill();g.stroke();g.restore()}
 function drawBigMap(){try{drawBigMap0()}catch(e){try{const c=$('bigmap'),g=c.getContext('2d');g.fillStyle='#d8c79a';g.fillRect(0,0,c.width,c.height);if(mapBase)g.drawImage(mapBase,0,0,c.width,c.height);const k=c.width/MAPN;g.fillStyle='#fff';g.strokeStyle='#000';for(const s of SITES)if(PL.discovered[s.id]){g.beginPath();g.arc(mpx(s.x)*k,mpx(s.z)*k,6,0,7);g.fill();g.stroke()}arrow(g,mpx(PL.x)*k,mpx(PL.z)*k,PL.yaw,9)}catch(e2){}}}
 function drawBigMap0(){
-  composeMap();const c=$('bigmap'),g=c.getContext('2d'),S=c.width;g.fillStyle='#d8c79a';g.fillRect(0,0,S,S);g.imageSmoothingEnabled=true;g.drawImage(mapBase,0,0,S,S);fogOverlay();g.drawImage(mapFog,0,0,S,S);
-  const k=S/MAPN;g.font='bold 13px "IM Fell English",serif';g.textAlign='center';
-  const pin=(x,z,n,col)=>{const px=mpx(x)*k,py=mpx(z)*k;g.fillStyle=col;g.strokeStyle='#1b140c';g.lineWidth=2;g.beginPath();g.arc(px,py,5,0,7);g.fill();g.stroke();g.strokeText(n,px,py-9);g.fillStyle='#fff';g.fillText(n,px,py-9)};
-  const sym=(x,z,ico,n,col)=>{const px=mpx(x)*k,py=mpx(z)*k;g.fillStyle='rgba(20,14,6,.82)';g.strokeStyle=col;g.lineWidth=2;g.beginPath();g.arc(px,py,12,0,7);g.fill();g.stroke();g.font='15px sans-serif';g.textBaseline='middle';g.fillStyle='#fff';g.fillText(ico,px,py+1);g.textBaseline='alphabetic';g.font='bold 13px "IM Fell English",serif';g.strokeStyle='#1b140c';g.lineWidth=3;g.strokeText(n,px,py-17);g.fillStyle='#fff';g.fillText(n,px,py-17)};
+  const zq=(window.MAPZ&&MAPZ.z)||1;composeMap();const c=$('bigmap'),g=c.getContext('2d'),S=c.width;g.fillStyle='#d8c79a';g.fillRect(0,0,S,S);g.imageSmoothingEnabled=true;g.drawImage(mapBase,0,0,S,S);fogOverlay();g.drawImage(mapFog,0,0,S,S);
+  const k=S/MAPN;g.font='bold '+(13/zq)+'px "IM Fell English",serif';g.textAlign='center';
+  const pin=(x,z,n,col)=>{const px=mpx(x)*k,py=mpx(z)*k;g.fillStyle=col;g.strokeStyle='#1b140c';g.lineWidth=2/zq;g.beginPath();g.arc(px,py,5/zq,0,7);g.fill();g.stroke();g.strokeText(n,px,py-9/zq);g.fillStyle='#fff';g.fillText(n,px,py-9/zq)};
+  const sym=(x,z,ico,n,col)=>{const px=mpx(x)*k,py=mpx(z)*k;g.fillStyle='rgba(20,14,6,.82)';g.strokeStyle=col;g.lineWidth=2/zq;g.beginPath();g.arc(px,py,12/zq,0,7);g.fill();g.stroke();g.font=(15/zq)+'px sans-serif';g.textBaseline='middle';g.fillStyle='#fff';g.fillText(ico,px,py+1);g.textBaseline='alphabetic';g.font='bold '+(13/zq)+'px "IM Fell English",serif';g.strokeStyle='#1b140c';g.lineWidth=3/zq;g.strokeText(n,px,py-17/zq);g.fillStyle='#fff';g.fillText(n,px,py-17/zq)};
   for(const s of SITES)if(PL.discovered[s.id]&&s.id!=='bridge')sym(s.x,s.z,MAPICON[s.id]||'📍',s.name,'#e0b04a');
   for(const q of HIDDEN)if(q.found)sym(q.x,q.z,MAPICON[q.id]||'✨',q.name,'#9cc552');
   for(const q of WAYS)if(q.on)sym(q.x,q.z,'🔷',q.name,'#74c0ff');
   for(const q of PL.quests){const t=q.mark&&q.mark();if(t)pin(t[0],t[1],q.title,'#e5766a')}
-  arrow(g,mpx(PL.x)*k,mpx(PL.z)*k,PL.yaw,9)}
+  arrow(g,mpx(PL.x)*k,mpx(PL.z)*k,PL.yaw,9/zq)}
 function drawMini(){
   const c=$('mini'),g=c.getContext('2d'),S=150;g.fillStyle='#1d1a14';g.fillRect(0,0,S,S);composeMap();if(!mapVis||PL.inCave){g.fillStyle='#888';g.font='12px sans-serif';g.textAlign='center';g.fillText(PL.inCave?'Grot':'',S/2,S/2);return}
   const W=210*MS;g.drawImage(mapVis,mpx(PL.x)-W/2,mpx(PL.z)-W/2,W,W,0,0,S,S);const k=S/210;
@@ -3727,6 +3727,11 @@ requestAnimationFrame(loop);if(!window.EIK_ASSETS)initStart();
 <script src="eikendal-code.js"></script>
 <script src="eikendal-soepel.js"></script>
 <script src="eikendal-sfeer.js"></script>
+<script src="eikendal-praten.js"></script>
+<script src="eikendal-kaart.js"></script>
+<script src="eikendal-iconen.js"></script>
+<script src="eikendal-buit.js"></script>
+<script src="eikendal-valkenland.js"></script>
 <script src="eikendal-titans.js"></script>
 <script src="eikendal-sounds.js"></script>
 <script src="eikendal-yeti.js"></script>

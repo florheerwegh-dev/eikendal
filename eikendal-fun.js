@@ -144,7 +144,7 @@ const LORE={wolf:'Jaagt in roedels aan de bosranden. Alleen is hij schuw, samen 
   piranha:'Kleine vissen met heel grote tanden. Nooit alleen.',shark:'Een meerhaai. Stilte in het water betekent niet dat je veilig bent.',bear:'Een bruine beer. Laat hem met rust en hij laat jou met rust.',boar:'Een wild zwijn met scherpe slagtanden. Valt aan als het bang is.',
   deer:'Een schuw hert. Goed voor wild.',rabbit:'Snel en schichtig.',fox:'Een slimme vos die kippen steelt.',sheep:'Een wollig schaap van de boeren.',cow:'Een koe. Ze geeft melk en loeit naar je.',chicken:'Een kip. Kakelt vrolijk.',elk:'Een machtige eland uit de noordelijke bossen.',goat:'Een berggeit die over rotsen springt.',pig:'Een varken dat in de modder rolt.',hare:'Een haas met lange oren.',
   yeti:'Yeti Ysgrauw, een harig ijsbeest diep onder Noordheim. Een titaan van kou.',frostgiant:'IJsreus Hrimtor, bewaker van de IJsburcht.',wolfking:'Wolvenkoning Fenrik, de witte wolf die zijn roedel roept.',stormrunner:'Zefyr de Stormloper, sneller dan de wind.',terrorbird:'Een schrikvogel: groot, snel en met een vlijmscherpe snavel.',dragonkin:'Drakenmensen die het nest van de draak bewaken.'};
-FN.ICO=ICO;FN.LORE=LORE;
+FN.ICO=ICO;FN.LORE=LORE;FN.nameOf=t=>nameOf(t);FN.allTypes=()=>allTypes();FN.F=F;
 function nameOf(t){return(ANIMALS[t]&&ANIMALS[t].name)||(MON[t]&&MON[t].n)||({wolf:'Wolf',bandit:'Rover',archer:'Roverboogschutter',skeleton:'Skelet'})[t]||t}
 const allTypes=()=>{const s=new Set(['wolf','bandit','archer','skeleton',...Object.keys(ANIMALS),...Object.keys(MON)]);for(const a of actors)if((a.kind==='enemy'||a.kind==='animal')&&a.type&&a.type!=='titancore')s.add(a.type);return[...s].filter(t=>t!=='titancore')};
 let page=0,pages=[],chapters=[],flipping=false;
@@ -210,11 +210,11 @@ function build(){const f=F(),nm=(PL.look&&PL.look.name)||'Reiziger',cls=CLASSES[
         h+='<div class="be'+(s?'':' off')+'"><div class="p">'+(ICO[t]||(ANIMALS[t]?'🐾':'👹'))+'</div><div><b>'+(s?esc(nameOf(t)):'???')+(s&&boss?' <small style="color:#8a2a14">· baas</small>':'')+'</b><span>'+(s?esc(LORE[t]||(ANIMALS[t]?'Een dier van de wilde streken.':'Een gevaarlijk wezen. Wees op je hoede.')):'Nog niet gezien.')+'</span>'+
           (s?'<span><i>Eerst gezien op dag '+s.d+' in '+esc(s.w)+(n?' · verslagen: '+n:'')+'</i></span>':'')+'</div></div>'}add(h)}};
   const types=allTypes();
-  idx('Dierenindex','🐾',types.filter(t=>ANIM.has(t)),'Elk dier dat je van dichtbij zag, komt in deze index.');
+  if(WD.spullen){chap('Indexen','📚');add('<h3>Indexen</h3><p class="drop">De dieren, monsters en mensen die je tegenkwam, en alle spullen die je vond, staan nu samen in één grote <b>Index</b>, met een foto van elk dier, monster en elke persoon.</p><p>Klik onderaan op de knop <b>Index</b> om ze te bekijken.</p>')}else{idx('Dierenindex','🐾',types.filter(t=>ANIM.has(t)),'Elk dier dat je van dichtbij zag, komt in deze index.');
   idx('Monsterindex','👹',types.filter(t=>!ANIM.has(t)),'Monsters, rovers, ondoden en bazen: alles wat je ooit aanviel of zag.');
   chap('Mensenindex','🧑');{const M=Object.values(f.met||{}).sort((a,b)=>a.d-b.d);for(let i=0;i<Math.max(1,M.length);i+=6){let h='<h3>Mensenindex'+(i?' (verder)':' · '+M.length)+'</h3>';
     if(!i)h+='<p style="font-size:13px;margin:0 0 4px"><i>Iedereen met wie je een praatje maakte.</i></p>';if(!M.length)h+='<p><i>Je hebt nog met niemand gepraat. Druk F bij iemand.</i></p>';
-    for(const m of M.slice(i,i+6))h+='<div class="be"><div class="p">'+(JOBICO[m.job]||'🧑')+'</div><div><b>'+esc(m.n)+'</b><span>'+esc(JOBNL(m.job))+'</span><span><i>Ontmoet op dag '+m.d+' in '+esc(m.w)+'</i></span></div></div>';add(h)}}
+    for(const m of M.slice(i,i+6))h+='<div class="be"><div class="p">'+(JOBICO[m.job]||'🧑')+'</div><div><b>'+esc(m.n)+'</b><span>'+esc(JOBNL(m.job))+'</span><span><i>Ontmoet op dag '+m.d+' in '+esc(m.w)+'</i></span></div></div>';add(h)}}}
   /* discoveries */
   chap('Ontdekkingen','🗺');const all=SITES.filter(s=>s.id!=='bridge'),fd=all.filter(s=>PL.discovered[s.id]);for(let i=0;i<Math.max(1,all.length);i+=16){let h='<h3>Ontdekkingen'+(i?' (verder)':' · '+fd.length+'/'+all.length)+'</h3><div style="columns:2;font-size:14px">';
     for(const s of all.slice(i,i+16))h+='<div style="break-inside:avoid;padding:2px 0">'+(PL.discovered[s.id]?'🗺 '+esc(s.name):'<span style="color:#9a8a70">? ? ?</span>')+'</div>';add(h+'</div>'+(i===0?'<h4>Geheime plekken</h4><div style="font-size:14px">'+(HIDDEN.filter(x=>x.found).map(x=>'✨ '+esc(x.name)).join('<br>')||'<i>Nog geen.</i>')+'</div>':''))}

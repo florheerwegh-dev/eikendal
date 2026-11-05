@@ -243,18 +243,18 @@ populateFantasy=function(){_pfU();try{addInter(SPOTS.wise[0],SPOTS.wise[1]+4.5,6
 
 /* ================= conversations: the world keeps moving, the camera finds the face ================= */
 css(`
-#dlg{left:50%!important;bottom:calc(18px + env(safe-area-inset-bottom,0px))!important;top:auto!important;transform:translateX(-50%)!important;width:min(860px,calc(100vw - 24px))!important;padding:14px 18px 12px!important;background:linear-gradient(180deg,rgba(24,19,12,.9),rgba(14,11,7,.96))!important;border-color:#8a7648!important;max-height:52vh!important}
-#dlg .dh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(224,176,74,.25);padding-bottom:6px;margin-bottom:6px}
-#dlg .dh h3{font-size:24px}#dlg .dh small{color:var(--mute);font-size:13px}#dlg .dh .hearts{margin-left:auto;color:#e5766a;letter-spacing:2px;font-size:14px}
-#dlg .dt{font-size:17px;line-height:1.45;min-height:2.9em;margin:4px 0 10px;color:#f1e4c4}
+#dlg{left:50%!important;bottom:calc(18px + env(safe-area-inset-bottom,0px))!important;top:auto!important;transform:translateX(-50%)!important;width:min(600px,calc(100vw - 24px))!important;padding:8px 12px 7px!important;background:linear-gradient(180deg,rgba(24,19,12,.82),rgba(14,11,7,.9))!important;border-color:#8a7648!important;max-height:38vh!important;overflow:auto!important}
+#dlg .dh{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(224,176,74,.25);padding-bottom:3px;margin-bottom:3px}
+#dlg .dh h3{font-size:17px}#dlg .dh small{color:var(--mute);font-size:11.5px}#dlg .dh .hearts{margin-left:auto;color:#e5766a;letter-spacing:2px;font-size:14px}
+#dlg .dt{font-size:14.5px;line-height:1.35;min-height:1.4em;margin:2px 0 6px;color:#f1e4c4}
 #dlg .dt .cur{display:inline-block;width:8px;height:16px;background:#e0b04a;margin-left:2px;animation:blink .8s steps(1) infinite;vertical-align:-2px}@keyframes blink{50%{opacity:0}}
-#dlg .do{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:6px}
-#dlg .do button{text-align:left;background:rgba(40,32,20,.85);border:1px solid #5a4b30;color:var(--parch);padding:7px 10px;border-radius:4px;cursor:pointer;font:inherit;font-size:14.5px;transition:all .12s}
+#dlg .do{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:4px}
+#dlg .do button{text-align:left;background:rgba(40,32,20,.85);border:1px solid #5a4b30;color:var(--parch);padding:3px 7px;border-radius:4px;cursor:pointer;font:inherit;font-size:12.5px;line-height:1.3;transition:all .12s}
 #dlg .do button:hover,#dlg .do button:focus{border-color:var(--gold);background:rgba(224,176,74,.16);color:#fff;outline:none}
 #dlg .do button.pri{border-color:#b98a2e;color:#ffe9b0}
-#dlg .do button kbd{background:#e0b04a;color:#1b140c;border-radius:3px;padding:0 5px;margin-right:7px;font-weight:700;font-size:12px}
-#dlg .hint{font-size:11.5px;color:var(--mute);margin-top:7px;text-align:right}
-#dlgbars:before,#dlgbars:after{content:'';position:fixed;left:0;right:0;height:7vh;background:#000;z-index:4;transition:transform .5s;pointer-events:none}
+#dlg .do button kbd{background:#e0b04a;color:#1b140c;border-radius:3px;padding:0 5px;margin-right:5px;font-weight:700;font-size:10.5px}
+#dlg .hint{display:none}
+#dlgbars:before,#dlgbars:after{content:'';position:fixed;left:0;right:0;height:3.5vh;background:#000;z-index:4;transition:transform .5s;pointer-events:none}
 #dlgbars:before{top:0;transform:translateY(-100%)}#dlgbars:after{bottom:0;transform:translateY(100%)}
 body.talking #dlgbars:before,body.talking #dlgbars:after{transform:none}
 `);
