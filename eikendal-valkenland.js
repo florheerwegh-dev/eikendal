@@ -2,7 +2,9 @@
    The empty sea in the top right of the map is now land: green hills and woods, the snowy Iron Mountains along the
    north, a quiet lake, a bay in the south and beaches along the east coast. A road runs there from Steenwijk.
    New places:
-   - Ravenshaven: a harbour town on the east coast, with an inn, a market, fishermen and a long wooden pier.
+   - Reuzenhaven: the town of the giants on the east coast. Giants three times as big as you live in huge houses with
+     doors seven metres high, tables you can walk under and mugs as big as barrels; with a giant inn, a market and a
+     wide pier.
    - Burcht Arendsnest: a castle on a hill in the middle, with walls, four towers, a lord, guards and a smith.
    - Het Spiegelmeer: a lake with a little island; the hermit Ingrid lives on its shore and brews potions.
    - Ruïne van Oud-Valkenburg: the ruins of an old town, haunted by skeletons, with a treasure chest.
@@ -30,21 +32,21 @@ GL.extraH=(x,z,h)=>{if(_ex)h=_ex(x,z,h);if(x<760||z>-1000||x>2700||z<-2700)retur
 const WW={x:2180,z:-1960};
 const _fdV=forestDensity;forestDensity=function(x,z){const d=_fdV(x,z);if(d<=0)return d;const k=1-smooth(110,230,Math.hypot(x-WW.x,z-WW.z));return k>0?Math.max(d,.9*k):d};
 /* ---------- places ---------- */
-const P={ravenshaven:{n:'Ravenshaven',x:2360,z:-1480,r:40,ico:'⚓',h:3.2},arendsnest:{n:'Burcht Arendsnest',x:2010,z:-1640,r:40,ico:'🏰'},spiegelmeer:{n:'Het Spiegelmeer',x:1650,z:-1905,r:16,ico:'💧',h:4.5},
+const P={ravenshaven:{n:'Reuzenhaven',x:2320,z:-1480,r:64,ico:'🗿',h:3.2},arendsnest:{n:'Burcht Arendsnest',x:2010,z:-1640,r:40,ico:'🏰'},spiegelmeer:{n:'Het Spiegelmeer',x:1650,z:-1905,r:16,ico:'💧',h:4.5},
   oudvalkenburg:{n:'Ruïne van Oud-Valkenburg',x:1450,z:-1650,r:34,ico:'🏚️'},wolvenwoud:{n:'Jagershut in het Wolvenwoud',x:2180,z:-1960,r:16,ico:'🐺'},meeuwenklif:{n:'Meeuwenklif',x:1690,z:-1185,r:28,ico:'🐟',h:3},
   noordertand:{n:'Ertsmijn Noordertand',x:1950,z:-2280,r:24,ico:'⛏️'},reuzentrap:{n:'De Reuzentrap',x:2380,z:-2080,r:22,ico:'🪨'}};
 const autoH=(x,z,r)=>{let s=0,n=0;for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){s+=baseH(x+i*r*.4,z+j*r*.4);n++}return Math.max(2.6,s/n)};
 for(const [id,p] of Object.entries(P)){const h=id==='arendsnest'?HILL.top:p.h||autoH(p.x,p.z,p.r);SITES.push(SITE[id]={id,name:p.n,x:p.x,z:p.z,r:p.r,h,blend:1.6,great:true});MAPICON[id]=p.ico}
-for(const pts of[[[855,-1423],[1000,-1460],[1180,-1560],[1330,-1640],[1450,-1650]],[[1450,-1650],[1600,-1620],[1780,-1600],[1900,-1630],[2010,-1640]],[[2010,-1640],[2120,-1600],[2230,-1520],[2360,-1480]],
+for(const pts of[[[855,-1423],[1000,-1460],[1180,-1560],[1330,-1640],[1450,-1650]],[[1450,-1650],[1600,-1620],[1780,-1600],[1900,-1630],[2010,-1640]],[[2010,-1640],[2120,-1600],[2230,-1520],[2320,-1480]],
   [[2010,-1640],[2060,-1760],[2120,-1880],[2180,-1960]],[[2010,-1640],[1900,-1740],[1760,-1800],[1690,-1860],[1650,-1905]],[[1900,-1740],[1940,-1950],[1950,-2150],[1950,-2280]],
-  [[1780,-1600],[1740,-1420],[1690,-1185]],[[2360,-1480],[2370,-1700],[2390,-1900],[2380,-2080]]])ROADS.push({w:2.4,pts,great:true});
+  [[1780,-1600],[1740,-1420],[1690,-1185]],[[2320,-1480],[2370,-1700],[2390,-1900],[2380,-2080]]])ROADS.push({w:2.4,pts,great:true});
 Object.assign(CHEST_LOOT,{vk_ruin:{gold:450,items:[['gem',3],['relic',1],['potion',2]]},vk_mine:{gold:320,items:[['iron',8],['gem',2]]},vk_trap:{gold:600,items:[['gem',4],['star_shard',1]].filter(([i])=>ITEMS[i])}});
 /* ---------- building ---------- */
 const S=id=>SITE[id],face=(x,z,cx,cz)=>((Math.round(Math.atan2(cx-x,cz-z)/(Math.PI/2))%4)+4)%4;
 const HOMES={},CAST={};
 function house(x,z,cx,cz,o={}){try{return makeHouse({x,z,rot:face(x,z,cx,cz),w:o.w||(Math.random()<.5?7.5:8.5),d:o.d||6.5,h:o.h||(Math.random()<.5?6.4:3.4),style:o.style||pick(['plaster','stone','wood']),roof:'tile',name:o.name||'Huis',kind:o.kind||'home'})}catch(e){console.warn('valkenland huis',e);return null}}
 function shore(x,z,dx,dz){for(let i=0;i<300;i+=2){if(terrainH(x+dx*i,z+dz*i)<.6)return i}return 0}
-function pier(x,z,dx,len){const g=new T.Group(),y=1.45,w=3;for(let i=0;i<len;i+=1.2){const px=x+dx*i;g.add(mesh(new T.BoxGeometry(1.1,.18,w),MAT.wood,px,y,z));if(i%4.8<1.2)for(const s of[-1,1])g.add(mesh(new T.CylinderGeometry(.14,.16,4,6),MAT.wood,px,y-1.8,z+s*(w/2-.2)))}
+function pier(x,z,dx,len,w=3){const g=new T.Group(),y=1.45;for(let i=0;i<len;i+=1.2){const px=x+dx*i;g.add(mesh(new T.BoxGeometry(1.1,.18,w),MAT.wood,px,y,z));if(i%4.8<1.2)for(const s of[-1,1])g.add(mesh(new T.CylinderGeometry(.14,.16,4,6),MAT.wood,px,y-1.8,z+s*(w/2-.2)))}
   scene.add(g);bridges.push({x:x+dx*len/2,z,hx:len/2+1,hz:w/2,y:y+.09})}
 function stoneMat(){return MAT.stone||new T.MeshStandardMaterial({color:0x8a857a,roughness:.95})}
 function castle(cx,cz){const g=new T.Group(),y=HILL.top,HW=24,WH=8,WT=2,st=stoneMat(),roofM=new T.MeshStandardMaterial({color:0x7a2a22,roughness:.8});g.position.set(cx,y,cz);
@@ -78,8 +80,61 @@ function giantsSteps(cx,cz){const g=new T.Group(),bas=new T.MeshStandardMaterial
 function village(id,o){const s=S(id),C={x:s.x,z:s.z},homes=[];for(let i=0;i<o.n;i++){const a=(o.a0||0)+i/(o.arc?o.n-1:o.n)*(o.arc||6.283),x=C.x+Math.cos(a)*o.r,z=C.z+Math.sin(a)*o.r;const b=house(x,z,C.x,C.z,{style:o.style,name:'Huis in '+s.name,kind:i===0&&o.inn?'inn':i===1&&o.shop?'shop':'home',w:i===0&&o.inn?12:undefined,h:i===0&&o.inn?6.4:undefined});if(b)homes.push(b)}
   if(o.well)try{well(C.x,C.z)}catch(e){}HOMES[id]=homes;return homes}
 function hut(id,dx,dz,o){const s=S(id);return house(s.x+dx,s.z+dz,s.x,s.z,{w:6,d:5,h:3.4,style:'wood',name:o.name})}
+/* ---------- Reuzenhaven: the town of the giants (everything three times as big as you) ---------- */
+function Bag2(){const L=new Map();const add=(geo,m,x,y,z,ry=0,rx=0,rz=0)=>{const g=geo.index?geo.toNonIndexed():geo.clone();for(const k of Object.keys(g.attributes))if(k!=='position'&&k!=='normal'&&k!=='uv')g.deleteAttribute(k);g.clearGroups();
+    g.applyMatrix4(new T.Matrix4().compose(new T.Vector3(x,y,z),new T.Quaternion().setFromEuler(new T.Euler(rx,ry,rz)),new T.Vector3(1,1,1)));if(!L.has(m))L.set(m,[]);L.get(m).push(g)};
+  return{add,box:(w,h,d,m,x,y,z,ry=0,rx=0,rz=0)=>add(new T.BoxGeometry(w,h,d),m,x,y,z,ry,rx,rz),cyl:(r0,r1,h,m,x,y,z,s=12,rx=0,rz=0)=>add(new T.CylinderGeometry(r0,r1,h,s),m,x,y,z,0,rx,rz),
+    build(group){for(const [m,gs] of L){let mg=null;try{mg=T.BufferGeometryUtils.mergeBufferGeometries(gs)}catch(e){}for(const q of mg?[mg]:gs){const me=new T.Mesh(q,m);me.castShadow=true;me.receiveShadow=true;group.add(me)}}}}}
+let GMAT=null;function gm(){if(GMAT)return GMAT;const M=(c,o={})=>new T.MeshStandardMaterial({color:c,roughness:o.r??.85,metalness:o.m||0,...(o.e?{emissive:o.e,emissiveIntensity:0}:{}),...(o.side?{side:o.side}:{})});
+  GMAT={stone:stoneMat(),plaster:MAT.plaster||M(0xe8dcc0),wood:MAT.wood||M(0x7a5434),beam:M(0x3a2614),roof:M(0x7a3a26,{r:.8}),glass:M(0x2a3a4a,{r:.2,e:0xffc070}),floor:M(0x8a5a32),linen:M(0xf0ece0),red:M(0x9a2a22),white:M(0xf0ece0),
+    fire:new T.MeshBasicMaterial({color:0xff8a2a}),flame:new T.MeshBasicMaterial({color:0xffd27a}),dark:new T.MeshBasicMaterial({color:0x120a06}),iron:MAT.iron||M(0x5a5f66,{m:.6,r:.4}),water:M(0x3a7ab8,{r:.1}),gable:M(0xe2d4b4,{side:T.DoubleSide}),
+    walls:[MAT.plaster||M(0xe8dcc0),M(0xd8c098),M(0xc8d4dc),M(0xe8c8b8),M(0x8a6a4a,{r:.9}),stoneMat()],roofs:[M(0x7a3a26,{r:.8}),M(0x3a4660,{r:.7}),M(0xb08a4a,{r:.95}),M(0x3f5a3a,{r:.85}),M(0x5a3a5a,{r:.8})]};return GMAT}
+function gHouse(cx,cz,q,o={}){const m=gm(),b=Bag2(),th=q*Math.PI/2,co=Math.cos(th),si=Math.sin(th),W2=(lx,lz)=>[cx+lx*co+lz*si,cz-lx*si+lz*co];
+  const y=groundH(cx,cz),g=new T.Group();g.position.set(cx,y,cz);g.rotation.y=th;const v=o.v||0,w=o.w||[21,18,24,20,22,19,23][v%7],d=o.d||[18,16,17,19,15,18,16][v%7],h=o.h||[10.5,12,9.5,11,10,13,9.8][v%7],t=1.2,dw=4.4,dh=7.2,rf=[7,9,6,8,7.5,10,6.5][v%7];
+  const WM=m.walls[v%m.walls.length],RM=m.roofs[(v*3+1)%m.roofs.length];
+  b.box(w-2*t,.15,d-2*t,m.floor,0,.08,0);
+  /* walls, with a stone plinth outside and a big doorway in front */
+  b.box(w,h,t,WM,0,h/2,-d/2+t/2);for(const sx of[-1,1])b.box(t,h,d,WM,sx*(w/2-t/2),h/2,0);const fw=(w-dw)/2;for(const sx of[-1,1])b.box(fw,h,t,WM,sx*(dw/2+fw/2),h/2,d/2-t/2);b.box(dw,h-dh,t,WM,0,dh+(h-dh)/2,d/2-t/2);
+  b.box(w+.4,2.4,.3,m.stone,0,1.2,-d/2-.1);for(const sx of[-1,1]){b.box(.3,2.4,d+.4,m.stone,sx*(w/2+.1),1.2,0);b.box(fw+.2,2.4,.3,m.stone,sx*(dw/2+fw/2),1.2,d/2+.1)}
+  /* timber beams outside */for(const sz of[-1,1]){for(let x=-w/2;x<=w/2+.01;x+=3.5){if(sz>0&&Math.abs(x)<dw/2+.4)continue;b.box(.45,h-2.4,.25,m.beam,x,2.4+(h-2.4)/2,sz*(d/2+.12))}b.box(w+.2,.5,.25,m.beam,0,h-.25,sz*(d/2+.12))}
+  for(const sx of[-1,1])b.box(.25,.5,d+.2,m.beam,sx*(w/2+.12),h-.25,0);b.box(dw+1.4,.7,.6,m.beam,0,dh+.35,d/2+.1);for(const sx of[-1,1])b.box(.7,dh,.6,m.beam,sx*(dw/2+.35),dh/2,d/2+.1);
+  /* windows (glowing at night) */const win=(x,z,ry)=>{for(const k of[-1,1]){const ox=Math.sin(ry)*k*.68,oz=Math.cos(ry)*k*.68;b.box(2.8,4,.1,m.glass,x+ox,5.6,z+oz,ry);b.box(3.4,.4,.3,m.beam,x+ox,3.5,z+oz,ry);b.box(3.4,.4,.3,m.beam,x+ox,7.7,z+oz,ry);b.box(.3,4,.25,m.beam,x+ox,5.6,z+oz,ry)}};
+  for(const sx of[-1,1]){win(sx*(w/4+1.2),d/2-t/2,0);win(sx*(w/2-t/2),-2,Math.PI/2);win(sx*(w/4),-d/2+t/2,0)}
+  /* the roof: two slopes and two gables */const half=d/2+1.4,sl=Math.hypot(half,rf),ang=Math.atan2(rf,half);for(const sz of[-1,1])b.box(w+2.4,.6,sl,RM,0,h+rf/2,sz*half/2,0,sz*ang);
+  {const sh=new T.Shape();sh.moveTo(-d/2,0);sh.lineTo(d/2,0);sh.lineTo(0,rf-.3);sh.lineTo(-d/2,0);const gg=new T.ShapeGeometry(sh);for(const sx of[-1,1])b.add(gg,v%3===2?m.beam:m.gable,sx*(w/2-.05),h,0,Math.PI/2)}
+  b.box(2.4,rf+1,2.4,m.stone,(v%2?-1:1)*(w/2-4),h+rf/2,-2.5);
+  /* something different on every house */
+  if(v%4===1){/* a round tower at one corner */const tx=-w/2,tz=d/2-1;b.cyl(3.2,3.4,h+5,m.stone,tx,(h+5)/2,tz,14);b.add(new T.ConeGeometry(4,6,14),RM,tx,h+8,tz)}
+  if(v%4===2){/* an awning over the door */b.box(dw+4,.3,4,m.red,0,dh+1.2,d/2+2,0,-.25);for(const sx of[-1,1])b.box(.4,dh+1,.4,m.wood,sx*(dw/2+1.8),(dh+1)/2,d/2+3.8)}
+  if(v%4===3){/* a shed at the side */const sx=w/2+3.2;b.box(5.6,5,8,m.wood,sx,2.5,-2);b.box(6.4,.4,9,RM,sx,5.2,-2,0,0,.2);b.cyl(1.4,1.3,3.4,m.wood,sx+1,1.7,4)}
+  if(v%4===0){/* flower boxes under the front windows */for(const sx of[-1,1]){b.box(3.6,.9,1,m.wood,sx*(w/4+1.2),3,d/2+.5);for(let i=0;i<5;i++)b.add(new T.SphereGeometry(.35,6,4),i%2?m.red:m.flame,sx*(w/4+1.2)-1.4+i*.7,3.6,d/2+.5)}}
+  /* inside: a table you can walk under, chairs, a bed, a fireplace, a mug as big as a barrel */
+  b.box(9,.4,3.6,m.wood,2,2.8,-2);for(const [lx,lz] of[[-2,-3.4],[6,-3.4],[-2,-.6],[6,-.6]])b.box(.6,2.8,.6,m.wood,lx,1.4,lz);b.cyl(.55,.5,1.2,m.wood,0,3.6,-2);b.cyl(.6,.6,.12,m.iron,0,3.05,-2);b.cyl(1.2,1.2,.1,m.white,4,3.05,-2,16);
+  b.cyl(.22,.22,1.2,m.linen,5.6,3.6,-2.6,8);b.add(new T.SphereGeometry(.2,6,4),m.flame,5.6,4.35,-2.6);
+  for(const sz of[-1,1]){const cz2=-2+sz*3.4;b.box(2.6,.35,2.4,m.wood,2,1.6,cz2);for(const [lx,lz] of[[-1.1,-1],[1.1,-1],[-1.1,1],[1.1,1]])b.box(.3,1.6,.3,m.wood,2+lx,.8,cz2+lz);b.box(2.6,3.2,.35,m.wood,2,3.2,cz2+sz*1.1)}
+  const bx=-w/2+4.2,bz=-d/2+5.6;b.box(5.4,1.4,8.4,m.wood,bx,.7,bz);b.box(5,.6,7.8,m.linen,bx,1.7,bz);b.box(5,.7,3.6,m.red,bx,1.8,bz+1.9);b.box(3.6,.7,1.4,m.white,bx,2.2,bz-3.2);b.box(5.4,3.4,.5,m.wood,bx,1.7,bz-4.1);
+  b.box(5.6,6,1.8,m.stone,w/2-5,3,-d/2+1.9);b.box(3.4,3.2,.2,m.dark,w/2-5,1.8,-d/2+2.85);b.add(new T.ConeGeometry(.8,2,6),m.fire,w/2-5.6,1,-d/2+2.6);b.add(new T.ConeGeometry(.6,1.5,6),m.fire,w/2-4.3,.8,-d/2+2.5);
+  b.build(g);scene.add(g);
+  /* walls stop you, the doorway lets you in; table legs and the bed are solid */
+  const rect=(x0,z0,x1,z1)=>{const [ax,az]=W2(x0,z0),[bx2,bz2]=W2(x1,z1);addBox(Math.min(ax,bx2),Math.min(az,bz2),Math.max(ax,bx2),Math.max(az,bz2))};
+  rect(-w/2,-d/2,w/2,-d/2+t);rect(-w/2,-d/2,-w/2+t,d/2);rect(w/2-t,-d/2,w/2,d/2);rect(-w/2,d/2-t,-dw/2,d/2);rect(dw/2,d/2-t,w/2,d/2);rect(bx-2.7,bz-4.2,bx+2.7,bz+4.2);if(v%4===1){const [x,z]=W2(-w/2,d/2-1);addCircle(x,z,3.4)}if(v%4===3)rect(w/2+.4,-6,w/2+6,2);
+  for(const [lx,lz] of[[-2,-3.4],[6,-3.4],[-2,-.6],[6,-.6]]){const [x,z]=W2(lx,lz);addCircle(x,z,.45)}
+  return{inside:W2(0,2),door:W2(0,d/2+3),counter:W2(0,2.5)}}
+function giantTown(){const s=S('ravenshaven'),C={x:s.x,z:s.z},m=gm(),H=[];
+  for(let i=0;i<8;i++){const a=Math.PI*.33+i*(Math.PI*1.34/7),r=i===0?46:44,x=C.x+Math.cos(a)*r,z=C.z+Math.sin(a)*r,q=face(x,z,C.x,C.z);H.push(gHouse(x,z,q,i===0?{w:27,d:21,h:12,v:0}:{v:i}))}
+  /* the well, the market stall and giant things lying about */const g=new T.Group(),b=Bag2(),y=s.h;g.position.set(C.x,y,C.z);
+  b.cyl(4.2,4.4,2.6,m.stone,0,1.3,0,20);b.cyl(3.6,3.6,.2,m.water,0,2.3,0,20);for(const sx of[-1,1])b.box(.6,7,.6,m.wood,sx*3.6,3.5,0);b.box(8.6,.6,.8,m.wood,0,7,0);b.box(9,.5,6,m.roof,0,7.8,0);addCircle(C.x,C.z,4.5);
+  b.box(8,.4,3.6,m.wood,-14,2.8,12);for(const [lx,lz] of[[-17.6,10.4],[-10.4,10.4],[-17.6,13.6],[-10.4,13.6]]){b.box(.5,6.4,.5,m.wood,lx,3.2,lz);addCircle(C.x+lx,C.z+lz,.4)}for(let i=0;i<6;i++)b.box(1.4,.25,4.2,i%2?m.red:m.white,-17.5+i*1.4,6.5,12);
+  for(const [lx,lz,r2,h2] of[[-20,-6,1.6,3.8],[-17,-9,1.5,3.6],[16,16,1.6,3.8]]){b.cyl(r2,r2*.9,h2,m.wood,lx,h2/2,lz);addCircle(C.x+lx,C.z+lz,r2)}
+  b.box(1.5,1.6,4.2,m.beam,8,.8,-14);b.box(1.5,1.6,4.2,m.beam,10.4,.8,-13.6);b.box(1.5,3.6,1.5,m.beam,8,2.6,-15.4);b.box(1.5,3.6,1.5,m.beam,10.4,2.6,-15);
+  b.cyl(2.6,2.6,.6,m.wood,-6,2.6,-18,18,Math.PI/2.3,0);b.cyl(.5,.5,.8,m.iron,-6,2.6,-18,8,Math.PI/2.3,0);
+  b.build(g);scene.add(g);CAST.giants=H;
+  /* a pier for giants */{const d=shore(C.x,C.z,1,0);CAST.rvPier=C.x+Math.max(46,d-8);pier(CAST.rvPier,C.z,1,50,9)}}
+const GLINES=['HO HO! Een kleintje!','Pas op dat ik niet op je stap!','Welkom in Reuzenhaven, kleine vriend!','Wil je een boterham? Hij is groter dan jij!','Mijn kat is groter dan jouw paard.','Ik nies even... HATSJOE!','Kleine mensen zijn zo schattig.'];
+try{LINES.reus=GLINES}catch(e){}
+function giant(a,k=3){if(!a)return a;try{a.root.scale.multiplyScalar(k);a.hh=(a.hh||1.8)*k;a.rad=.42*k;a.giant=k;a.line='reus'}catch(e){}return a}
 const _bfV=buildFantasy;buildFantasy=function(){_bfV();
-  try{village('ravenshaven',{n:9,r:22,well:true,inn:true,shop:true,style:'stone'});{const s=S('ravenshaven'),d=shore(s.x,s.z,1,0);CAST.rvPier=s.x+Math.max(26,d-8);pier(CAST.rvPier,s.z,1,44)}}catch(e){console.warn('ravenshaven',e)}
+  try{giantTown()}catch(e){console.warn('ravenshaven',e)}
   try{castle(S('arendsnest').x,S('arendsnest').z)}catch(e){console.warn('arendsnest',e)}
   try{ruins(S('oudvalkenburg').x,S('oudvalkenburg').z)}catch(e){console.warn('oud-valkenburg',e)}
   try{CAST.hermit=hut('spiegelmeer',-6,0,{name:'Hut van Kluizenares Ingrid'})}catch(e){console.warn(e)}
@@ -93,10 +148,12 @@ const sp=(job,x,z,o)=>{try{return spawnNPC(job,x,z,o)}catch(e){console.warn('val
 const shop=L=>L.filter(i=>ITEMS[i]);
 function people(id,n,o={}){const s=S(id);for(let i=0;i<n;i++){const a=Math.random()*6.283,r=5+Math.random()*(s.r*.6),b=sp(o.job||'villager',s.x+Math.cos(a)*r,s.z+Math.sin(a)*r,{name:o.names?pick(o.names)+' '+pick(FIRST):undefined,line:o.line,roam:{x:s.x,z:s.z},radius:s.r*.7});if(b&&HOMES[id]&&HOMES[id].length)b.homeB=pick(HOMES[id])}}
 const _pfV=populateFantasy;populateFantasy=function(){_pfV();
-  try{const s=S('ravenshaven'),H=HOMES.ravenshaven||[];people('ravenshaven',8);const inn=H[0],sh=H[1];
-    sp('innkeeper',...at(inn,s.x+4,s.z),{name:'Waard Gerolf',ai:'stay',shop:shop(['bread','stew','ale','cheese','fish','wine'])});
-    sp('merchant',...at(sh,s.x-4,s.z),{name:'Koopvrouw Liesbeth',ai:'stay',shop:shop(['rod','rope','potion','bread','apple','salmon','trout','iron','wood'])});
-    for(let i=0;i<3;i++)sp('villager',(CAST.rvPier||s.x+28)+8+i*10,s.z+rr(.8),{name:'Visser '+pick(FIRST),line:'fisher',ai:'stay',face:Math.PI/2});for(let i=0;i<2;i++)sp('guard',s.x+rr(6),s.z+24,{name:'Havenwacht',ai:'guard',patrol:[[s.x-20,s.z+20],[s.x+20,s.z+20],[s.x+20,s.z-20],[s.x-20,s.z-20]]})}catch(e){console.warn(e)}
+  try{const s=S('ravenshaven'),H=CAST.giants||[],R=n=>({x:s.x,z:s.z});for(let i=0;i<9;i++){const a=Math.random()*6.283,r=10+Math.random()*24;giant(sp('villager',s.x+Math.cos(a)*r,s.z+Math.sin(a)*r,{name:'Reus '+pick(FIRST),roam:{x:s.x,z:s.z},radius:30}))}
+    giant(sp('villager',s.x+8,s.z+8,{name:'Reuzenkind Pim',roam:{x:s.x,z:s.z},radius:18}),1.8);
+    const inn=H[0];giant(sp('innkeeper',...(inn?inn.counter:[s.x+4,s.z]),{name:'Herbergier Grom',ai:'stay',shop:shop(['bread','stew','roast','ale','cheese','fish','wine'])}));
+    giant(sp('merchant',s.x-14,s.z+16,{name:'Marktreuzin Hilde',ai:'stay',face:Math.PI,shop:shop(['club_troll','axe_war','shield_knight','potion','elixir','iron','wood','bread'])}));
+    for(let i=0;i<2;i++)giant(sp('villager',(CAST.rvPier||s.x+46)+12+i*16,s.z+rr(1.5),{name:'Reuzenvisser '+pick(FIRST),line:'reus',ai:'stay',face:Math.PI/2}));
+    for(const sz of[-1,1])giant(sp('guard',s.x-64,s.z+sz*6,{name:'Reuzenwacht',ai:'stay',face:-Math.PI/2}))}catch(e){console.warn(e)}
   try{const s=S('arendsnest'),k=CAST.keep;sp('lord',...at(k,s.x,s.z-9),{name:'Heer Albrecht van Arendsnest',ai:'stay'});const m=CAST.smithy;sp('smith',...at(m,s.x+15,s.z+8),{name:'Smid Hildegard',ai:'stay',shop:shop(['sword_knight','axe_war','shield_knight','helm_iron','chain','bow_long','arrow'])});
     for(let i=0;i<5;i++)sp('guard',s.x+rr(14),s.z+rr(14),{name:'Valkenridder',ai:'guard',patrol:[[s.x-18,s.z-18],[s.x+18,s.z-18],[s.x+18,s.z+18],[s.x-18,s.z+18],[s.x,s.z+30]]});people('arendsnest',4)}catch(e){console.warn(e)}
   try{const s=S('spiegelmeer'),h=CAST.hermit;sp('hermit',...at(h,s.x-6,s.z),{name:'Kluizenares Ingrid',ai:'stay',shop:shop(['potion','elixir','salve','spd_potion','str_potion','skin_potion','reuzendrank','veerdrank','kikkerdrank'])});for(let i=0;i<5;i++)spawnAnimal(pick(['deer','deer','rabbit','fox'].filter(t=>ANIMALS[t])),LK.x+Math.cos(i)*(LK.r+20),LK.z+Math.sin(i)*(LK.r+20))}catch(e){console.warn(e)}
@@ -105,5 +162,6 @@ const _pfV=populateFantasy;populateFantasy=function(){_pfV();
   try{const s=S('meeuwenklif');people('meeuwenklif',4,{line:'fisher'});for(let i=0;i<2;i++)sp('villager',s.x+rr(1),(CAST.mkPier||s.z+20)+8+i*10,{name:'Visser '+pick(FIRST),line:'fisher',ai:'stay',face:0});sp('merchant',s.x+6,s.z+6,{name:'Visvrouw Marijke',ai:'stay',shop:shop(['fish','salmon','trout','catfish','bread'])})}catch(e){console.warn(e)}
   try{const s=S('noordertand');for(let i=0;i<4;i++)sp('smith',s.x+rr(10),s.z+rr(6),{name:'Mijnwerker '+pick(FIRST),roam:{x:s.x,z:s.z},radius:12});for(let i=0;i<3;i++)spawnMonster('golem',s.x+rr(20),s.z-30+rr(8))}catch(e){console.warn(e)}
   try{for(let i=0;i<6;i++)spawnAnimal(pick(['deer','elk','sheep','boar'].filter(t=>ANIMALS[t])),1500+Math.random()*800,-1300-Math.random()*800)}catch(e){}};
+ANIMS.push(()=>{if(GMAT){const n=ENV.night||0;GMAT.glass.emissiveIntensity=n>.3?.9*n:0}});
 WD.valkenland={P,LK,HILL,inside};
 })();
