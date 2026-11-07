@@ -219,9 +219,9 @@ const _haE=hitActor;hitActor=function(a,dmg,by,dir){if(a&&a.robot)return;return 
 /* his blows */
 const foes=(x,z,r)=>actors.filter(e=>!e.dead&&e.kind==='enemy'&&!e.passive&&!e.seaAlly&&!!e.cave===!!PL.inCave&&Math.hypot(e.x-x,e.z-z)<r);
 function knock(e,dx,dz,k){const p={x:e.x+dx*k,z:e.z+dz*k};collide(p,e.rad||.5);e.x=p.x;e.z=p.z}
-function punch(a,auto){if(EK.cd>0)return;EK.cd=auto?1:.7;const h=EK.h;h.atk=.55;h.atkT=.55;h.atkKind='slash';try{sfx('swing')}catch(e){}
-  setTimeout(()=>{const fx=Math.sin(a.rot),fz=Math.cos(a.rot),dmg=Math.round(140+PL.lvl*12);let n=0;for(const e of foes(a.x,a.z,11)){const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz)||1;if((dx*fx+dz*fz)/d<.35&&d>3)continue;hitActor(e,dmg*(.9+Math.random()*.2),true,{x:dx/d,z:dz/d});knock(e,dx/d,dz/d,3);n++}if(n)try{sfx('boom')}catch(e){}},300)}
-function stamp(a){if(EK.cd>0)return;EK.cd=2.2;PL.vy=8;try{sfx('swing')}catch(e){}setTimeout(()=>{const dmg=Math.round(90+PL.lvl*8);for(const e of foes(a.x,a.z,14)){const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz)||1;hitActor(e,dmg,true,{x:dx/d,z:dz/d});knock(e,dx/d,dz/d,5)}try{sfx('boom')}catch(e){}addLog('BOEM! Eikenhart stampt op de grond.','#ffd27a')},600)}
+function punch(a,auto){if(EK.cd>0)return;EK.cd=auto?1:.7;if(auto)EK.nA=(EK.nA||0)+1;const h=EK.h;h.atk=.55;h.atkT=.55;h.atkKind='slash';try{sfx('swing')}catch(e){}
+  setTimeout(()=>{const fx=Math.sin(a.rot),fz=Math.cos(a.rot),dmg=Math.round(140+PL.lvl*12);let n=0;EK.by=true;try{for(const e of foes(a.x,a.z,11)){const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz)||1;if((dx*fx+dz*fz)/d<.35&&d>3)continue;hitActor(e,dmg*(.9+Math.random()*.2),true,{x:dx/d,z:dz/d});knock(e,dx/d,dz/d,3);n++}}finally{EK.by=false}if(n)try{sfx('boom')}catch(e){}},300)}
+function stamp(a){if(EK.cd>0)return;EK.cd=2.2;PL.vy=8;EK.nS=(EK.nS||0)+1;try{sfx('swing')}catch(e){}setTimeout(()=>{const dmg=Math.round(90+PL.lvl*8);EK.by=true;try{for(const e of foes(a.x,a.z,14)){const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz)||1;hitActor(e,dmg,true,{x:dx/d,z:dz/d});knock(e,dx/d,dz/d,5)}}finally{EK.by=false}try{sfx('boom')}catch(e){}addLog('BOEM! Eikenhart stampt op de grond.','#ffd27a')},600)}
 const _saE=startAttack;startAttack=function(){const a=EK.a;if(a&&PL.mounted===a){punch(a,false);return}return _saE()};
 addEventListener('keydown',e=>{if(e.code!=='KeyR'||!started||PL.dead||!EK.a||PL.mounted!==EK.a||(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')))return;e.stopImmediatePropagation();e.preventDefault();stamp(EK.a)},true);
 /* asking in Raderburg to mend him */

@@ -26,7 +26,8 @@ function snap(){const f=F();return{k:Object.assign({},PL.kills||{}),slain:Object
 function note(t){const f=F();f.today=f.today||{s:snap(),ev:[]};if(f.today.ev.length<14)f.today.ev.push(t)}
 FN.note=note;
 function endDay(){const f=F();const T0=f.today||{s:snap(),ev:[]},a=T0.s,b=snap();const slain=[];for(const t in f.slain){const n=f.slain[t]-(a.slain[t]||0);if(n>0)slain.push([t,n])}slain.sort((x,y)=>y[1]-x[1]);
-  f.yday={day:f.st.days,slain,earned:b.earned-a.earned,walk:b.walk-a.walk,disc:b.disc-a.disc,lvl:[a.lvl,b.lvl],ach:b.ach-a.ach,done:b.done-a.done,ev:T0.ev.slice()};f.today={s:b,ev:[]};f.newDay=true}
+  f.yday={day:f.st.days,slain,earned:b.earned-a.earned,walk:b.walk-a.walk,disc:b.disc-a.disc,lvl:[a.lvl,b.lvl],ach:b.ach-a.ach,done:b.done-a.done,ev:T0.ev.slice()};f.today={s:b,ev:[]};f.newDay=true;
+  try{const r=verslag(DAG(),f.st.days,f.yday);f.yday.rep=r;f.dagen=(f.dagen||[]).concat([{day:f.st.days,title:r.title,pages:r.pages}]).slice(-3)}catch(e){console.warn('dagverslag',e)}f.dag=newDag()}
 setInterval(()=>{const f=F();if(!started)return;if(!f.today)f.today={s:snap(),ev:[]};
   if(!f.newDay||PL.dead||anyModal()||(window.CIN&&CIN.on)||ENV.time<6.3||ENV.time>14)return;if(actors.some(a=>a.kind==='enemy'&&!a.dead&&a.state==='chase'&&Math.hypot(a.x-PL.x,a.z-PL.z)<35))return;
   f.newDay=false;FN.openAt='recap';toggleModal('inv',()=>{invTab='quests';renderInv()});try{document.exitPointerLock()}catch(e){}},1000);
@@ -146,6 +147,126 @@ const LORE={wolf:'Jaagt in roedels aan de bosranden. Alleen is hij schuw, samen 
   yeti:'Yeti Ysgrauw, een harig ijsbeest diep onder Noordheim. Een titaan van kou.',frostgiant:'IJsreus Hrimtor, bewaker van de IJsburcht.',wolfking:'Wolvenkoning Fenrik, de witte wolf die zijn roedel roept.',stormrunner:'Zefyr de Stormloper, sneller dan de wind.',terrorbird:'Een schrikvogel: groot, snel en met een vlijmscherpe snavel.',dragonkin:'Drakenmensen die het nest van de draak bewaken.'};
 FN.ICO=ICO;FN.LORE=LORE;FN.nameOf=t=>nameOf(t);FN.allTypes=()=>allTypes();FN.F=F;
 function nameOf(t){return(ANIMALS[t]&&ANIMALS[t].name)||(MON[t]&&MON[t].n)||({wolf:'Wolf',bandit:'Rover',archer:'Roverboogschutter',skeleton:'Skelet'})[t]||t}
+
+/* ---------- Het Grote Dagverslag ----------
+   All day long the game keeps track of what you do: how far you walk, ride, swim and fly, what you fight and beat,
+   your hardest blow, how often you fall, gold in and out, chests, fish, food, who you talk to, the places you find
+   and visit, quests, levels, the weather, rides on Eikenhart and the dragon. Every morning the book opens on a big,
+   funny report of yesterday: a story per part of the day, the numbers with silly comparisons, prizes, a mark out
+   of ten, what the people of Eikendal say about you, and a forecast for today. The last three days stay in the book. */
+const newDag=()=>({ev:[],walk:0,ride:0,robot:0,fly:0,swim:0,boat:0,jumps:0,hits:0,dmg:0,big:null,taken:0,deaths:0,close:0,goldIn:0,goldOut:0,items:{},chests:[],talk:[],eat:0,fish:0,quests:[],sites:[],regions:[],wx:[],mounts:{},cave:0,punch:0,autoPunch:0,stamp:0,robotKills:0,bosses:[],kills:{},kp:[0,0,0,0],sleep:0});
+const DAG=()=>{const f=F();if(!f.dag)f.dag=newDag();return f.dag};
+const part=t=>t<5?0:t<12?1:t<18?2:3;
+const dev=(k,x)=>{const D=DAG();if(D.ev.length<90)D.ev.push([+ENV.time.toFixed(2),k,x])};
+const once=(arr,x,cap=40)=>{if(x&&!arr.includes(x)&&arr.length<cap){arr.push(x);return true}return false};
+/* what you do, counted */
+{const _k=killActor;killActor=function(a,by){const was=a&&a.dead;_k(a,by);try{if(was||!a||!by)return;if(a.kind!=='enemy'&&a.kind!=='animal')return;const D=DAG(),t=a.type||a.name;
+  D.kills[t]=(D.kills[t]||0)+1;D.kp[part(ENV.time)]++;if(a.boss){once(D.bosses,a.name);dev('boss',a.name)}else if(D.kills[t]===1&&a.kind==='enemy')dev('first',t);
+  const E=WD.eikenhart;if(E&&(E.by||PL.mounted&&PL.mounted.robot))D.robotKills++}catch(e){}}}
+{const _h=hitActor;hitActor=function(a,dmg,by,dir){const hp=a&&a.hp;_h(a,dmg,by,dir);try{if(!by||!a||a.robot)return;const D=DAG(),d=Math.max(0,Math.round((hp||0)-Math.max(0,a.hp)))||Math.round(dmg);D.hits++;D.dmg+=d;if(!D.big||d>D.big.v)D.big={v:d,n:a.name||nameOf(a.type)}}catch(e){}}}
+{const _d=damagePlayer;damagePlayer=function(d,src){const hp=PL.hp;const r=_d(d,src);try{const D=DAG(),lost=Math.max(0,hp-PL.hp);D.taken+=lost;if(PL.hp>0&&PL.hp<PL.hpMax*.15&&hp>=PL.hpMax*.15){D.close++;dev('close',src&&(src.name||nameOf(src.type))||'')}}catch(e){}return r}}
+{const _p=playerDie;playerDie=function(){try{DAG().deaths++;dev('death','')}catch(e){}return _p.apply(this,arguments)}}
+{const _o=openChest;openChest=function(c){const was=c&&c.open;_o(c);try{if(!was&&c&&c.open){once(DAG().chests,c.name||'een kist');dev('chest',c.name||'een kist')}}catch(e){}}}
+{const _t=openDialog;openDialog=function(a){try{if(a&&a.name)once(DAG().talk,a.name,60)}catch(e){}return _t.apply(this,arguments)}}
+{const _q=finishQuest;finishQuest=function(q){try{const D=DAG();once(D.quests,q&&q.title||'een opdracht');dev('quest',q&&q.title||'')}catch(e){}return _q.apply(this,arguments)}}
+{const _u=useItem;useItem=function(id){const n=PL.inv[id]||0;const r=_u.apply(this,arguments);try{if(ITEMS[id]&&ITEMS[id].g==='food'&&(PL.inv[id]||0)<n)DAG().eat++}catch(e){}return r}}
+{const _gi2=giveItem;giveItem=function(id,n=1,q){const r=_gi2(id,n,q);try{if(!started)return r;const D=DAG();D.items[id]=(D.items[id]||0)+n;if(/fish|trout|salmon|catfish|eel|haring|paling|karper|snoek/.test(id))D.fish+=n}catch(e){}return r}}
+{const _m=mount;mount=function(h){const r=_m.apply(this,arguments);try{if(h&&PL.mounted===h){const k=h.robot?'Eikenhart':h.flyM?'draak':h.boatM?'boot':h.chair?'draagstoel':h.beetle?'kever':h.name==='Eenhoorn'?'eenhoorn':'paard',D=DAG();D.mounts[k]=(D.mounts[k]||0)+1;if(D.mounts[k]===1)dev('mount',k)}}catch(e){}return r}}
+{const _s=startAttack;startAttack=function(){try{if(PL.mounted&&PL.mounted.robot)DAG().punch++}catch(e){}return _s.apply(this,arguments)}}
+let dp={x:null,z:null,gold:null,t:null,ground:true,inCave:false,lvl:null,disc:null,eA:0,eS:0,wxT:0};
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started||PL.dead)return;const D=DAG();
+  if(dp.x!==null){const d=Math.hypot(PL.x-dp.x,PL.z-dp.z);if(d<60){const h=PL.mounted;if(!h)(PL.swim?D.swim+=d:D.walk+=d);else if(h.robot)D.robot+=d;else if(h.flyM)D.fly+=d;else if(h.boatM)D.boat+=d;else D.ride+=d}}dp.x=PL.x;dp.z=PL.z;
+  if(dp.gold!==null){if(PL.gold>dp.gold)D.goldIn+=PL.gold-dp.gold;else if(PL.gold<dp.gold)D.goldOut+=dp.gold-PL.gold}dp.gold=PL.gold;
+  if(dp.ground&&!PL.onGround&&PL.vy>5&&!PL.mounted)D.jumps++;dp.ground=PL.onGround;
+  if(PL.inCave)D.cave+=dt;
+  if(dp.t!==null&&ENV.time>dp.t+1.5&&ENV.time-dp.t<12){D.sleep++;dev('sleep','')}dp.t=ENV.time;
+  const E=WD.eikenhart;if(E){if((E.nA||0)>dp.eA)D.autoPunch+=E.nA-dp.eA;if((E.nS||0)>dp.eS)D.stamp+=E.nS-dp.eS;dp.eA=E.nA||0;dp.eS=E.nS||0}});
+setInterval(()=>{if(!started||PL.dead)return;const D=DAG();
+  if(dp.lvl!==null&&PL.lvl>dp.lvl)dev('level',PL.lvl);dp.lvl=PL.lvl;
+  const ds=SITES.filter(q=>PL.discovered[q.id]&&q.id!=='bridge');if(dp.disc)for(const q of ds)if(!dp.disc.has(q.id))dev('found',q.name);dp.disc=new Set(ds.map(q=>q.id));
+  const s=!PL.inCave&&typeof siteAt==='function'?siteAt(PL.x,PL.z):null;if(s&&once(D.sites,s.name))dev('visit',s.name);
+  const R=PL.inCave&&WD.region?WD.region(PL.x):null,rn=R?R.name:PL.inCave?(PL.x<-30000?'Noordheim':'de grotten'):null;if(rn&&once(D.regions,rn))dev('region',rn);
+  once(D.wx,ENV.weather,8)},2000);
+
+/* ---------- writing the report ---------- */
+const P=a=>a[Math.floor(Math.random()*a.length)],cap=s=>s.charAt(0).toUpperCase()+s.slice(1),fmt=n=>Math.round(n).toLocaleString('nl-NL');
+const PLU={wolf:'wolven',reus:'reuzen',spin:'spinnen',skelet:'skeletten',draak:'draken',trol:'trollen',bandiet:'bandieten',rover:'rovers',beer:'beren',rat:'ratten',vleermuis:'vleermuizen',everzwijn:'everzwijnen',slang:'slangen',goblin:'goblins',orc:'orks',ork:'orks',zombie:'zombies',golem:'golems',piraat:'piraten',spook:'spoken',geest:'geesten',krab:'krabben',kip:'kippen',konijn:'konijnen',hert:'herten',haas:'hazen',vos:'vossen',hond:'honden',schaap:'schapen',koe:'koeien',varken:'varkens',muis:'muizen',heks:'heksen',ridder:'ridders',soldaat:'soldaten',boogschutter:'boogschutters',roverboogschutter:'roverboogschutters',kever:'kevers',schorpioen:'schorpioenen',mummie:'mummies',demon:'demonen',imp:'imps',yeti:'yeti\'s',raptor:'raptors',dino:'dino\'s',haai:'haaien',kraak:'kraken'};
+function plu(n,name){const w=String(name||'').trim(),low=w.toLowerCase();if(n===1)return'een '+low;const parts=low.split(' '),last=parts.pop();let p=PLU[last];
+  if(!p){if(/[aiouy]$/.test(last))p=last+"'s";else if(/(el|er|em|en|je|ie|e)$/.test(last))p=last+'s';else if(/f$/.test(last))p=last.slice(0,-1)+'ven';else if(/[^aeiou][aeiou][bdgklmnprst]$/.test(last)&&!/(aa|ee|oo|uu)/.test(last))p=last+last.slice(-1)+'en';else p=last+'en'}
+  return n+' '+(parts.length?parts.join(' ')+' ':'')+p}
+const nmT=t=>{try{return nameOf(t)}catch(e){return t}};
+const art=x=>!x?'':/\s/.test(x)?x:'een '+x.toLowerCase();
+function verslag(D,day,y){const nm=(PL.look&&PL.look.name)||'onze held',season=(WD.season&&WD.season())||{n:'',k:''},kills=Object.entries(D.kills).sort((a,b)=>b[1]-a[1]),totK=kills.reduce((s,[,n])=>s+n,0),
+  lv=y&&y.lvl?y.lvl[1]-y.lvl[0]:0,found=D.ev.filter(e=>e[1]==='found').map(e=>e[2]),km=D.walk/1000,allMove=D.walk+D.ride+D.robot+D.fly+D.swim+D.boat,
+  score=totK*1.2+D.bosses.length*12+found.length*5+D.chests.length*3+D.quests.length*5+lv*6+D.walk/400+D.ride/800+D.robot/500+D.fly/600+D.fish*1.5+D.talk.length*.6+D.eat*.4,
+  mark=Math.max(3,Math.min(10,Math.round((3.5+Math.log2(1+score)*1.05)*2)/2));
+  /* a nickname for the day */
+  const nick=[];if(D.bosses.length)nick.push([50,'Reuzendoder','Schrik der Eindbazen']);if(D.robot>400||D.punch+D.autoPunch>10)nick.push([40,'Houtreuzenrijder','Baas van Eikenhart']);if(totK>=25)nick.push([30+totK/5,'Monstermepper','Onverschrokken Knokker']);
+  if(kills[0]&&kills[0][1]>=6)nick.push([25+kills[0][1],cap(plu(2,nmT(kills[0][0])).replace(/^\d+ /,''))+'schrik','Plaag der '+cap(plu(2,nmT(kills[0][0])).replace(/^\d+ /,''))]);if(found.length>=2)nick.push([28,'Ontdekkingsreiziger','Kaartenmaker']);
+  if(D.fish>=4)nick.push([24,'Visfluisteraar','Hengelheld']);if(km>=4)nick.push([20+km,'Onvermoeibare Wandelaar','Zevenmijlslaars']);if(D.goldIn>=800)nick.push([22,'Goudzak','Kampioen Muntenraper']);if(D.talk.length>=8)nick.push([18,'Kletskous','Roddelkoning(in)']);
+  if(D.deaths>=2)nick.push([21,'Taaie Rakker','Die-Altijd-Weer-Opstaat']);if(D.chests.length>=2)nick.push([19,'Kistenkraker','Slotenbreker']);if(D.fly>800)nick.push([26,'Drakenruiter','Wolkenscheerder']);if(D.eat>=6)nick.push([15,'Smulpaap','Bodemloze Maag']);
+  nick.sort((a,b)=>b[0]-a[0]);const bij=nick.length?P([nick[0][1],nick[0][2]]):score>4?P(['Dappere','Onverschrokkene','Avontuurlijke','Stoere','Nieuwsgierige']):P(['Grasprietjesteller','Wolkenkijker','Rustige','Slakkentemmer','Dagdromer']);
+  const tag=P(['of: hoe één held de hele wereld op zijn kop zette','of: een dag die de bard nog lang zal bezingen','of: waarom de kippen van Eikendal vandaag binnen bleven','of: avonturen, zweet en een beetje modder','of: de dag dat zelfs de wolven over jou praatten']);
+  const open={rain:['Het regende pijpenstelen, kikkers en waarschijnlijk ook een paar verdwaalde kabouters, maar '+nm+' trok gewoon de laarzen aan.','De regen kletterde op de daken van Eikendal. Perfect weer om binnen te blijven... dacht iedereen, behalve '+nm+'.'],
+    storm:['Donder rommelde, bliksem knetterde, en ergens gilde een geit. Een stormachtige dag, precies zoals '+nm+' ze graag heeft.'],fog:['De mist hing zo dik over het land dat je je eigen neus nauwelijks zag. Ideaal om monsters te besluipen, vond '+nm+'.'],
+    clear:['De zon kwam op boven Eikendal, de haan kraaide zo hard dat de wolven ervan schrokken, en '+nm+' sprong uit bed alsof er gratis pannenkoeken werden uitgedeeld.','Het was een stralende dag. De vogels floten, de bakker bakte, en '+nm+' had grote plannen.','Een frisse wind, een blauwe lucht en een held met jeukende voeten: '+nm+' was klaar voor avontuur.']};
+  const wx=D.wx.includes('storm')?'storm':D.wx.includes('rain')?'rain':D.wx.includes('fog')?'fog':'clear';
+  let p1='<h3 style="text-align:center">📜 Het Grote Dagverslag</h3><div style="text-align:center;font-family:var(--f-display);font-size:19px;color:#5a3a1a">Dag '+day+' · '+esc(season.n||'')+'</div><div style="text-align:center;font-style:italic;margin:4px 0 10px">over <b>'+esc(nm)+' de '+esc(bij)+'</b><br>'+tag+'</div>';
+  p1+='<p class="drop">'+esc(P(open[wx]||open.clear))+'</p>';
+  /* the day, part by part */
+  const PN=['In het holst van de nacht','In de ochtend','In de middag','In de avond'],CON=['Daarna','Even later','Toen','Alsof dat nog niet genoeg was,','Niet veel later','Ondertussen'];
+  const say={boss:x=>P(['versloeg je <b>'+esc(x)+'</b> in een gevecht waar ze in de herbergen nog jaren over zullen zingen','ging <b>'+esc(x)+'</b> tegen de vlakte. De grond trilde, de vogels vlogen op, en jij stond er nog','maakte je korte metten met <b>'+esc(x)+'</b>. Eindbaas? Meer een eind-baasje']),
+    first:x=>P(['kwam je je eerste '+esc(nmT(x).toLowerCase())+' van de dag tegen. Die had beter thuis kunnen blijven','kreeg een '+esc(nmT(x).toLowerCase())+' de verrassing van zijn leven','maakte een '+esc(nmT(x).toLowerCase())+' kennis met jouw wapen']),
+    found:x=>P(['ontdekte je <b>'+esc(x)+'</b>. Je zette er meteen een denkbeeldig vlaggetje','vond je <b>'+esc(x)+'</b>. De kaartenmakers van het land zijn jaloers','stond je ineens in <b>'+esc(x)+'</b>, een plek die je nog nooit had gezien']),
+    visit:x=>P(['kwam je langs in '+esc(x),'liep je door '+esc(x),'bracht je een bezoekje aan '+esc(x)]),
+    chest:x=>P(['kraakte je <b>'+esc(x)+'</b>. Rammel rammel, schat!','opende je <b>'+esc(x)+'</b> en je ogen werden groot van al dat moois','vond je <b>'+esc(x)+'</b>. Wat erin zat? Laten we zeggen: je tas werd zwaarder']),
+    level:x=>P(['steeg je naar <b>niveau '+x+'</b>! Je spieren groeiden ongeveer drie millimeter','werd je <b>niveau '+x+'</b>. Iemand in de verte begon spontaan te applaudisseren']),
+    death:()=>P(['ging je een momentje dood. Gelukkig is dat in deze wereld maar een tijdelijke toestand','viel je om. Je stond weer op, klopte het stof van je kleren en deed alsof er niets gebeurd was']),
+    close:x=>P(['ontsnapte je op het nippertje'+(x?' aan '+esc(art(x)):'')+', met nog maar een paar levenspunten over. Spannend!','hing je leven aan een zijden draadje'+(x?' door '+esc(art(x)):'')+', maar je hield vol']),
+    quest:x=>P(['maakte je de opdracht <b>'+esc(x)+'</b> af. Iemand is je nu héél dankbaar','rondde je <b>'+esc(x)+'</b> af en streek je de beloning op']),
+    mount:x=>({Eikenhart:P(['klom je op de schouder van <b>Eikenhart</b>, de houten reus. Boem, boem, boem, door het land!','stuurde je <b>Eikenhart</b> op pad. De bomen bogen opzij']),draak:'vloog je op de rug van je draak hoog boven de wolken',boot:'stapte je in een boot en voer je over het water',paard:P(['sprong je op een paard en galoppeerde je weg','leende je een paard. Het paard leende jouw goede humeur']),eenhoorn:'reed je op een échte eenhoorn. Ja, echt',draagstoel:'liet je je als een echte koning(in) dragen in je draagstoel',kever:'reed je op een reuzenkever. Bzzzt'})[x]||'reed je ergens op',
+    sleep:()=>P(['deed je een heerlijk dutje','kroop je even onder de wol']),region:x=>P(['daalde je af in '+esc(x)+', waar het donker en spannend was','waagde je je in '+esc(x)])};
+  const byP=[[],[],[],[]];for(const [t,k,x] of D.ev)if(say[k])byP[part(t)].push([k,x]);
+  let story='';for(let i=0;i<4;i++){const L=byP[i];const kp=D.kp[i];if(!L.length&&!kp)continue;let s=PN[i]+' ';const seen=new Set(),out=[];
+    for(const [k,x] of L){const key=k+':'+x;if(seen.has(key))continue;seen.add(key);if(k==='visit'&&out.length>4)continue;out.push(say[k](x))}
+    if(kp)out.push(P(['sneuvelden er '+kp+' tegenstanders','maakte je '+kp+' vijanden een kopje kleiner','moesten '+kp+' monsters het onderspit delven']));
+    const cs=CON.slice().sort(()=>Math.random()-.5);s+=out.slice(0,7).map((t,j)=>{const z=(j?cs[(j-1)%cs.length]+' ':'')+t;return/[.!?]$/.test(z)?z:z+'.'}).join(' ');story+='<p>'+s.replace(/([.!?]) ([a-z])/g,(m,a,c)=>a+' '+c.toUpperCase())+'</p>'}
+  if(!story)story='<p>'+P(['Het was een rustige dag. Zo rustig dat zelfs de slakken je inhaalden. Je keek naar de wolken, telde grassprietjes (je kwam tot 4.812) en dacht diep na over het leven.','Vandaag gebeurde er... bijna niets. Maar wie zegt dat een held niet af en toe mag uitrusten? Zelfs draken doen weleens een dutje.'])+'</p>';
+  p1+=story;
+  if(D.robot>50||D.autoPunch+D.punch+D.stamp>0)p1+='<p>🪵 <b>Eikenhart</b> was ook van de partij: '+(D.robot>50?'hij stampte '+fmt(D.robot)+' meter door het land met jou op zijn schouder, ':'')+((D.punch+D.autoPunch)?'deelde '+(D.punch+D.autoPunch)+' houten vuistslagen uit':'')+(D.stamp?', stampte '+D.stamp+' keer de grond zo hard dat de mollen verhuisden':'')+(D.robotKills?' en hielp '+D.robotKills+' vijanden het land uit':'')+'. Krrrk!</p>';
+  /* page 2: the numbers */
+  let p2='<h3>📊 De cijfers van de dag</h3>';const row=(i,t)=>'<div style="margin:5px 0">'+i+' '+t+'</div>';
+  if(D.walk>30){const st=Math.round(D.walk/.75);p2+=row('👣','Je liep <b>'+(km>=1?km.toFixed(1).replace('.',',')+' km':fmt(D.walk)+' meter')+'</b>, dat zijn zo\'n <b>'+fmt(st)+'</b> stappen. '+P(['Dat is '+Math.max(1,Math.round(D.walk/105))+' keer een voetbalveld lang!','Daarmee kom je '+Math.max(1,Math.round(D.walk/34))+' keer over de Steenbrug.','Je schoenen vragen om vakantie.','Een slak zou daar '+Math.max(1,Math.round(D.walk/48))+' uur over doen.']))}
+  if(D.ride>30)p2+=row('🐎','Te paard of op een ander rijdier: <b>'+fmt(D.ride)+' meter</b>. Hop hop!');if(D.robot>30)p2+=row('🪵','Op de schouder van Eikenhart: <b>'+fmt(D.robot)+' meter</b>. Boem. Boem. Boem.');
+  if(D.fly>30)p2+=row('🐉','Door de lucht gevlogen: <b>'+fmt(D.fly)+' meter</b>. Vogels keken je jaloers na.');if(D.swim>20)p2+=row('🏊','Gezwommen: <b>'+fmt(D.swim)+' meter</b>. De vissen gaven je een 8 voor stijl.');if(D.boat>30)p2+=row('⛵','Gevaren: <b>'+fmt(D.boat)+' meter</b>. Ahoi!');
+  if(D.jumps>5)p2+=row('🦘','Je sprong <b>'+D.jumps+' keer</b>. '+P(['De kikkers zijn jaloers.','Een kangoeroe zou trots zijn.','Boing boing!']));
+  if(totK){p2+=row('⚔️','Verslagen: <b>'+totK+'</b> tegenstanders.');p2+='<div class="card" style="margin:6px 0">'+kills.slice(0,6).map(([t,n])=>(ICO[t]||'⚔')+' '+esc(plu(n,nmT(t))).replace(/^een /,'1 ')).join('<br>')+'</div>'}
+  if(D.big)p2+=row('💥','Je hardste klap: <b>'+fmt(D.big.v)+' schade</b> tegen '+esc(D.big.n||'iets')+'. '+P(['Au!','Dat voelde die nog wel even.','Ergens viel een tand op de grond.']));
+  if(D.hits>5)p2+=row('🗡','Je raakte <b>'+D.hits+' keer</b> raak en deelde in totaal <b>'+fmt(D.dmg)+'</b> schade uit.');
+  if(D.taken>0)p2+=row('❤️','Je verloor <b>'+fmt(D.taken)+' levenspunten</b>'+(D.deaths?' en ging <b>'+D.deaths+' keer</b> neer':'')+'. '+(D.deaths?P(['Maar je stond telkens weer op!','Opgeven? Nooit van gehoord.']):P(['En je bleef de hele dag overeind. Taai!','Pleisters? Niet nodig.'])));
+  if(D.goldIn||D.goldOut)p2+=row('🪙','Goud erbij: <b>'+fmt(D.goldIn)+'</b>, goud uitgegeven: <b>'+fmt(D.goldOut)+'</b>. '+(D.goldIn>D.goldOut?P(['Je spaarvarken knort tevreden.','Rijk worden gaat zo.']):D.goldOut>D.goldIn?P(['De winkeliers van het land zijn je héél dankbaar.','Shoppen is ook een sport.']):'Precies quitte!'));
+  const itn=Object.entries(D.items).filter(([id])=>ITEMS[id]).sort((a,b)=>b[1]-a[1]);if(itn.length)p2+=row('🎒','In je tas belandden <b>'+itn.reduce((s,[,n])=>s+n,0)+'</b> spullen, zoals '+itn.slice(0,4).map(([id,n])=>n+'× '+esc(ITEMS[id].n.toLowerCase())).join(', ')+'.');
+  if(D.chests.length)p2+=row('🧰','Kisten geopend: <b>'+D.chests.length+'</b>.');if(D.fish)p2+=row('🎣','Vissen gevangen: <b>'+D.fish+'</b>. '+P(['Blub.','De rest van de vissen heeft nu een vergadering.']));
+  if(D.eat)p2+=row('🍖','Je at <b>'+D.eat+' keer</b>. '+P(['Smakelijk!','Een held met een lege maag is maar een halve held.','Burp. Pardon.']));
+  if(D.talk.length)p2+=row('💬','Je kletste met <b>'+D.talk.length+'</b> mensen, onder wie '+D.talk.slice(0,4).map(esc).join(', ')+'.');
+  if(D.sites.length)p2+=row('🗺','Plaatsen bezocht: '+D.sites.slice(0,8).map(esc).join(', ')+(D.sites.length>8?' en nog meer':'')+'.');if(D.cave>20)p2+=row('🕳','Onder de grond: <b>'+Math.round(D.cave/60)+' minuten</b>. Je ogen moesten weer even aan de zon wennen.');
+  if(D.wx.length)p2+=row('🌦','Weer van de dag: '+D.wx.map(w=>({clear:'zon',rain:'regen',storm:'onweer',fog:'mist',snow:'sneeuw'})[w]||w).join(', ')+'.');
+  if(p2.length<60)p2+='<p>Vandaag viel er weinig te tellen. Behalve schaapjes, misschien.</p>';
+  /* page 3: prizes, the mark and what people say */
+  const prize=[];if(totK)prize.push(['🗡','Het Gouden Zwaard','voor '+totK+' verslagen tegenstanders']);if(D.walk>800)prize.push(['👟','De Zilveren Schoen','voor '+(km>=1?km.toFixed(1).replace('.',',')+' km':fmt(D.walk)+' m')+' wandelen']);
+  if(D.fish)prize.push(['🎣','De Bronzen Vishaak','voor '+D.fish+' gevangen vissen']);if(D.talk.length>=4)prize.push(['🗣','De Kletsmuts','voor praatjes met '+D.talk.length+' mensen']);if(D.goldIn>=300)prize.push(['🐷','Het Spaarvarken','voor '+fmt(D.goldIn)+' verdiend goud']);
+  if(D.deaths)prize.push(['🍀','De Pechvogel-van-de-Dag-trofee','voor '+D.deaths+' keer neergaan (en weer opstaan!)']);if(D.robot>200)prize.push(['🪵','De Houten Reuzentrofee','voor '+fmt(D.robot)+' meter op Eikenhart']);if(found.length)prize.push(['🧭','Het Ontdekkingskompas','voor '+found.length+' nieuwe plaatsen']);
+  if(D.eat>=4)prize.push(['🍰','De Dikke-Buik-medaille','voor '+D.eat+' maaltijden']);if(D.jumps>=30)prize.push(['🦘','De Kangoeroeprijs','voor '+D.jumps+' sprongen']);if(D.chests.length>=2)prize.push(['🧰','De Kistenkrakerspenning','voor '+D.chests.length+' geopende kisten']);if(D.close)prize.push(['😅','De Op-het-Nippertje-prijs','voor '+D.close+' keer bijna-net-niet']);
+  if(!prize.length)prize.push(['🌼','De Madeliefjesprijs','voor de rustigste dag van het jaar']);
+  let p3='<h3>🏆 Prijzen van de dag</h3>'+prize.slice(0,5).map(([i,t,w])=>'<div class="card" style="margin:6px 0"><span style="font-size:22px">'+i+'</span> <b>'+t+'</b><br><span style="font-style:italic">'+w+'</span></div>').join('');
+  const mc=mark>=9.5?'Een legendarische dag. De barden schrijven al liedjes.':mark>=8?'Een topdag! Daar mag je trots op zijn.':mark>=6.5?'Een prima dag vol avontuur.':mark>=5?'Een gezellige dag, met hier en daar wat spanning.':'Een rustige dag. Ook helden moeten soms uitrusten.';
+  p3+='<h4>📝 Rapportcijfer</h4><div style="font-family:var(--f-display);font-size:34px;text-align:center;color:#7a2a1a">'+String(mark).replace('.',',')+' / 10</div><p style="text-align:center;font-style:italic">'+mc+'</p>';
+  const who=D.talk.length?P(D.talk):P(['Boer Hendrik','Bakker Mia','Waardin Margriet','een oude visser','de dorpsgek van Eikendal']);
+  const what=D.bosses.length?'"Heb je het gehoord? '+esc(nm)+' heeft '+esc(D.bosses[0])+' verslagen! Ik heb het van mijn buurvrouw, die het van haar kat heeft."':totK>=10?'"'+esc(nm)+'? Die heeft vandaag '+totK+' monsters verslagen. Ik hou mijn kippen voortaan binnen."':D.robot>200?'"Ik zag '+esc(nm)+' op de schouder van die houten reus voorbijkomen. Mijn melk is er zuur van geworden."':found.length?'"'+esc(nm)+' is helemaal naar '+esc(found[0])+' geweest. Ik kom zelf nooit verder dan de waterput."':D.talk.length>=5?'"Wat een gezellig iemand, die '+esc(nm)+'. Kletst met iedereen. Ook met mij, gelukkig."':km>2?'"'+esc(nm)+' loopt zoveel rond dat de paden er al vanzelf ontstaan."':'"'+esc(nm)+'? Een rustig type. Zat volgens mij de hele dag naar de wolken te kijken."';
+  p3+='<h4>🗨 Wat men over je zegt</h4><p><i>'+what+'</i><br><span style="color:#7a5a3a">— '+esc(who)+'</span></p>';
+  p3+='<h4>🔮 Voorspelling voor vandaag</h4><p>'+P(['70% kans op avontuur, 20% kans op soep en 10% kans dat een kip je achtervolgt.','Zonnig met af en toe een draak. Neem een schild mee.','Kans op schatten: groot. Kans op modder aan je laarzen: nog groter.','Een vreemdeling zal je iets vertellen. Luister goed, of doe alsof.','Vandaag vind je iets glimmends. Of iets glimmends vindt jou.','De sterren zeggen: eet een appel en sla een monster. In die volgorde.'])+'</p>';
+  return{title:'Dag '+day+': '+nm+' de '+bij,pages:[p1,p2,p3]}}
+FN.verslag=verslag;FN.dag=DAG;
 const allTypes=()=>{const s=new Set(['wolf','bandit','archer','skeleton',...Object.keys(ANIMALS),...Object.keys(MON)]);for(const a of actors)if((a.kind==='enemy'||a.kind==='animal')&&a.type&&a.type!=='titancore')s.add(a.type);return[...s].filter(t=>t!=='titancore')};
 let page=0,pages=[],chapters=[],flipping=false;
 const JOBICO={smith:'⚒',merchant:'🛒',innkeeper:'🍺',guard:'🛡',farmer:'🌾',priest:'✝',lord:'⚜',villager:'🏠',child:'🧒',fisher:'🎣',elf:'🧝',witch:'🧙',hermit:'🧓',traveler:'🎒',tailor:'🧵'};
@@ -178,7 +299,8 @@ function build(){const f=F(),nm=(PL.look&&PL.look.name)||'Reiziger',cls=CLASSES[
   const add=h=>{pages.push(h)},chap=(t,ico)=>chapters.push([t,ico,pages.length]);
   add('<div style="text-align:center;padding-top:40px"><div style="font-size:54px">📖</div><h3 style="border:none;font-size:34px;margin-top:10px">Avonturenboek</h3><div style="font-family:var(--f-display);font-size:22px;color:#5a3a1a">van '+esc(nm)+'</div>'+
     '<p style="margin-top:26px;font-style:italic">'+esc(cls)+' · niveau '+PL.lvl+' · dag '+f.st.days+'</p><p style="margin-top:40px;font-size:13px;color:#7a5a3a">❦ Blader met de pijlen, met ← → of door op de rand van een bladzijde te klikken ❦</p></div>');
-  let recapAt=-1;const y=f.yday;if(y){recapAt=pages.length;const top=y.slain.slice(0,6).map(([t,n])=>(ICO[t]||'⚔')+' '+n+'× '+esc(nameOf(t))).join('<br>');
+  let recapAt=-1;const y=f.yday;if(y&&y.rep){recapAt=pages.length;chap('Dagverslag van gisteren','📜');for(const pg of y.rep.pages)add(pg);for(const o of(f.dagen||[]).slice(0,-1).reverse()){chap(o.title,'🗓');for(const pg of o.pages)add(pg)}}
+  else if(y){recapAt=pages.length;const top=y.slain.slice(0,6).map(([t,n])=>(ICO[t]||'⚔')+' '+n+'× '+esc(nameOf(t))).join('<br>');
     add('<h3>Terugblik · dag '+y.day+'</h3><p class="drop">Gisteren was een dag om te onthouden. '+(y.walk>200?'Je liep '+(y.walk/1000).toFixed(1)+' kilometer':'Je bleef dicht bij huis')+(y.earned>0?' en verdiende '+y.earned+' goud':'')+'. '+
       (y.slain.length?'Je versloeg '+y.slain.reduce((s,[,n])=>s+n,0)+' tegenstanders.':'Je hoefde niet te vechten.')+(y.lvl[1]>y.lvl[0]?' Je groeide van niveau '+y.lvl[0]+' naar '+y.lvl[1]+'.':'')+'</p>'+
       (top?'<h4>Verslagen</h4><div class="card">'+top+'</div>':'')+(y.ev.length?'<h4>Wat er gebeurde</h4><div class="card">'+y.ev.map(e=>'❦ '+esc(e)).join('<br>')+'</div>':'')+

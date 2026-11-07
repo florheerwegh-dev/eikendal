@@ -38,6 +38,7 @@ async function loadAssets(phase){
     await Promise.all(AS_TEX.map(n=>new Promise(r=>tl.load('assets/tex/'+n+'.jpg',t=>{t.encoding=T.LinearEncoding;t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=4;if(AS_FLIP.has(n))t.flipY=false;AS.tex[n]=t;r()},undefined,()=>r()))));
     AS.chest=AS.raw.props.animations||[];AS.horseClips={};for(const c of (AS.raw.horse?AS.raw.horse.animations:[]))AS.horseClips[c.name]=c;
     try{await asLoadDragon()}catch(e){console.warn('dragon model not loaded',e)}
+    try{asGreenLeaves()}catch(e){console.warn('groene bladeren',e)}
     AS.ok=true;AS.worldOk=true;console.log('Eikendal assets ready in',Math.round(performance.now()-AS.t0),'ms');return true
   }catch(e){console.warn('Eikendal: assets not loaded, using procedural models',e);AS.err=String(e&&e.message||e);AS.ok=false;AS.failed=true;return false}}
 /* the title screen loads only the people first; the world follows after the character screen */
@@ -436,6 +437,19 @@ buildRocks=function(){if(!AS.ok||!AS.lib.Rock_Medium_1)return _br0();
   by.forEach((items,v)=>{asScatter('Rock_Medium_'+(v+1),items,{shadow:true,rad:2.5,maxD:700});for(const it of items){it.ref.inst=it.inst;it.ref.i=it.i}});
   for(const r of list)if(r.s>1.1)r.col=addCircle(r.x,r.z,r.s*.9);ROCKS=list};
 
+/* leaves stay green from far away: the see-through edges of the leaf pictures were black, and seen from a distance
+   that black runs into the leaves and makes bushes and trees look dark brown. The edges now get the leaf colour.
+   The twisted trees had red leaves; as small trees they looked like red bushes, so their leaves are green too. */
+function asGreenLeaves(){const seen=new Set();for(const n of Object.keys(AS.lib))AS.lib[n].traverse(o=>{if(!o.isMesh)return;for(const m of(Array.isArray(o.material)?o.material:[o.material])){
+  if(!m||!m.map||!(m.alphaTest>0)||seen.has(m.uuid)||!/Leaves|Flowers|Vine/i.test(m.name||''))continue;seen.add(m.uuid);const im=m.map.image;if(!im||!im.width)continue;
+  const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const g=c.getContext('2d');g.drawImage(im,0,0);const D=g.getImageData(0,0,c.width,c.height),d=D.data;
+  const red=/Twisted/i.test(m.name);let r=0,gg=0,b=0,k=0;
+  for(let i=0;i<d.length;i+=4){if(d[i+3]<128)continue;if(red){const R0=d[i],G0=d[i+1],B0=d[i+2];d[i]=Math.round(R0*.42+G0*.3);d[i+1]=Math.round(R0*.74+G0*.4);d[i+2]=Math.round(B0*.3+R0*.04)}r+=d[i];gg+=d[i+1];b+=d[i+2];k++}
+  if(!k)continue;r=Math.round(r/k);gg=Math.round(gg/k);b=Math.round(b/k);for(let i=0;i<d.length;i+=4)if(d[i+3]<128){d[i]=r;d[i+1]=gg;d[i+2]=b}
+  g.putImageData(D,0,0);m.map.image=c;m.map.needsUpdate=true}});
+  /* bushes get their own fresh green leaves, which the seasons leave alone: trees still blossom and turn orange in autumn */
+  let bl=null;for(const n of Object.keys(AS.lib))if(/^Bush/i.test(n))AS.lib[n].traverse(o=>{if(!o.isMesh||Array.isArray(o.material)||!/^Leaves/i.test(o.material.name||''))return;if(!bl){bl=o.material.clone();bl.name='Struikblad';bl.color.setRGB(1,1.04,.85)}o.material=bl})}
+
 /* grass, clover and wild flowers around the player */
 const GR={v:[],last:{x:1e9,z:1e9}};
 const _bg0=buildGrass;
@@ -444,16 +458,29 @@ buildGrass=function(){if(!AS.ok||!AS.lib.Grass_Common_Short)return _bg0();
   for(const [n,w,s0,s1] of defs){const parts=asParts(n);if(!parts)continue;const ims=parts.map(p=>{const im=new T.InstancedMesh(p.g,asWindMat(p.m,.1),2600);im.count=0;im.frustumCulled=false;im.receiveShadow=true;scene.add(im);return im});GR.v.push({n,w,s0,s1,ims})}
   grass={visible:true,count:0,instanceMatrix:{needsUpdate:false}}};
 const _ug0=updateGrass;
+/* The grass around you is worked out per piece of ground (10 x 10 grass spots) and remembered, so walking or riding
+   only works out the new pieces at the edge, a few per frame, instead of all the grass every 5 metres. */
+const GT={tiles:new Map(),N:10,nb:-1,pending:false,off:false};
+function grassTile(tx,tz){const S=1.15,N=GT.N,tot=GR.v.reduce((a,v)=>a+v.w,0),out=GR.v.map(()=>[]),x0=tx*N*S,z0=tz*N*S,X1=x0+N*S,Z1=z0+N*S;
+  const RS=[];for(const r of ROADS){const q=r.pts,mg=r.w+2;for(let i=0;i<q.length-1;i++){const ax=q[i][0],az=q[i][1],bx=q[i+1][0],bz=q[i+1][1];if(Math.max(ax,bx)+mg<x0-S||Math.min(ax,bx)-mg>X1+S||Math.max(az,bz)+mg<z0-S||Math.min(az,bz)-mg>Z1+S)continue;RS.push(ax,az,bx-ax,bz-az,r.w)}}
+  const nearRoad=(x,z)=>{for(let k=0;k<RS.length;k+=5){const ax=RS[k],az=RS[k+1],dx=RS[k+2],dz=RS[k+3],t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1);if(Math.hypot(x-ax-dx*t,z-az-dz*t)-RS[k+4]<1.2)return true}return false};
+  for(let gx=tx*N;gx<tx*N+N;gx++)for(let gz=tz*N;gz<tz*N+N;gz++){
+    const hv=hash2(gx,gz);if(hv>.8)continue;const x=(gx+hash2(gz,gx*3))*S,z=(gz+hash2(gx*7,gz))*S;
+    const h=terrainH(x,z);if(h<.9||h>58||nearRoad(x,z)||inBuilding(x,z,1)||AS_PAVED.some(q=>Math.abs(x-q.x)<q.hw&&Math.abs(z-q.z)<q.hd))continue;_gp.x=x;_gp.z=z;if(collide(_gp,.3))continue;
+    let pk=hash2(gx*13+1,gz*17+5)*tot,vi=0;for(let i=0;i<GR.v.length;i++){pk-=GR.v[i].w;if(pk<=0){vi=i;break}}const v=GR.v[vi];
+    _g.position.set(x,h-.04,z);_g.rotation.set(0,hv*40,0);const sc=v.s0+(v.s1-v.s0)*hash2(gx+5,gz);_g.scale.set(sc,sc*(.85+hv*.4),sc);_g.updateMatrix();out[vi].push(x,z,..._g.matrix.elements)}
+  return{v:out,cx:x0+N*S/2,cz:z0+N*S/2}}
 updateGrass=function(px,pz){if(!GR.v.length)return _ug0(px,pz);
-  if(Math.hypot(px-GR.last.x,pz-GR.last.z)<5)return;GR.last.x=px;GR.last.z=pz;for(const v of GR.v)for(const im of v.ims)im.count=0;
-  if(PL.inCave||grass.visible===false){return}
-  const S=1.15,R=asDet().grass,tot=GR.v.reduce((a,v)=>a+v.w,0);
-  for(let gx=Math.floor((px-R)/S);gx<=Math.floor((px+R)/S);gx++)for(let gz=Math.floor((pz-R)/S);gz<=Math.floor((pz+R)/S);gz++){
-    const hv=hash2(gx,gz);if(hv>.8)continue;const x=(gx+hash2(gz,gx*3))*S,z=(gz+hash2(gx*7,gz))*S;if(Math.hypot(x-px,z-pz)>R)continue;
-    const h=terrainH(x,z);if(h<.9||h>58||roadDist(x,z)<1.2||inBuilding(x,z,1)||AS_PAVED.some(q=>Math.abs(x-q.x)<q.hw&&Math.abs(z-q.z)<q.hd))continue;_gp.x=x;_gp.z=z;if(collide(_gp,.3))continue;
-    let pk=hash2(gx*13+1,gz*17+5)*tot,v=GR.v[0];for(const q of GR.v){pk-=q.w;if(pk<=0){v=q;break}}const c=v.ims[0].count;if(c>=2600)continue;
-    _g.position.set(x,h-.04,z);_g.rotation.set(0,hv*40,0);const sc=v.s0+(v.s1-v.s0)*hash2(gx+5,gz);_g.scale.set(sc,sc*(.85+hv*.4),sc);_g.updateMatrix();for(const im of v.ims){im.setMatrixAt(c,_g.matrix);im.count=c+1}}
-  for(const v of GR.v)for(const im of v.ims)im.instanceMatrix.needsUpdate=true};
+  if(PL.inCave||grass.visible===false){if(!GT.off){for(const v of GR.v)for(const im of v.ims)im.count=0;GT.off=true}GR.last.x=1e9;return}
+  const moved=Math.hypot(px-GR.last.x,pz-GR.last.z)>=5||GT.off;if(!moved&&!GT.pending)return;GT.off=false;if(moved){GR.last.x=px;GR.last.z=pz}
+  if(GT.nb!==BUILDINGS.length){GT.nb=BUILDINGS.length;GT.tiles.clear()}
+  const R=asDet().grass,TS=GT.N*1.15,tx0=Math.floor((px-R)/TS),tx1=Math.floor((px+R)/TS),tz0=Math.floor((pz-R)/TS),tz1=Math.floor((pz+R)/TS),use=[],need=[];
+  for(let tx=tx0;tx<=tx1;tx++)for(let tz=tz0;tz<=tz1;tz++){const cx=(tx+.5)*TS,cz=(tz+.5)*TS,d=Math.hypot(cx-px,cz-pz);if(d>R+TS*.75)continue;const k=tx+','+tz,T=GT.tiles.get(k);if(T)use.push(T);else need.push([d,tx,tz,k])}
+  need.sort((a,b)=>a[0]-b[0]);const t0=performance.now();let left=0;for(const [,tx,tz,k] of need){if(performance.now()-t0>3){left++;continue}const T=grassTile(tx,tz);GT.tiles.set(k,T);use.push(T)}GT.pending=left>0;
+  for(const v of GR.v)for(const im of v.ims)im.count=0;
+  for(const T of use)for(let vi=0;vi<GR.v.length;vi++){const L=T.v[vi],v=GR.v[vi];for(let i=0;i<L.length;i+=18){if(Math.hypot(L[i]-px,L[i+1]-pz)>R)continue;const c=v.ims[0].count;if(c>=2600)break;for(const im of v.ims){for(let e=0;e<16;e++)im.instanceMatrix.array[c*16+e]=L[i+2+e];im.count=c+1}}}
+  for(const v of GR.v)for(const im of v.ims)im.instanceMatrix.needsUpdate=true;
+  if(GT.tiles.size>700)for(const [k,T] of GT.tiles)if(Math.hypot(T.cx-px,T.cz-pz)>R*3)GT.tiles.delete(k)};
 
 /* flowers, bushes, ferns, plants, mushrooms, pebbles and petals across the land */
 const _bfl0=buildFlora;
