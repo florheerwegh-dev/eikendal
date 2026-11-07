@@ -19,7 +19,7 @@ GL.westH=(x,z,h)=>{const k=westK(x,z);return k<=0?h:lerp(h,westLand(x,z),k)};
 if(GL.isl)GL.isl.push([1250,2050,120],[-1000,2160,110]);
 /* ---------- places ---------- */
 const PL_={raderburg:{n:'Raderburg',x:2260,z:140,r:105,ico:'⚙️'},fossiel:{n:'De Fossielenkuil',x:2300,z:-420,r:40,ico:'🦴'},sterren:{n:'Sterrenwacht Kijkuit',x:2350,z:-700,r:24,ico:'🔭'},
-  molens:{n:'Het Molenveld',x:2240,z:620,r:62,ico:'🌬️'},schat:{n:'Schateiland',x:1250,z:2050,r:46,ico:'🏝️'},kristal:{n:'Kristaleiland',x:-1000,z:2160,r:44,ico:'💎'},wrak:{n:'Het Spookschip',x:2520,z:300,r:34,ico:'🏴‍☠️'},reus:{n:'De Gevallen IJzerreus',x:2170,z:-180,r:34,ico:'🤖'}};
+  molens:{n:'Het Molenveld',x:2240,z:620,r:62,ico:'🌬️'},schat:{n:'Schateiland',x:1250,z:2050,r:46,ico:'🏝️'},kristal:{n:'Kristaleiland',x:-1000,z:2160,r:44,ico:'💎'},wrak:{n:'Het Spookschip',x:2520,z:300,r:34,ico:'🏴‍☠️'},reus:{n:'De Houten Reus',x:2170,z:-180,r:34,ico:'🤖'}};
 const autoH=(x,z,r)=>{let s=0,n=0;for(let i=-2;i<=2;i++)for(let j=-2;j<=2;j++){s+=baseH(x+i*r*.4,z+j*r*.4);n++}return Math.max(2.6,s/n)};
 for(const [id,p] of Object.entries(PL_)){SITES.push(SITE[id]={id,name:p.n,x:p.x,z:p.z,r:p.r,h:autoH(p.x,p.z,p.r),blend:1.6,great:true});MAPICON[id]=p.ico}
 for(const pts of[[[1612,-28],[1700,-10],[1820,30],[1940,80],[2060,120],[2160,140],[2260,140]],
@@ -104,9 +104,7 @@ function buildPlaces(){const m=mats(),B=bag();
   /* the field of windmills */
   {const S=SITE.molens;for(let i=0;i<6;i++){const a=i/6*6.283+.3,x=S.x+Math.cos(a)*40,z=S.z+Math.sin(a)*40,y=gy(x,z);B.add(new T.CylinderGeometry(1.6,2.4,13,10),std(0xe8e0d0),MX(x,y+6.5,z));B.add(new T.ConeGeometry(2.2,2.4,10),m.slate,MX(x,y+14.2,z));addCircle(x,z,2.4);
     const hub=new T.Group();hub.position.set(x,y+11.5,z);hub.rotation.y=Math.atan2(S.x-x,S.z-z);const rot=new T.Group();rot.position.z=2.2;hub.add(rot);for(let k=0;k<4;k++){const bl=new T.Group();bl.rotation.z=k*Math.PI/2;bl.add(mesh(new T.BoxGeometry(.25,7,.1),m.wood,0,3.6,0));bl.add(mesh(new T.PlaneGeometry(1.6,5.6),m.sail,.9,3.9,0));rot.add(bl)}scene.add(hub);MOV.push({o:rot,t:'mill',sp:.8+Math.random()*.5})}}
-  /* the fallen iron giant */
-  {const S=SITE.reus,x=S.x,z=S.z,y=gy(x,z);B.add(boxGeo(9,5,16),m.iron,MX(x,y+2.2,z,.4,1,1,1,.05,.1));B.add(new T.SphereGeometry(3.6,16,12),m.iron,MX(x+3.4,y+2.4,z+11,.4));for(const s of[-1,1]){B.add(boxGeo(2.6,2.6,11),m.iron,MX(x+s*6.4,y+1.2,z-2,.4+s*.3));B.add(boxGeo(3,3,12),m.iron,MX(x+s*3,y+1.4,z-15,.4,1,1,1,0,s*.2))}
-    for(const s of[-1,1])B.add(new T.SphereGeometry(.6,10,8),m.glowO,MX(x+3.4+s*1.2,y+3.4,z+13.6));const g=gear(2.4,12,.5,m.brass);g.position.set(x-1,y+5,z+1);g.rotation.set(.3,.4,1.1);scene.add(g);addBox(x-6,z-12,x+6,z+12);addInter(x,z+16,6,'Onderzoek de IJzerreus',giant)}
+  /* the fallen wooden giant: see Eikenhart below */
   /* the ghost ship on the beach */
   {const S=SITE.wrak,x=S.x,z=S.z,y=gy(x,z);const g=new T.Group();g.position.set(x,y-.6,z);g.rotation.set(.18,.9,.12);g.add(mesh(new T.BoxGeometry(6,4,22),m.hull,0,1.6,0));g.add(mesh(new T.BoxGeometry(5,1.6,5),m.hull,0,4.2,-8));
     const mast=mesh(new T.CylinderGeometry(.25,.3,16,8),m.hull,0,9,2);mast.rotation.z=.25;g.add(mast);const sl=mesh(new T.PlaneGeometry(6,6),m.sail,1.5,11,2.2);sl.rotation.z=.25;g.add(sl);scene.add(g);addBox(x-8,z-8,x+8,z+8);
@@ -146,7 +144,7 @@ function dig(){if(PL.t-digT<45){addLog('De grond is hier al omgewoeld. Probeer h
   const it=r<.08?'barnsteen':r<.16&&ITEMS.trex_tand?'trex_tand':'fossiel';giveItem(it,1);floatText(PL.x,PL.y+2.2,PL.z,ITEMS[it].n,'#e0b04a');giveXp(25)}
 function stargaze(){if(!window.cinematic||CIN.on)return;const V=(a,b,c)=>new T.Vector3(a,b,c),S=SITE.sterren,y=gy(S.x,S.z);giveXp(60);
   cinematic([{d:5,from:V(S.x+2,y+14,S.z-2),to:V(S.x+2.2,y+14.4,S.z-2.4),lf:V(S.x+40,y+200,S.z-300),lt:V(S.x-60,y+240,S.z-280)}],'Door de telescoop','Je ziet de ringen van een verre planeet, en een komeet met een gouden staart.')}
-function giant(){giveXp(40);card('🤖 De Gevallen IJzerreus','Lang geleden bouwden de uitvinders van Raderburg een reus van ijzer om de stad te beschermen. Op een dag viel hij om en stond nooit meer op. Zijn ogen gloeien nog altijd... Professor Tijdwijzer zegt dat zijn hart van klokwerk het eerste stuk van de tijdmachine werd.',null,12)}
+function giant(){giveXp(40);card('🪵 De Houten Reus','Lang geleden bouwden de uitvinders van Raderburg een reus van eikenhout om de stad te beschermen: Eikenhart. Op een dag viel hij om en stond nooit meer op. Zijn hart van klokwerk tikt nog heel zacht... Vraag in Raderburg aan Uitvinder Tandwiel of Professor Tijdwijzer of ze hem kunnen herstellen.',null,12)}
 function airship(){const L=Object.values(SITE).filter(s=>s.great&&!['fossiel','sterren','molens','wrak','reus','raderburg'].includes(s.id)&&PL.discovered[s.id]&&/^(aurelia|drakenstein|qadir|hoogmark|valdoria|rozendaal)$/.test(s.id));
   const opts=[['Eikendal',{x:20,z:40}],['Zilverhaven',{x:730,z:600}]].concat(L.map(s=>[s.name,{x:s.x,z:s.z+(s.r||60)*.9}]));
   card('🎈 Het luchtschip','Waar wil je heen? Een vlucht kost 150 goud. (Steden in de nieuwe landen verschijnen hier zodra je ze hebt ontdekt.)',opts.slice(0,6).map(([n,p])=>[n,()=>fly(n,p)]).concat([['Blijf hier',()=>{}]]))}
@@ -165,12 +163,100 @@ ANIMS.push(dt=>{if(!RB.built||PL.inCave)return;const S=SITE.raderburg,d=Math.hyp
     if(RB.tm&&Math.random()<dt*8)pwEm(PW.ps,RB.tm.x+rr(1),gy(RB.tm.x,RB.tm.z)+3.2,RB.tm.z+rr(1),rr(2),rr(2),rr(2),.8,.25,.05,[.6,.9,1],[.2,.5,1],.9,0,1);
     if((ENV.night||0)>.6){fwT-=dt;if(fwT<=0){fwT=1.2+Math.random()*2.5;const x=S.x+rr(60),z=S.z+rr(60),y=y0+60+Math.random()*30,c=pick([[1,.4,.3],[.4,.8,1],[1,.85,.3],[.7,1,.5],[1,.5,1]]);for(let i=0;i<46;i++){const a=Math.random()*6.283,b=Math.acos(rr(1)),v=9+Math.random()*3;pwEm(PW.ps,x,y,z,Math.sin(b)*Math.cos(a)*v,Math.cos(b)*v,Math.sin(b)*Math.sin(a)*v,1.6,.45,.05,c,[c[0]*.5,c[1]*.5,c[2]*.5],1,-4,1)}try{if(d<220)sfx('boom')}catch(e){}}}}});
 /* news for everyone: the world grew again */
-ANIMS.push(()=>{if(!started||!PL.fx||PL.fx.news28||document.body.classList.contains('cine')||anyModal()||PL.t<14)return;if(!PL.fx.bigWorld)return;PL.fx.news28=1;
-  try{WD.kingdom.card('🌍 Nog groter!','Ver in het oosten, over De Oostdijk bij het Klooster Sint-Benedictus, ligt Raderland met Raderburg: een stad vol machines, een luchtschip, een weermachine en een tijdmachine die je terugbrengt naar de tijd van de dinosaurussen! Ver op zee liggen nu ook het Schateiland en het Kristaleiland.',null,16)}catch(e){}});
+ANIMS.push(()=>{if(!started||!PL.fx||PL.fx.news28||document.body.classList.contains('cine')||anyModal()||PL.t<14)return;if(!PL.fx.bigWorld)return;PL.fx.news28=1;});
 /* arriving in Raderburg */
 ANIMS.push(()=>{if(!RB.built||!started||PL.inCave||!PL.fx)return;const S=SITE.raderburg;if(PL.fx.seenRader||Math.hypot(PL.x-S.x,PL.z-S.z)>130)return;PL.fx.seenRader=1;giveXp(300);
   addLog('Je komt aan in Raderburg, de stad van de machines!','#e0b04a');if(window.cinematic&&!CIN.on&&!PL.mounted){const V=(a,b,c)=>new T.Vector3(a,b,c),y=gy(S.x,S.z);
     cinematic([{d:3.4,from:V(S.x+120,y+70,S.z+110),to:V(S.x+50,y+40,S.z+50),lf:V(S.x,y+20,S.z),lt:V(S.x,y+24,S.z)},{d:3.4,from:V(RB.tm.x+18,y+10,RB.tm.z+18),to:V(RB.tm.x+9,y+6,RB.tm.z+10),lf:V(RB.tm.x,y+3,RB.tm.z),lt:V(RB.tm.x,y+3,RB.tm.z)}],'Raderburg','De stad van de machines en de tijdmachine')}});
+
+/* ---------- Eikenhart, the wooden giant ----------
+   A giant of oak, seven times as tall as a person, built by the inventors of Raderburg. He lies broken near the
+   town until you ask Uitvinder Tandwiel or Professor Tijdwijzer to mend him. Then he stands up again, and he is very
+   fast and very strong. Talk to him (F) and choose: climb onto his shoulder and steer him yourself (Shift = run,
+   click = punch, R = stamp, Space = jump, F = climb off), or let him go his own way: he follows you and fights
+   everything that attacks you. He can also wait, or walk home. */
+const RS=7,EK={a:null,h:null,cd:0,tgt:null,saveT:0,fx:null,rise:-1,cols:[]};WD.eikenhart=EK;
+const WOOD={};function woodMat(k,skin){const key=k+(skin?'s':'');if(!WOOD[key]){const m=new T.MeshStandardMaterial({map:MAT.wood&&MAT.wood.map||null,color:k==='old'?0x8e8a7c:k==='dark'?0x6a4626:0xd6a46a,roughness:k==='old'?1:.78});m.skinning=!!skin;WOOD[key]=m}return WOOD[key]}
+function eyeMat(on,skin){const k='eye'+(on?1:0)+(skin?'s':'');if(!WOOD[k]){const m=new T.MeshStandardMaterial({color:on?0xffc060:0x2a2218,emissive:on?0xff9a30:0x000000,emissiveIntensity:on?1:0,roughness:.4});m.skinning=!!skin;WOOD[k]=m}return WOOD[k]}
+function paint(fresh){const h=EK.h;if(!h)return;h.g.traverse(o=>{if(!o.isMesh||o.userData.ekKeep)return;const sk=!!o.isSkinnedMesh;o.material=/eye/i.test(o.name||'')?eyeMat(fresh,sk):woodMat(fresh?(o.userData.ekDark?'dark':'new'):'old',sk);o.castShadow=true});if(EK.eyes)for(const e of EK.eyes)e.material=eyeMat(fresh,false)}
+const home=()=>{const S=SITE.reus;return{x:S.x,z:S.z}};
+const fixed=()=>!!(PL.fx&&PL.fx.robot&&PL.fx.robot.fixed);
+function makeGiant(){let h=null;try{h=makeHuman({...randomLook(false),armor:1,hat:'helm',build:1.25,scale:1})}catch(e){console.warn('eikenhart',e)}if(!h)return null;
+  /* two kinds of oak: dark for helmet, boots, belt, gloves and shoulder plates, light for the rest */h.g.traverse(o=>{if(o.isMesh&&(/Feet|Pauldron|Body_1|Arms_1/.test(o.name||'')||(!o.isSkinnedMesh&&!o.name)))o.userData.ekDark=true});
+  /* on his back: a great wooden cogwheel and two small ones on the shoulders; his eyes are lanterns */
+  const back=new T.Group();back.position.set(0,1.22,-.2);h.g.add(back);const g1=gear(.32,12,.08,woodMat('dark'));g1.rotation.x=Math.PI/2;back.add(g1);g1.traverse(o=>{if(o.isMesh)o.userData.ekKeep=true});
+  const small=[];for(const s of[-1,1]){const g2=gear(.12,8,.06,woodMat('dark'));g2.position.set(s*.27,1.43,-.02);g2.rotation.z=Math.PI/2;h.g.add(g2);g2.traverse(o=>{if(o.isMesh)o.userData.ekKeep=true});small.push(g2)}
+  EK.eyes=[];for(const s of[-1,1]){const e=mesh(new T.SphereGeometry(.028,10,8),eyeMat(false,false),s*.045,1.69,.115);h.g.add(e);EK.eyes.push(e)}
+  EK.gears=[g1,...small];return h}
+function spawnGiant(x,z){const h=makeGiant();if(!h)return null;EK.h=h;const a=baseActor({kind:'horse',name:'Eikenhart',model:{g:h.g,h,ekM:true},root:h.g,x,z,hp:1e7,hpMax:1e7,rad:1.2,speed:6,robot:true,mult:2.5,hh:RS*1.8});
+  a.t=1e9;a.wp=null;a.rot=0;h.g.scale.setScalar(RS);h.scale=RS;h.actor=null;scene.add(a.root);placeActor(a);EK.a=a;paint(fixed());return a}
+/* while he lies broken, he blocks the way like a fallen tree */
+function lieCols(on){if(on&&!EK.cols.length){const {x,z}=home();EK.cols.push(addBox(x-2.4,z-6.6,x+2.4,z+6.4))}for(const c of EK.cols)c.off=!on}
+/* the giant moves like a person, only seven times bigger */
+const _ahE=animHorse;animHorse=function(m,dt,sp){if(!m||!m.ekM)return _ahE(m,dt,sp);const a=EK.a;if(!a)return;
+  if(!fixed()&&EK.rise<0){if(!m.posed){animHuman(m.h,.016,0,{});m.posed=true}return}
+  const v=PL.mounted===a?sp:(a.mv||0);animHuman(m.h,dt,v,{});if(EK.gears)for(const g of EK.gears)g.rotation.y+=dt*(.6+v*.08)};
+/* talking to him, climbing on and off */
+function menu(){const a=EK.a;if(!a)return;const f=PL.fx.robot;
+  card('🪵 Eikenhart','"Krrrk... Klaar om te helpen!" De houten reus kijkt je aan met zijn lantaarnogen. Wat doen we?',[
+    ['🕹️ Klim op zijn schouder en bestuur hem',()=>{if(PL.inCave)return;mount(a)}],
+    ['🤖 Laat hem zelf gaan (hij volgt en vecht)',()=>{f.mode='follow';addLog('Eikenhart volgt je en vecht tegen alles wat jou aanvalt.','#9cc552')}],
+    ['✋ Wacht hier',()=>{f.mode='wait';a.mv=0;addLog('Eikenhart blijft hier staan.','#e0b04a')}],
+    ['🏠 Ga terug naar je plek',()=>{f.mode='home';addLog('Eikenhart stapt terug naar zijn plek bij Raderburg.','#e0b04a')}]])}
+const _fiE=findInteract;findInteract=function(){const a=EK.a;if(a&&started){if(PL.mounted===a)return{txt:'Klim van Eikenhart af',fn:dismount};
+  if(!PL.mounted&&!PL.inCave){const d=Math.hypot(a.x-PL.x,a.z-PL.z);if(fixed()&&d<6.5)return{txt:'Praat met Eikenhart (de houten reus)',fn:menu};if(!fixed()){const H=home();if(Math.hypot(H.x-PL.x,H.z-PL.z)<11)return{txt:'Onderzoek de houten reus',fn:giant}}}}return _fiE()};
+const _mE=mount;mount=function(h){if(!h||!h.robot)return _mE(h);PL.mounted=h;h.rider=true;h.wp=null;PL.vy=0;
+  addLog('Je zit op de schouder van Eikenhart! Shift = rennen, klik = vuistslag, R = stampen, Spatie = springen, F = afklimmen.','#9cc552')};
+const _dE=dismount;dismount=function(){const h=PL.mounted;if(!h||!h.robot)return _dE();h.rider=false;PL.mounted=null;const p={x:h.x+Math.cos(h.rot)*6,z:h.z-Math.sin(h.rot)*6};collide(p,.4);PL.x=p.x;PL.z=p.z;PL.y=groundH(PL.x,PL.z);PL.vy=0;h.mv=0;try{pm.g.visible=true}catch(e){}
+  if(PL.fx.robot.mode!=='follow')PL.fx.robot.mode='wait'};
+/* you ride on his shoulder; he never gets tired and takes most of the blows for you */
+const _upE=updatePlayer;updatePlayer=function(dt){_upE(dt);const a=EK.a;if(!a||PL.mounted!==a)return;PL.st=PL.stMax;const c=Math.cos(a.rot),s=Math.sin(a.rot),ox=-.3*RS,oy=1.46*RS;
+  pm.g.position.set(a.x+ox*c,a.root.position.y+oy-.8,a.z-ox*s);pm.g.rotation.y=a.rot};
+const _ucE=updateCamera;updateCamera=function(dt){const a=EK.a;if(!a||PL.mounted!==a||PL.fp)return _ucE(dt);const y0=PL.y,d0=PL.camDist;PL.y+=RS*1.25;PL.camDist=d0*2.7;try{_ucE(dt)}finally{PL.y=y0;PL.camDist=d0}};
+const _uhE=updateHUD;updateHUD=function(dt){_uhE(dt);if(EK.a&&PL.mounted===EK.a)try{$('mode').textContent='op Eikenhart'}catch(e){}};
+const _dpE=damagePlayer;damagePlayer=function(d,src){if(EK.a&&PL.mounted===EK.a)d*=.2;return _dpE(d,src)};
+const _haE=hitActor;hitActor=function(a,dmg,by,dir){if(a&&a.robot)return;return _haE(a,dmg,by,dir)};
+/* his blows */
+const foes=(x,z,r)=>actors.filter(e=>!e.dead&&e.kind==='enemy'&&!e.passive&&!e.seaAlly&&!!e.cave===!!PL.inCave&&Math.hypot(e.x-x,e.z-z)<r);
+function knock(e,dx,dz,k){const p={x:e.x+dx*k,z:e.z+dz*k};collide(p,e.rad||.5);e.x=p.x;e.z=p.z}
+function punch(a,auto){if(EK.cd>0)return;EK.cd=auto?1:.7;const h=EK.h;h.atk=.55;h.atkT=.55;h.atkKind='slash';try{sfx('swing')}catch(e){}
+  setTimeout(()=>{const fx=Math.sin(a.rot),fz=Math.cos(a.rot),dmg=Math.round(140+PL.lvl*12);let n=0;for(const e of foes(a.x,a.z,11)){const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz)||1;if((dx*fx+dz*fz)/d<.35&&d>3)continue;hitActor(e,dmg*(.9+Math.random()*.2),true,{x:dx/d,z:dz/d});knock(e,dx/d,dz/d,3);n++}if(n)try{sfx('boom')}catch(e){}},300)}
+function stamp(a){if(EK.cd>0)return;EK.cd=2.2;PL.vy=8;try{sfx('swing')}catch(e){}setTimeout(()=>{const dmg=Math.round(90+PL.lvl*8);for(const e of foes(a.x,a.z,14)){const dx=e.x-a.x,dz=e.z-a.z,d=Math.hypot(dx,dz)||1;hitActor(e,dmg,true,{x:dx/d,z:dz/d});knock(e,dx/d,dz/d,5)}try{sfx('boom')}catch(e){}addLog('BOEM! Eikenhart stampt op de grond.','#ffd27a')},600)}
+const _saE=startAttack;startAttack=function(){const a=EK.a;if(a&&PL.mounted===a){punch(a,false);return}return _saE()};
+addEventListener('keydown',e=>{if(e.code!=='KeyR'||!started||PL.dead||!EK.a||PL.mounted!==EK.a||(e.target&&(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')))return;e.stopImmediatePropagation();e.preventDefault();stamp(EK.a)},true);
+/* asking in Raderburg to mend him */
+function repair(by){if(fixed()||!EK.a)return;PL.fx.robot={fixed:1,mode:'follow'};giveXp(400);const a=EK.a,{x,z}=home(),y=gy(x,z),V=(p,q,r)=>new T.Vector3(p,q,r);
+  try{WD.chron&&WD.chron.add('Eikenhart, de houten reus van Raderburg, werd hersteld.')}catch(e){}
+  EK.rise=0;lieCols(false);
+  const done=()=>{EK.rise=-1;paint(true);card('🪵 Eikenhart werkt weer!','"Krrrk... Dank je wel!" De houten reus staat weer op zijn benen. Hij is supersnel en supersterk, en hij komt nu naar je toe. Praat met hem (F): klim op zijn schouder en bestuur hem zelf, of laat hem zelf gaan, dan volgt hij je en vecht hij voor je.',null,14)};
+  if(window.cinematic&&!CIN.on)cinematic([{d:3.6,from:V(x+16,y+5,z+14),to:V(x+12,y+7,z+12),lf:V(x,y+1.5,z-3),lt:V(x,y+6,z)},{d:3.2,from:V(x+10,y+2,z+16),to:V(x+8,y+3,z+14),lf:V(x,y+11,z),lt:V(x,y+12,z)}],'Eikenhart staat op!',by+' en de leerlingen van Raderburg zetten de houten reus weer in elkaar.',done);else done()}
+const _dmE=dlgMain;dlgMain=function(a,text){_dmE(a,text);try{if(!a||!/^(Uitvinder Tandwiel|Professor Tijdwijzer)$/.test(a.name||'')||fixed()||!EK.a)return;const box=document.querySelector('#dlg #dopts');if(!box)return;
+  const b=document.createElement('button');b.className='btn pri';b.textContent='🪵 Kunt u de houten reus Eikenhart herstellen?';b.onclick=()=>{closeModals();card('🪵 '+a.name,'"De houten reus? Die heb ik helpen bouwen! Er zit alleen een tandwiel los en zijn klokwerkhart moet opgewonden worden. Mijn leerlingen gaan meteen aan de slag. Kijk maar!"',[['Ja, herstel hem!',()=>repair(a.name)],['Later',()=>{}]])};box.insertBefore(b,box.firstChild)}catch(e){}};
+RUMORS.push({t:'Bij Raderburg ligt een omgevallen reus van eikenhout. Ze zeggen dat Uitvinder Tandwiel hem weer kan laten lopen... en dat hij dan sneller is dan een paard!'});
+/* what he does by himself */
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!RB.built||!started)return;
+  if(!EK.a){const {x,z}=home();spawnGiant(x,z+6);if(!EK.a)return}
+  const a=EK.a,f=PL.fx||(PL.fx={});EK.cd-=dt;
+  /* a save was loaded: put him where he was */
+  if(EK.fx!==f){EK.fx=f;if(PL.mounted===a)dismount();const r=f.robot;if(r&&r.fixed){const p=r.mode==='follow'?{x:PL.x-6,z:PL.z-6}:{x:r.x??home().x,z:r.z??home().z+6};a.x=p.x;a.z=p.z;a.y=groundH(a.x,a.z);lieCols(false);paint(true);a.root.rotation.x=0}else{const H=home();a.x=H.x;a.z=H.z+6;a.rot=0;lieCols(true);paint(false)}}
+  const H=home();
+  /* broken: he lies on his back; while he is mended he slowly gets up */
+  if(!fixed()||EK.rise>=0){if(EK.rise>=0){EK.rise=Math.min(1,EK.rise+dt/4.5);if(EK.rise>.55&&!EK.painted){EK.painted=1;paint(true)}}const k=EK.rise<0?0:EK.rise*EK.rise*(3-2*EK.rise);a.x=H.x;a.z=H.z+6;a.rot=0;a.mv=0;a.root.position.set(a.x,groundH(a.x,a.z)+1.15*(1-k),a.z);a.root.rotation.set(-1.5*(1-k),0,0);return}
+  a.root.rotation.x=0;
+  const r=f.robot;EK.saveT-=dt;if(EK.saveT<=0){EK.saveT=2;r.x=+a.x.toFixed(1);r.z=+a.z.toFixed(1)}
+  if(PL.mounted===a){a.mv=PL.speed;return}
+  if(Math.hypot(a.x-PL.x,a.z-PL.z)<600)a.root.visible=true;
+  if(PL.inCave||r.mode==='wait'){a.mv=0;return}
+  const go=(tx,tz,sp,stop)=>{const ox=a.x,oz=a.z,arrived=stepTo(a,dt,tx,tz,sp,stop);a.mv=arrived?0:sp;
+    /* stuck behind a house: he steps round it to a free spot nearer to you */if(!arrived&&Math.hypot(a.x-ox,a.z-oz)<sp*dt*.2){EK.stuck=(EK.stuck||0)+dt;if(EK.stuck>2.5){EK.stuck=0;const p={x:PL.x+rr(14),z:PL.z+rr(14)};collide(p,1.2);a.x=p.x;a.z=p.z;a.y=groundH(a.x,a.z)}}else EK.stuck=0;return arrived};
+  if(r.mode==='home'){if(go(H.x,H.z+6,18,2))r.mode='wait';return}
+  /* follow: fight what threatens you, otherwise stay close */
+  if(EK.tgt&&(EK.tgt.dead||Math.hypot(EK.tgt.x-PL.x,EK.tgt.z-PL.z)>45))EK.tgt=null;
+  if(!EK.tgt){let best=null,bd=36;for(const e of foes(PL.x,PL.z,36)){const d=Math.hypot(e.x-PL.x,e.z-PL.z);if(d<bd){bd=d;best=e}}EK.tgt=best}
+  const d=Math.hypot(a.x-PL.x,a.z-PL.z);
+  if(d>320){const fx=Math.sin(PL.rot),fz=Math.cos(PL.rot),p={x:PL.x-fx*60,z:PL.z-fz*60};collide(p,1.2);a.x=p.x;a.z=p.z;a.y=groundH(a.x,a.z);return}
+  if(EK.tgt){const e=EK.tgt,de=Math.hypot(e.x-a.x,e.z-a.z);if(de>(e.rad||.5)+5)go(e.x,e.z,24,(e.rad||.5)+4.5);else{a.mv=0;a.rot+=angDiff(a.rot,Math.atan2(e.x-a.x,e.z-a.z))*Math.min(1,dt*8);punch(a,true)}return}
+  const fx=Math.sin(PL.rot),fz=Math.cos(PL.rot),tx=PL.x-fx*7-fz*5,tz=PL.z-fz*7+fx*5;if(d>11)go(tx,tz,Math.min(40,8+d*.9),3);else a.mv=0});
 /* ---------- gadgets you carry: the compass and the clockwork owl ---------- */
 const hud=document.createElement('div');hud.style.cssText='position:fixed;left:50%;top:calc(46px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:15;display:none;padding:4px 12px;font-size:13px;color:#f0e6cc;background:rgba(20,14,6,.7);border:1px solid #6b5b3a;border-radius:4px;pointer-events:none';document.body.appendChild(hud);
 setInterval(()=>{if(!started||PL.dead||!hasItem('kompas')||PL.inCave||document.body.classList.contains('cine')){hud.style.display='none';return}let best=null,bd=1e9;for(const s of SITES){if(s.id==='bridge'||PL.discovered[s.id])continue;const d=Math.hypot(s.x-PL.x,s.z-PL.z);if(d<bd){bd=d;best=s}}

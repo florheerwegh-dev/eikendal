@@ -505,7 +505,7 @@ setInterval(()=>{const w=$('mapw');if(!w||w.querySelector('#glgoods'))return;con
 ANIMS.push(dt=>{if(!GL.built||PL.inCave)return;if(window.PW&&PW.ps)for(const [x,y,z] of FOUNT)if(Math.abs(x-PL.x)<120&&Math.abs(z-PL.z)<120&&Math.random()<dt*20)pwEm(PW.ps,x+rr(.3),y,z+rr(.3),rr(1.1),2.4+Math.random(),rr(1.1),.9,.18,.04,[.7,.85,1],[.4,.6,.9],.7,-9,1)});
 let arrT=0;
 ANIMS.push(dt=>{arrT+=typeof dt==='number'?dt:.016;if(arrT<1||!started||!GL.built||PL.dead||PL.inCave)return;arrT=0;PL.fx=PL.fx||{};const seen=PL.fx.seenG=PL.fx.seenG||{};
-  if(!PL.fx.bigWorld&&!document.body.classList.contains('cine')&&!anyModal()&&PL.t>8){PL.fx.bigWorld=1;try{WD.kingdom.card('🌍 De wereld is veel groter geworden!','Achter de bergen in het oosten (door De Oostpas bij de Levensbron, of over De Drakenpas bij het Drakennest) en over De Zandbank in het zuiden ligt een nieuw land met zes machtige rijken: de keizerrijken Aurelia en Drakenstein, het sultanaat Al-Qadir en de koninkrijken Hoogmark, Valdoria en Rozendaal. Ze zijn veel sterker dan de oude rijken. Verover ze met je leger, maar pas op: sommige rijken vallen jou ook aan!',null,16)}catch(e){}}
+  if(!PL.fx.bigWorld&&!document.body.classList.contains('cine')&&!anyModal()&&PL.t>8){PL.fx.bigWorld=1;}
   for(const R of RLM){const S=SITE[R.site];if(seen[R.site])continue;const d=Math.hypot(PL.x-S.x,PL.z-S.z);if(d>R.hw+50)continue;seen[R.site]=1;giveXp(250);
     addLog('Je komt aan in '+R.name+': '+R.sub.toLowerCase()+'. Hier heerst '+R.ruler+'.','#e0b04a');
     if(window.cinematic&&!CIN.on&&!PL.mounted){const V=(a,b,c)=>new T.Vector3(a,b,c),y=gy(S.x,S.z),H=R.hw;

@@ -522,9 +522,14 @@ buildTerrain=async function(){if(!AS.ok||!AS.tex.rocks)return _btr0();
     /* the old land in full detail; the new land a little coarser, and the outermost ring (sea and cliffs) coarse */
     const ed=Math.max(Math.abs(ox),Math.abs(oz)),SEG=mx<-2?10:(WD.fineChunk&&WD.fineChunk(ox,oz,mx))?36:ed>HALF-150?24:ed>1150?(mx>34?56:36):(mx>34?84:40),g=new T.PlaneGeometry(CH,CH,SEG,SEG);g.rotateX(-Math.PI/2);
     const p=g.attributes.position,n=p.count,cols=new Float32Array(n*3),nor=new Float32Array(n*3),uv=new Float32Array(n*2);
+    /* every height is worked out once: one grid per chunk with a ring around it, the normals come from the neighbours in that grid */
+    const M=SEG+1,M2=M+2,e=CH/SEG,x0=ox-CH/2,z0=oz-CH/2,GH=new Float32Array(M2*M2);for(let j=0;j<M2;j++)for(let i=0;i<M2;i++)GH[j*M2+i]=terrainH(x0+(i-1)*e,z0+(j-1)*e);
+    /* only the road pieces near this chunk are looked at */
+    const RS=[];for(const r of ROADS){const q=r.pts,mg=r.w+3;for(let i=0;i<q.length-1;i++){const ax=q[i][0],az=q[i][1],bx=q[i+1][0],bz=q[i+1][1];if(Math.max(ax,bx)+mg<x0||Math.min(ax,bx)-mg>x0+CH||Math.max(az,bz)+mg<z0||Math.min(az,bz)-mg>z0+CH)continue;RS.push(ax,az,bx-ax,bz-az,r.w)}}
+    const nearRoad=(x,z)=>{let best=1e9;for(let k=0;k<RS.length;k+=5){const ax=RS[k],az=RS[k+1],dx=RS[k+2],dz=RS[k+3],t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1),d=Math.hypot(x-ax-dx*t,z-az-dz*t)-RS[k+4];if(d<best)best=d}return best};
     for(let i=0;i<n;i++){
-      const x=p.getX(i)+ox,z=p.getZ(i)+oz,h=terrainH(x,z);p.setXYZ(i,x,h,z);
-      const e=SEG>40?1.2:2,hx=terrainH(x+e,z)-terrainH(x-e,z),hz=terrainH(x,z+e)-terrainH(x,z-e),l=Math.hypot(hx,2*e,hz);
+      const ix=i%M,iy=(i-ix)/M,gi=(iy+1)*M2+ix+1,x=x0+ix*e,z=z0+iy*e,h=GH[gi];p.setXYZ(i,x,h,z);
+      const hx=GH[gi+1]-GH[gi-1],hz=GH[gi+M2]-GH[gi-M2],l=Math.hypot(hx,2*e,hz);
       nor[i*3]=-hx/l;nor[i*3+1]=2*e/l;nor[i*3+2]=-hz/l;uv[i*2]=x/9;uv[i*2+1]=z/9;
       const slope=Math.hypot(hx,hz)/(2*e),nn=fbm(x*.05,z*.05,3),n2=fbm(x*.011+9,z*.011,3);
       let r=.27+.12*nn+.05*n2,gg=.43+.14*nn,b=.16+.05*nn;
@@ -532,12 +537,14 @@ buildTerrain=async function(){if(!AS.ok||!AS.tex.rocks)return _btr0();
       const sand=1-smooth(-.6,1.5,h);r=lerp(r,.58,sand);gg=lerp(gg,.52,sand);b=lerp(b,.36,sand);
       const alp=smooth(40,90,h);r=lerp(r,.36,alp*.6);gg=lerp(gg,.40,alp*.6);b=lerp(b,.24,alp*.6);
       const rock=Math.max(smooth(.55,1,slope),smooth(70,110,h)*.6);r=lerp(r,.43+.1*nn,rock);gg=lerp(gg,.41+.1*nn,rock);b=lerp(b,.38+.08*nn,rock);
-      if(h<70){const rd=roadDist(x,z);if(rd<2.5){const t=1-smooth(.2,2.5,rd);r=lerp(r,.58,t);gg=lerp(gg,.49,t);b=lerp(b,.34,t)}}
+      if(h<70&&RS.length){const rd=nearRoad(x,z);if(rd<2.5){const t=1-smooth(.2,2.5,rd);r=lerp(r,.58,t);gg=lerp(gg,.49,t);b=lerp(b,.34,t)}}
       for(const q of SITES)if(q.tint){const tt=1-smooth(q.r*.55,q.r*1.25,Math.hypot(x-q.x,z-q.z));if(tt>0){const w=tt*.8;r=lerp(r,q.tint[0],w);gg=lerp(gg,q.tint[1],w);b=lerp(b,q.tint[2],w)}}
       if(WD.tintAt){const tq=WD.tintAt(x,z);if(tq){r=lerp(r,tq[0],tq[3]);gg=lerp(gg,tq[1],tq[3]);b=lerp(b,tq[2],tq[3])}}
       cols[i*3]=r;cols[i*3+1]=gg;cols[i*3+2]=b}
     g.setAttribute('color',new T.BufferAttribute(cols,3));g.setAttribute('normal',new T.BufferAttribute(nor,3));g.setAttribute('uv',new T.BufferAttribute(uv,2));g.computeBoundingSphere();
-    const m=new T.Mesh(g,mat);m.receiveShadow=true;scene.add(m);WD.chunks.push({m,x:ox,z:oz})}await tick()}};
+    const m=new T.Mesh(g,mat);m.receiveShadow=true;scene.add(m);WD.chunks.push({m,x:ox,z:oz,seg:SEG})}await tick()}
+  /* a quick height for whole-world jobs (the map, the water): read from the finished land, nothing is calculated twice */
+  WD.hFast=(x,z)=>{const c=WD.chunks,fx=clamp(Math.floor((x+HALF)/CH),0,N-1),fz=clamp(Math.floor((z+HALF)/CH),0,N-1),q=c[fx*N+fz],S=q.seg,st=CH/S,u=clamp((x-q.x+CH/2)/st,0,S-.001),v=clamp((z-q.z+CH/2)/st,0,S-.001),i=Math.floor(u),j=Math.floor(v),a=q.m.geometry.attributes.position.array,M=S+1,tx=u-i,tz=v-j,at=(ii,jj)=>a[(jj*M+ii)*3+1];return lerp(lerp(at(i,j),at(i+1,j),tx),lerp(at(i,j+1),at(i+1,j+1),tx),tz)}};
 /* boulders and crags on the mountain sides */
 function asCrags(){const items=[[],[],[]];
   for(let t=0,k=0;t<26000*WK&&k<380*WK;t++){const x=rnd(-HALF+20,HALF-20),z=rnd(-HALF+20,HALF-20),h=terrainH(x,z);if(h<30||h>108||siteAt(x,z))continue;const sl=slopeAt(x,z);if(sl<.48||roadDist(x,z)<6)continue;
@@ -546,7 +553,7 @@ function asCrags(){const items=[[],[],[]];
 
 /* ---------- Water: depth colour, transparent shallows, shore foam, layered waves, sky reflection ---------- */
 function asWaterDepth(){const N=1000,d=new Uint8Array(N*N),S=HALF*2/N;
-  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+(i+.5)*S,z=-HALF+(j+.5)*S;const h=terrainH(x,z);d[j*N+i]=h>=-.05?0:Math.min(255,Math.round((-.05-h)/8*255))}
+  const HF=WD.hFast||terrainH;for(let j=0;j<N;j++)for(let i=0;i<N;i++){const x=-HALF+(i+.5)*S,z=-HALF+(j+.5)*S;const h=HF(x,z);d[j*N+i]=h>=-.05?0:Math.min(255,Math.round((-.05-h)/8*255))}
   const t=new T.DataTexture(d,N,N,T.LuminanceFormat,T.UnsignedByteType);t.magFilter=t.minFilter=T.LinearFilter;t.wrapS=t.wrapT=T.ClampToEdgeWrapping;t.needsUpdate=true;return t}
 const _uw0=upgradeWater;
 upgradeWater=function(){_uw0();if(!AS.ok)return;setLoad('water');const m=waterMesh.material;m.roughness=.14;m.metalness=.1;m.opacity=1;m.transparent=true;m.depthWrite=false;

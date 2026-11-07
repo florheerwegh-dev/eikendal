@@ -385,3 +385,28 @@ const _rcK=renderCust;renderCust=function(){_rcK();const c=$('cctl');if(!c)retur
     const nt=document.createElement('div');nt.style.cssText='font-size:13px;color:var(--mute);margin-top:6px';nt.textContent='Draag je een harnas, dan zie je het harnas met zijn eigen kleur in plaats van deze kleding.';c.appendChild(nt)}
   try{rebuildPreview()}catch(e){}};
 })();
+
+/* ================= Het laadscherm =================
+   Real pictures from the game fade slowly into each other while the world is being built. The slow zoom and the fading
+   are done by the graphics card (CSS transform and opacity), so they keep running smoothly while the game loads. */
+(function(){
+const L=document.getElementById('ldg');if(!L)return;
+const PICS=['marktplein','bos','eikendal','velden','brug','herberg','avond'],n=PICS.length,T0=7;
+const st=document.createElement('style');st.textContent=`#ldg.ldon{background:#07060c!important;place-items:start center;overflow:hidden}
+.ldslide{position:absolute;inset:-3%;background-size:cover;background-position:center;opacity:0;will-change:transform,opacity;animation:ldkb ${n*T0}s linear infinite}
+@keyframes ldkb{0%{opacity:0;transform:scale(1.02)}${(100/n*.2).toFixed(2)}%{opacity:1}${(100/n).toFixed(2)}%{opacity:1}${(100/n*1.2).toFixed(2)}%{opacity:0;transform:scale(1.13)}100%{opacity:0;transform:scale(1.13)}}
+#ldshade{position:absolute;inset:0;background:linear-gradient(rgba(8,6,4,.72),rgba(8,6,4,.3) 42%,rgba(8,6,4,.55) 70%,rgba(8,6,4,.9))}
+#ldg.ldon>div:not(.ldslide):not(#ldshade){position:relative;z-index:2;margin-top:8vh;text-shadow:0 2px 8px #000,0 0 18px rgba(0,0,0,.7)}
+#ldtitle{font-family:var(--f-display);font-size:clamp(46px,10vw,100px);letter-spacing:.06em;line-height:1;color:#ffdf8a;text-shadow:0 3px 8px #000,0 0 26px rgba(255,190,90,.4)}
+#ldsub{font-family:var(--f-display);font-size:clamp(14px,2.2vw,20px);letter-spacing:.42em;color:#e8d4a8;margin:6px 0 16px}
+#ldfun{display:block;font-family:var(--f-display);font-size:clamp(17px,2.6vw,23px);color:#fff2cc;min-height:1.4em}
+#ldg.ldon #ldgt{display:none}
+#ldg.ldon #ldbar{width:min(460px,76vw);height:10px;margin:12px auto 4px;border:1px solid #c9a24a;background:rgba(10,8,14,.7)}
+#ldg.ldon #ldfill{background:linear-gradient(90deg,#c97a1c,#ffd27a,#fff2c0)}
+#ldg.ldon #ldpct{display:inline-block;font:bold 15px var(--f-ui);color:#ffe9a8}
+#ldg.ldon .tip{margin:12px auto 0;background:rgba(18,12,6,.6);border:1px solid rgba(201,162,74,.45);border-radius:8px;padding:7px 14px;max-width:min(560px,86vw);min-height:0}`;document.head.appendChild(st);
+const box=L.querySelector('div');L.classList.add('ldon');
+PICS.forEach((p,i)=>{const d=document.createElement('div');d.className='ldslide';d.style.backgroundImage='url(assets/laad/'+p+'.jpg)';d.style.animationDelay=(i*T0)+'s';L.insertBefore(d,box)});{const d=document.createElement('div');d.id='ldshade';L.insertBefore(d,box)}
+const first=box.firstChild;if(first&&first.nodeType===3)first.textContent='';const t=document.createElement('div');t.id='ldtitle';t.textContent='EIKENDAL';const s=document.createElement('div');s.id='ldsub';s.textContent='OPEN WERELD';const f=document.createElement('span');f.id='ldfun';box.insertBefore(f,box.firstChild);box.insertBefore(s,f);box.insertBefore(t,s);
+const FUN=['De bergen optillen...','Eikels planten...','De zee vullen met water...','Draken wakker maken...','Ridders hun harnas laten poetsen...','Reuzen hun tanden laten poetsen...','Skeletten tellen...','Wegen uitrollen...','Kippen leren lopen...','Schatten verstoppen...','Goblins naar hun tunnels sturen...','De zon opwrijven...','Het piratenschip te water laten...','Taarten bakken voor het feest...','Trollen onder bruggen zetten...','Sterren aan de hemel prikken...','De koning zijn kroon zoeken...','Wolken opschudden...'];let k=Math.floor(Math.random()*FUN.length);const sh=()=>{f.textContent=FUN[k++%FUN.length]};sh();const iv=setInterval(()=>{if(!L.isConnected)return clearInterval(iv);sh()},2400);
+})();
