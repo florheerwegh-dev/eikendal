@@ -2716,7 +2716,7 @@ populateFantasy=function(){_pf4();
   const spawnGroup=(type,n,minD,fd,spread)=>{for(let i=0;i<n;i++){const p=wildPoint(minD,1050,fd);if(!p)continue;const k=1+Math.floor(Math.random()*(spread||3));for(let j=0;j<k;j++)spawnAnimal(type,p[0]+rnd(-4,4),p[1]+rnd(-4,4))}};
   const forest=(x,z)=>forestDensity(x,z)>.25,open=(x,z)=>forestDensity(x,z)<.2;
   spawnGroup('deer',22,90,forest,3);spawnGroup('rabbit',34,40,open,4);spawnGroup('hare',20,60,open,3);
-  spawnGroup('fox',16,100,forest,2);spawnGroup('elk',12,200,forest,3);
+  spawnGroup('fox',16,100,forest,2);spawnGroup('elk',12,700,forest,3);
   spawnGroup('goat',14,120,(x,z)=>terrainH(x,z)>10,3);spawnGroup('pig',10,60,forest,3);
   for(let i=0;i<6;i++){const p=wildPoint(60,500,open);if(p)for(let k=0;k<4;k++)spawnAnimal('sheep',p[0]+rnd(-5,5),p[1]+rnd(-5,5))}};
 
