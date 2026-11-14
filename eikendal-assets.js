@@ -124,6 +124,7 @@ function makeSkinned(o){
   const ho={...o};if(out.hood)ho.hat=null;const proc=_mh0(ho),ph=proc.head;proc.rig.remove(ph);ph.position.set(0,0,0);head.add(ph);
   if(kind==='mann'){ph.scale.setScalar(1.12)}else ph.scale.setScalar((out.hood?.78:.84)*(kind==='female'?.92:1));
   if(out.hood)ph.traverse(x=>{if(x.isMesh&&x.geometry&&x.geometry.type==='BoxGeometry'&&x.material!==undefined&&x.position.y>.2)x.visible=false});
+  /* hats were too big for the head: smaller, and still sitting on top of it */for(const c of ph.children)if(c.userData.hat){const k=.74;c.position.set(c.position.x*k,.27+(c.position.y-.27)*k,c.position.z*k);c.scale.multiplyScalar(k)}
   asMergeHead(ph);
   if(o.cape&&out.style!=='ranger'||o.cape&&o.hat==='crown'){const cp=mesh(bxg(.46,.9,.04),cm(o.cape),0,-.42,-.17);cp.rotation.x=.08;spine.add(cp)}
   if(o.amulet)spine.add(mesh(new T.SphereGeometry(.045,8,6),new T.MeshBasicMaterial({color:o.amulet}),0,-.04,.15,false));
@@ -612,7 +613,12 @@ groundH=function(x,z){let h=_gh0(x,z);if(!FLOOR.size||x<-2000)return h;const a=F
 
 
 /* ---------- Warhorse (Literock Studios) and animated dragon ---------- */
-async function asLoadDragon(){if(!T.FBXLoader)return;setLoad('draak laden');const tl=new T.TextureLoader(),tx=n=>new Promise(r=>tl.load('assets/dragon/'+n,t=>{t.encoding=T.LinearEncoding;t.anisotropy=4;r(t)},undefined,()=>r(null)));
+async function asLoadDragon(){setLoad('draak laden');
+  /* every dragon is the Ashwing Drake of Literock Studios (Filip's download); the old dragon is only loaded if it fails */
+  try{const buf=await asFetchBin('assets/literock/drake.glb');const g=await new Promise((res,rej)=>new T.GLTFLoader().parse(buf,'',res,rej));g.scene.updateMatrixWorld(true);
+    g.scene.traverse(m=>{if(!m.isMesh)return;m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;for(const x of[].concat(m.material)){for(const k of['map','emissiveMap'])if(x[k]){x[k].encoding=T.LinearEncoding;x[k].needsUpdate=true}x.needsUpdate=true}});
+    AS.drake=g;AS.drakeMats={};try{if(window.EX&&EX.lr)EX.lr.drake=Promise.resolve(g)}catch(e){}return}catch(e){console.warn('drake',e)}
+  if(!T.FBXLoader)return;const tl=new T.TextureLoader(),tx=n=>new Promise(r=>tl.load('assets/dragon/'+n,t=>{t.encoding=T.LinearEncoding;t.anisotropy=4;r(t)},undefined,()=>r(null)));
   const [o,red,blue,nrm]=await Promise.all([asFetchBin('assets/dragon/dragon_anim.fbx').then(buf=>new T.FBXLoader().parse(buf,'assets/dragon/')),tx('dragon_red.jpg'),tx('dragon_blue.jpg'),tx('dragon_n.jpg')]);
   AS.dragon=o;AS.dragonClip=o.animations[0];AS.dragonTex={red,blue,nrm}}
 function asHorseAnchor(model){const B=model.userData.bones,head=B.head;if(!head)return new T.Group();model.updateMatrixWorld(true);
@@ -656,7 +662,26 @@ hitActor=function(a,dmg,byPlayer,dir){_hah0(a,dmg,byPlayer,dir);if(a.kind==='hor
 const _sar0=shootArrow;
 shootArrow=function(x,y,z,tx,ty,tz,owner,dmg,speed,by){_sar0(x,y,z,tx,ty,tz,owner,dmg,speed,by);if(by&&by.type==='dragon'&&AS.ok){const ar=arrows[arrows.length-1];scene.remove(ar.m);
   ar.m=new T.Mesh(new T.SphereGeometry(.55,10,8),new T.MeshBasicMaterial({color:0xff7a1a}));ar.m.add(new T.Mesh(new T.SphereGeometry(.85,10,8),new T.MeshBasicMaterial({color:0xffc04a,transparent:true,opacity:.35,depthWrite:false})));ar.m.position.copy(ar.p);scene.add(ar.m)}};
-ANIMS.push(dt=>{if(MOTHER.on&&MOTHER.m&&MOTHER.m.gl)MOTHER.m.mixer.update(dt)});
+ANIMS.push(dt=>{if(MOTHER.on&&MOTHER.m&&MOTHER.m.gl){if(MOTHER.m.drake)animHorse(MOTHER.m,dt,9);else MOTHER.m.mixer.update(dt)}});
+/* ---------- the Ashwing Drake as every dragon: Vyrnax red, Glacius ice blue, Virulax poison green, the Dragon Mother
+   sea green, Vonk your own dragon. It walks on its wing-hands, flies when it is up in the air, roars and bites. ---------- */
+const DRAKE_TINT={0x7a1f1a:0xe08068,0x2a6aaa:0x9ad0ff,0x4a8a1a:0x9ad864,0x1f6a5a:0x78c8b0};
+const _mdrF=makeDragon;
+makeDragon=function(c1=0x7a1f1a,c2=0x4a120f){if(!AS.ok||!AS.drake)return _mdrF(c1,c2);
+  const tint=DRAKE_TINT[c1]!==undefined?DRAKE_TINT[c1]:new T.Color(c1).lerp(new T.Color(0xffffff),.45).getHex(),o=T.SkeletonUtils.clone(AS.drake.scene),cache=AS.drakeMats[tint]||(AS.drakeMats[tint]=new Map());
+  o.traverse(m=>{if(!m.isMesh)return;m.frustumCulled=false;m.castShadow=true;const f=x=>{if(!cache.has(x)){const y=x.clone();y.color.multiply(new T.Color(tint));cache.set(x,y)}return cache.get(x)};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
+  o.scale.setScalar(1.35);const g=new T.Group(),rig=new T.Group();g.add(rig);rig.add(o);
+  const mixer=new T.AnimationMixer(o),acts={};for(const c of AS.drake.animations)acts[c.name]=mixer.clipAction(c);
+  const h={g,rig,body:o,legs:dummyLegs(),wings:[new T.Object3D(),new T.Object3D()],phase:Math.random()*6,gl:true,dragon:true,drake:true,mixer,acts,cur:null,oneT:0,act:{timeScale:1}};
+  h.play=(n,once)=>{const A=acts[n];if(!A)return;if(h.cur===n&&!once)return;A.reset();A.setLoop(once?T.LoopOnce:T.LoopRepeat,Infinity);A.clampWhenFinished=false;A.setEffectiveWeight(1);A.fadeIn(.25).play();
+    if(h.cur&&h.cur!==n&&acts[h.cur])acts[h.cur].fadeOut(.25);h.cur=n;h.oneT=once?A.getClip().duration*.92:0};
+  h.play('idle_loop');mixer.update(Math.random()*2);return h};
+const _dv=new T.Vector3(),_ahDr=animHorse;
+animHorse=function(h,dt,speed){if(!h||!h.drake)return _ahDr(h,dt,speed);dt=dt||0;
+  h.g.getWorldPosition(_dv);const air=h.forceFly||(_dv.y-groundH(_dv.x,_dv.z)>2.2*Math.max(.3,h.g.scale.x));
+  if(h.oneT>0)h.oneT-=dt;else{const n=air?'fly_loop':speed>.4?'walk_loop':'idle_loop';if(h.cur!==n)h.play(n)}
+  const A=h.acts[h.cur];if(A)A.timeScale=h.cur==='walk_loop'?clamp(speed/3,.6,2.2):1;
+  h.rig.position.y=air&&h.cur==='fly_loop'?Math.sin((h.phase+=dt)*1.4)*.3:0;if(h.g.visible!==false||PL.mounted&&PL.mounted.model===h)h.mixer.update(dt)};
 
 /* ---------- Sky: gradient, drifting clouds, sun and moon discs, stars (after a Godot sky shader) ---------- */
 function asNoise(N,oct,base,seed,pw=1){const d=new Uint8Array(N*N),f=new Float32Array(N*N);let mn=1e9,mx=-1e9;

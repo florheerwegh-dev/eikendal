@@ -600,7 +600,8 @@ function stall(x,z,rot,col){const y=groundH(x,z),g=new T.Group();g.position.set(
   const b={x,z,th:g.rotation.y};colLocal(b,-1.6,-.8,1.6,.2);return g}
 function crate(x,z,s=.9){const y=groundH(x,z);scene.add(mapBox(s,s,s,MAT.wood,x,y+s/2,z));addBox(x-s/2,z-s/2,x+s/2,z+s/2)}
 function barrelW(x,z){const y=groundH(x,z);scene.add(cyl(.38,.34,.9,10,MAT.wood,x,y+.45,z));addCircle(x,z,.38)}
-function hay(x,z){const y=groundH(x,z);scene.add(mesh(new T.CylinderGeometry(.9,1.1,1.6,10),MAT.hay,x,y+.8,z));scene.add(mesh(new T.ConeGeometry(1,.8,10),MAT.hay,x,y+1.9,z));addCircle(x,z,1)}
+/* a hay stack: the spot is kept, and real hay bales (Literock Studios) are put there once their model is loaded */
+const HAYS=[];function hay(x,z){HAYS.push([x,z]);addCircle(x,z,1)}
 function fence(x0,z0,x1,z1,gap=-1){const n=Math.floor(Math.hypot(x1-x0,z1-z0)/2.2);for(let i=0;i<=n;i++){const x=lerp(x0,x1,i/n),z=lerp(z0,z1,i/n),y=groundH(x,z);scene.add(mapBox(.14,1.2,.14,MAT.wood,x,y+.6,z));if(i<n){const mx=lerp(x0,x1,(i+.5)/n),mz=lerp(z0,z1,(i+.5)/n),m=mapBox(2.3,.1,.08,MAT.wood,mx,y+.5,mz);m.rotation.y=-Math.atan2(z1-z0,x1-x0);scene.add(m);const m2=m.clone();m2.position.y=y+.95;scene.add(m2)}}
   const len=Math.hypot(x1-x0,z1-z0);if(Math.abs(x1-x0)>Math.abs(z1-z0))addBox(Math.min(x0,x1),z0-.12,Math.max(x0,x1),z0+.12,{});else addBox(x0-.12,Math.min(z0,z1),x0+.12,Math.max(z0,z1),{})}
 function field(x,z,w,d,col){const c=canvasTex(128,128,(g,W,H)=>{g.fillStyle=col;g.fillRect(0,0,W,H);for(let i=0;i<16;i++){g.fillStyle=i%2?'rgba(0,0,0,.18)':'rgba(255,255,255,.1)';g.fillRect(0,i*8,W,4)}speckle(g,W,H,800,['#3a4a1a','#c9b050'],2)},w/6,d/6);
@@ -808,7 +809,7 @@ function makeHuman(o={}){
     a.add(mesh(sph(.058,8,6),skin,0,-.7,.01));rig.add(a);return a};
   const armL=mkArm(-.37*bw-.02),armR=mkArm(.37*bw+.02);
   const head=new T.Group();head.position.y=1.62;rig.add(head);
-  buildHead(head,o);
+  buildHead(head,o);const _hc0=head.children.length;
   if(o.hat==='cap')head.add(mesh(new T.CylinderGeometry(.17,.19,.12,8),cm(o.hatc||0x6a3a2a),0,.4,0));
   if(o.hat==='helm'){head.add(mesh(new T.CylinderGeometry(.19,.2,.14,10),MAT.iron,0,.39,0));head.add(mesh(new T.BoxGeometry(.04,.16,.03),MAT.iron,0,.25,.17));head.add(mesh(new T.BoxGeometry(.34,.2,.06),MAT.iron,0,.2,-.15));for(const x of[-.17,.17])head.add(mesh(new T.BoxGeometry(.03,.2,.22),MAT.iron,x,.16,.0))}
   if(o.hat==='hood'){const hm=cm(o.hatc||0x333b2a);head.add(mesh(new T.BoxGeometry(.38,.1,.38),hm,0,.42,0));head.add(mesh(new T.BoxGeometry(.38,.42,.08),hm,0,.2,-.16));for(const x of[-.18,.18])head.add(mesh(new T.BoxGeometry(.05,.34,.3),hm,x,.22,-.02));head.add(mesh(new T.BoxGeometry(.4,.06,.1),hm,0,.38,.15))}
@@ -819,6 +820,7 @@ function makeHuman(o={}){
   if(o.hat==='crown')head.add(mesh(new T.CylinderGeometry(.14,.17,.12,6),MAT.gold,0,.42,0));
   if(o.hat==='straw'){const sm=cm(o.hatc||0xc7a94d);head.add(mesh(cylG(.3,.3,.03,14),sm,0,.36,0));head.add(mesh(cylG(.16,.18,.14,12),sm,0,.43,0));head.add(mesh(cylG(.185,.185,.03,12),cm(0x6a3a1a),0,.38,0))}
   if(o.hat==='scarf'){const sm=cm(o.hatc||0xb85a4a);const c=mesh(sph(.2,10,8),sm,0,.3,-.02);c.scale.set(1,.8,1.05);head.add(c);head.add(mesh(sph(.07,6,5),sm,0,.14,-.2))}
+  for(let i=_hc0;i<head.children.length;i++)head.children[i].userData.hat=1;   /* the hat parts, so a body can make them smaller */
   if(o.skirt)rig.add(mesh(cylG(.24,.44,.62,12),cm(o.skirt),0,.5,0));
   if(o.cape){const cp=mesh(bxg(.5*bw,.95,.05),cm(o.cape),0,1.08,-.2);cp.rotation.x=.06;rig.add(cp);rig.add(mesh(bxg(.56*bw,.08,.12),cm(o.cape),0,1.54,-.14))}
   if(o.armor){const ch=mesh(cylG(.3,.24,.52,12),MAT.iron,0,1.24,0);ch.scale.z=.7;rig.add(ch);for(const a of[armL,armR]){a.add(mesh(sph(.14,8,6),MAT.iron,0,.02,0));a.add(mesh(cylG(.075,.07,.22,8),MAT.iron,0,-.4,0))}rig.add(mesh(cylG(.235,.235,.12,12),MAT.iron,0,.9,0).clone())}
@@ -1544,7 +1546,7 @@ function updateTags(){
     let e=tagEls.get(a.id);if(!e){e=document.createElement('div');host.appendChild(e);tagEls.set(a.id,e)}seen.add(a.id);
     const hostile=a.kind==='enemy'||(a.guard&&hostileToPlayer(a));const mk=a.quest&&!a.quest.taken&&a.kind==='npc'?'<span style="color:#e0b04a"> !</span>':'';
     const key=(showSay?a.say:'')+'|'+showName+hostile+mk+Math.round(a.hp/a.hpMax*10);
-    if(e._k!==key){e._k=key;e.className='nm'+(hostile?' hostile':'');e.innerHTML=(showSay?'<div class="bub">'+esc(a.say)+'</div>':'')+(showName?esc(a.name)+mk+(hostile||a.hp<a.hpMax?'<span class="eb"><i style="width:'+(a.hp/a.hpMax*100)+'%"></i></span>':''):'')}
+    if(e._k!==key){e._k=key;e.className='nm'+(hostile?' hostile':'');e.innerHTML=(showSay?'<div class="bub">'+esc(a.say)+'</div>':'')+(showName?esc(a.name||(MON[a.type]&&MON[a.type].n)||'')+mk+(!(a.boss||a.titan)&&(hostile||a.hp<a.hpMax)?'<span class="eb"><i style="width:'+(a.hp/a.hpMax*100)+'%"></i></span>':''):'')}
     e.style.left=((_v.x+1)/2*W)+'px';e.style.top=((1-_v.y)/2*Hh)+'px';e.style.display='block'}
   for(const [id,e] of tagEls)if(!seen.has(id)){e.remove();tagEls.delete(id)}}
 
@@ -3265,7 +3267,7 @@ function pwBolt(x1,y1,z1,x2,y2,z2,pal,wid=1){
 function pwFlash(col,op,dur){const e=PW.fl;if(!e)return;e.style.background=col;e.style.transition='none';e.style.opacity=op;requestAnimationFrame(()=>{e.style.transition='opacity '+dur+'s ease-out';e.style.opacity=0})}
 function pwLight(col,inten,x,y,z){const L=PW.light;if(!L)return;L.color.set(col);L.position.set(x,y,z);PW.lightI=inten}
 /* ---------- helpers ---------- */
-const pwFoe=a=>!a.dead&&(a.kind==='enemy'||a.kind==='animal')&&a.root&&a.root.visible!==false;
+const pwFoe=a=>!a.dead&&(a.kind==='enemy'||a.kind==='animal'||(a.kind==='npc'&&!a.kid&&a.job!=='child'&&!a.spouse&&!a.pet&&a.ai!=='escort'&&!(a.realm&&WD.kingdom&&WD.kingdom.isMine&&WD.kingdom.isMine(a.realm))))&&a.root&&a.root.visible!==false;   /* powers also hit people: guards and the realm will not like it */
 function pwFoesIn(x,z,r){const o=[];for(const a of actors){if(!pwFoe(a))continue;const d=Math.hypot(a.x-x,a.z-z);if(d<r+(a.rad||.5))o.push({a,d})}return o}
 const pwHand=()=>({x:PL.x+Math.sin(PL.rot)*.45,y:PL.y+(PL.mounted?2.3:1.35),z:PL.z+Math.cos(PL.rot)*.45});
 function pwAim(maxD=55){
@@ -3642,13 +3644,16 @@ function initStart(){
 }
 async function boot(){
   installItemIcons();
-  {const ids=Object.keys(ITEMS);let k=0;const warm=()=>{if(!started){setTimeout(warm,1500);return}for(let n=0;n<4&&k<ids.length;n++)itemIconUrl(ids[k++]);if(k<ids.length)setTimeout(warm,120)};setTimeout(warm,4000)}
+  {const ids=Object.keys(ITEMS);let k=0;const warm=()=>{if(!started){setTimeout(warm,1500);return}/* one icon at a time, when the computer has a moment, so playing never stutters */const step=()=>{itemIconUrl(ids[k++]);if(k<ids.length)setTimeout(warm,250)};if(window.requestIdleCallback)requestIdleCallback(step,{timeout:2000});else step()};setTimeout(warm,4000)}
   try{
     const sceneStart=scene.children.length;
     await buildTerrain();buildWater();upgradeWater();buildRoads();await tick();setLoad('bomen en rotsen');buildForests();buildRocks();await tick();
     buildBridge();buildVillage();await tick();buildHamlet();buildFarm();buildTown();await tick();buildCastle();buildRuins();buildCamp();buildCave();buildSecrets();buildFantasy();finishWorld();buildGrass();buildFlora();buildSigns();buildGraveyard();buildSmoke();freezeStatic(sceneStart);await tick();
     setLoad('kaart');await buildMapBase();populate();populateFantasy();
     PL.y=groundH(PL.x,PL.z);PL.discovered.village=true;
+    /* draw the first picture now, behind the loading screen: sending every model and texture near the start to the
+       graphics card takes seconds, and otherwise the game froze for a moment right after you began */
+    setLoad('eerste beeld');await tick();try{const gy=groundH(PL.x,PL.z);for(const [dx,dz] of[[0,7],[7,0],[0,-7],[-7,0]]){camera.position.set(PL.x+dx,gy+3.2,PL.z+dz);camera.lookAt(PL.x,gy+1.5,PL.z);camera.updateMatrixWorld(true);renderer.render(scene,camera)}}catch(e){console.warn('warm render',e)}await tick();
     worldReady=true;$('ldg').remove();
   }catch(e){console.error(e);$('ldg').innerHTML='<div>Fout bij het opbouwen van de wereld.<small>'+esc(e&&e.message||e)+'</small></div>'}
 }
@@ -3749,6 +3754,5 @@ requestAnimationFrame(loop);if(!window.EIK_ASSETS)initStart();
 <script src="eikendal-nav.js"></script>
 <script src="eikendal-touch.js"></script>
 <script src="eikendal-music.js"></script>
-<script src="eikendal-mphelp.js"></script>
 
 </body></html>

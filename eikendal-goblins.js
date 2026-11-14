@@ -113,3 +113,150 @@ ANIMS.push(()=>{if(done||!started||!worldReady)return;done=true;try{
 /* Noordheim is built later */
 ANIMS.push(()=>{if(doneN||!started||!WD.north||!WD.north.built)return;doneN=true;try{for(let i=0;i<9;i++){const a=Math.random()*6.283,r=200+Math.random()*450,x=-40000+Math.cos(a)*r,z=Math.sin(a)*r;spawnX('goblin_ice',x,z)}}catch(e){console.warn('ice goblins',e)}});
 })();
+
+/* ================= De Gifvallei: a poisoned valley under the Trollenmoeras =================
+   Long ago the alchemists of the swamp poured their failed potions into a cave. The poison seeped into a hidden valley
+   and turned it green and rotten. A stinking tunnel at the edge of the Trollenmoeras leads there. The air is poisonous:
+   buy a gas mask (or an antidote) from the alchemist Vira at the tunnel mouth. Inside wait lakes of acid, dead and
+   twisted trees, giant mushrooms, old poison barrels, poison spiders, acid orcs, slimes and swamp goblins, the ruin of
+   the old poison brewery with its chest, and in the crater in the middle the poison dragon Virulax. (x 140000) */
+(function(){
+const TX=140000,TZ=0,RT=560,inT=x=>x>130000&&x<160000,rr=(a=1)=>(Math.random()*2-1)*a;
+const TV={built:false,X:TX,Z:TZ};WD.gif=TV;
+WD.regions=WD.regions||[];WD.regions.push({x0:130000,x1:160000,name:'De Gifvallei',in:'in de Gifvallei',adv:'de Gifvallei'});
+const CR={x:60,z:-120,r:90},LK=[{x:-200,z:60,r:70},{x:150,z:170,r:55},{x:-70,z:-300,r:48},{x:270,z:-60,r:40}],ARR={x:0,z:430},BREW={x:-250,z:-160};
+function tH(x,z){const u=x-TX,v=z-TZ,r=Math.hypot(u,v);let h=(fbm(u*.005+11,v*.005-7,4)-.5)*16+6;
+  const dc=Math.hypot(u-CR.x,v-CR.z);if(dc<CR.r*1.7){h+=Math.exp(-Math.pow((dc-CR.r)/26,2))*16;if(dc<CR.r)h=lerp(h,1.5,1-smooth(CR.r*.45,CR.r,dc))}
+  for(const L of LK){const d=Math.hypot(u-L.x,v-L.z)+(fbm(u*.02,v*.02,2)-.5)*22;if(d<L.r+34)h=lerp(h,-3,1-smooth(L.r-18,L.r+34,d))}
+  h+=smooth(RT-160,RT-10,r+(fbm(u*.01,v*.01,2)-.5)*70)*(110+fbm(u*.012,v*.012,3)*70);
+  for(const [P,R0,H0] of[[ARR,52,5],[BREW,34,7]]){const d=Math.hypot(u-P.x,v-P.z);if(d<R0)h=lerp(h,H0,1-smooth(R0*.5,R0,d))}return h}
+TV.h=tH;
+const _gT=groundH;groundH=function(x,z){return inT(x)?tH(x,z):_gT(x,z)};
+const _tT=terrainH;terrainH=function(x,z){return inT(x)?tH(x,z):_tT(x,z)};
+const _cT=gtClamp;gtClamp=function(P){if(inT(P.x)){const dx=P.x-TX,dz=P.z-TZ,d=Math.hypot(dx,dz);if(d>RT-80){P.x=TX+dx/d*(RT-80);P.z=TZ+dz/d*(RT-80)}return}return _cT(P)};
+/* a sickly green haze */
+const _ueT=updateEnv,HZ=new T.Color(0xa4b06a),HZN=new T.Color(0x1a2410);
+updateEnv=function(dt,pp){if(pp===PL&&inT(PL.x)){const q=Object.create(PL,{inCave:{value:false,writable:true}});_ueT(dt,q);scene.fog.color.lerp((ENV.night||0)>.5?HZN:HZ,.6);scene.fog.density=Math.max(scene.fog.density,.0052);return}return _ueT(dt,pp)};
+/* ---------- things to buy, find and win ---------- */
+Object.assign(ITEMS,{
+  gifmasker:{n:'Gifmasker',g:'mat',price:900,ico:'😷',rar:'e',desc:'Zolang je dit masker bij je hebt, doet de giflucht van de Gifvallei je niets. Zuur blijft wel zuur!'},
+  tegengif:{n:'Tegengif',g:'food',heal:25,buff:{tox:1},dur:180,price:45,ico:'🧪',rar:'r',desc:'Geneest gif en beschermt je 3 minuten tegen de giflucht.'},
+  gifkristal:{n:'Gifkristal',g:'mat',price:220,ico:'💚',rar:'e',desc:'Een groen gloeiend kristal uit de Gifvallei. Alchemisten betalen er goed voor.'},
+  zuurzwaard:{n:'Zuurzwaard van Virulax',g:'weapon',kind:'sword',dmg:150,spd:.46,rng:3.3,fx:{dmg:.2},col:0x7aff2a,price:16000,ico:'⚔',rar:'m'},
+  gifschild:{n:'Gifschubschild',g:'shield',kind:'shield',def:.95,fx:{hp:80,regen:2},col:0x4a8a1a,price:14000,ico:'◔',rar:'m'},
+  gifpantser:{n:'Gifschubpantser',g:'armor',def:46,tunic:0x3a5a1a,pants:0x1a2a0a,armor:1,fx:{hp:160,regen:4},price:15000,ico:'🛡',rar:'m'},
+  amu_virulax:{n:'Gifhart van Virulax',g:'amulet',fx:{dmg:4,hp:120,regen:5},col:0x8aff3a,price:20000,ico:'💚',rar:'m',desc:'Het hart van de gifdraak. Je slaat vijf keer zo hard.'}});
+Object.assign(MON,{gifspin:{n:'Gifspin',hp:260,dmg:22,speed:6,aggro:24,range:1.8,xp:120,loot:'gifspin',rad:.8,hh:1.4,respawn:500},
+  gifork:{n:'Zuurork',hp:900,dmg:40,speed:4.6,aggro:26,range:3,xp:420,loot:'gifork',rad:1.2,hh:3.4,respawn:700}});
+LOOTX.gifspin=()=>({gold:Math.floor(rnd(30,80)),items:Math.random()<.35?[['gifkristal',1]]:[]});
+LOOTX.gifork=()=>({gold:Math.floor(rnd(150,320)),items:[['gifkristal',1+Math.floor(Math.random()*2)]].concat(Math.random()<.25?[['tegengif',1]]:[])});
+CHEST_LOOT.gif_brew={gold:2500,items:[['gifpantser',1],['tegengif',3],['gifkristal',3],['gem',3]]};
+addEventListener('load',()=>{try{const F=WD.fun;Object.assign(F.ICO,{gifspin:'🕷',gifork:'👹'});Object.assign(F.LORE,{gifspin:'Een spin uit de Gifvallei. Haar beet is giftig.',gifork:'Een ork die te lang in de Gifvallei woonde. Zijn huid is groen van het zuur en zijn slagen vergiftigen je.'})}catch(e){}});
+/* the antidote also cures poison */
+const _uiT=useItem;useItem=function(id){const r=_uiT.apply(this,arguments);if(id==='tegengif'){PL.poisonT=0;TV.air=0}return r};
+/* poison creatures poison you */
+const _dpT=damagePlayer;damagePlayer=function(d,src){const hp0=PL.hp,r=_dpT(d,src);if(src&&src.tox&&PL.hp<hp0&&!PL.dead)PL.poisonT=Math.max(PL.poisonT||0,4);return r};
+/* a tunnel mouth: two upright boulders, one across the top and a dark opening between them; (ox,oz) points into the tunnel */
+function mouth(B,par,x,z,ox,oz,gy){const px=-oz,pz=ox,y=gy(x,z);for(const s of[-1,1]){const X=x+px*s*3+ox*1.2,Z=z+pz*s*3+oz*1.2;B.model('Rock_Medium_'+(s>0?1:3),X,gy(X,Z)+2.4,Z,Math.atan2(ox,oz),1.9,{tint:0x8a8778,rz:Math.PI/2*s,sy:1.3});addCircle(X,Z,1.9)}
+  {const X=x+ox*1.4,Z=z+oz*1.4;B.model('Rock_Medium_2',X,y+5.2,Z,Math.atan2(px,pz),1.8,{tint:0x7a776a})}
+  for(const s of[-1,1])for(let k=0;k<3;k++){const X=x+px*s*(4.2+k*1.6)+ox*(1.5+k),Z=z+pz*s*(4.2+k*1.6)+oz*(1.5+k);B.model('Rock_Medium_'+(1+k%3),X,gy(X,Z)-.6,Z,Math.random()*6,1.4+Math.random()*.8,{tint:0x8a8676});addCircle(X,Z,2)}
+  const sh=new T.Shape();sh.moveTo(-2.3,0);sh.lineTo(-2.3,3);sh.quadraticCurveTo(-2.2,5.3,0,5.4);sh.quadraticCurveTo(2.2,5.3,2.3,3);sh.lineTo(2.3,0);sh.lineTo(-2.3,0);const h=new T.Mesh(new T.ShapeGeometry(sh),new T.MeshBasicMaterial({color:0x020201}));h.position.set(x+ox*2.4,y-.3,z+oz*2.4);h.rotation.y=Math.atan2(-ox,-oz);par.add(h);
+  const f=new T.Mesh(new T.PlaneGeometry(4.6,3),new T.MeshBasicMaterial({color:0x040402}));f.rotation.x=-Math.PI/2;f.rotation.z=-Math.atan2(ox,oz);f.position.set(x+ox*1.4,y+.06,z+oz*1.4);par.add(f)}
+function spawnTX(type,k,x,z,opt){const d=MON[type];let m=null;try{m=EX.makeCX(k,opt)}catch(e){}if(!m)return spawnMonster('slime',x,z,{cave:true});
+  const a=baseActor({kind:'enemy',type,name:d.n,model:m,root:m.g,x,z,hp:d.hp,hpMax:d.hp,dmg:d.dmg,speed:d.speed,aggro:d.aggro,range:d.range,rad:d.rad,hh:d.hh,xp:d.xp,loot:d.loot,respawn:d.respawn,cave:true,tox:true});scene.add(a.root);placeActor(a);return a}
+/* ---------- building the valley ---------- */
+const G=new T.Group();
+function build(){if(TV.built)return;TV.built=true;const t0=performance.now();scene.add(G);
+  const mat=new T.MeshStandardMaterial({vertexColors:true,map:TEX.dirt||TEX.grass||null,roughness:1}),CH=160;
+  for(let cx=-4;cx<4;cx++)for(let cz=-4;cz<4;cz++){const ox=TX+cx*CH+CH/2,oz=TZ+cz*CH+CH/2,SEG=36,g=new T.PlaneGeometry(CH,CH,SEG,SEG);g.rotateX(-Math.PI/2);const p=g.attributes.position,n=p.count,cols=new Float32Array(n*3),uv=new Float32Array(n*2);
+    for(let i=0;i<n;i++){const x=p.getX(i)+ox,z=p.getZ(i)+oz,h=tH(x,z);p.setXYZ(i,x,h,z);uv[i*2]=x/8;uv[i*2+1]=z/8;const nn=fbm(x*.05,z*.05,3);
+      let r=.42+.08*nn,gg=.44+.1*nn,b=.16+.04*nn;const mud=1-smooth(-1,2.5,h);r=lerp(r,.26,mud);gg=lerp(gg,.3,mud);b=lerp(b,.1,mud);
+      const shore=Math.max(0,1-Math.abs(h-.4)/1.4);r=lerp(r,.62,shore*.6);gg=lerp(gg,.7,shore*.6);b=lerp(b,.3,shore*.6);
+      const rock=smooth(30,80,h);r=lerp(r,.36,rock);gg=lerp(gg,.36,rock);b=lerp(b,.28,rock);cols[i*3]=r;cols[i*3+1]=gg;cols[i*3+2]=b}
+    g.setAttribute('color',new T.BufferAttribute(cols,3));g.setAttribute('uv',new T.BufferAttribute(uv,2));g.computeVertexNormals();g.computeBoundingSphere();const me=new T.Mesh(g,mat);me.receiveShadow=true;G.add(me)}
+  /* acid: the lakes and the pool in the crater */
+  const acid=new T.MeshStandardMaterial({color:0x7ae02a,map:TEX.water?(()=>{const t=TEX.water.clone();t.needsUpdate=true;return t})():null,emissive:0x2a6a0a,emissiveIntensity:.4,roughness:.2,metalness:.15,transparent:true,opacity:.86});TV.acid=acid;
+  for(const L of LK){const m=new T.Mesh(new T.CircleGeometry(L.r+36,40),acid);m.rotation.x=-Math.PI/2;m.position.set(TX+L.x,-.3,TZ+L.z);G.add(m)}
+  const ok=(x,z,h)=>{const u=x-TX,v=z-TZ;if(Math.hypot(u,v)>RT-190||h<.8||h>45)return false;if(Math.hypot(u-ARR.x,v-ARR.z)<60||Math.hypot(u-BREW.x,v-BREW.z)<36)return false;if(Math.hypot(u-CR.x,v-CR.z)<CR.r*1.1)return false;return true};
+  const spot=(R0=RT-200,cx=0,cz=0)=>{for(let t=0;t<60;t++){const x=TX+cx+rr(R0),z=TZ+cz+rr(R0),h=tH(x,z);if(ok(x,z,h))return[x,z,h]}return null};
+  const K=window.KIT;
+  if(K&&K.Bag&&AS.lib&&AS.lib.DeadTree_1){const B=K.Bag(),M=(n,x,z,ry,s,o={},dy=0)=>B.model(n,x,tH(x,z)+dy,z,ry,s,o);
+    for(let i=0;i<90;i++){const p=spot();if(p){M('DeadTree_'+(1+i%5),p[0],p[1],Math.random()*6.3,.6+Math.random()*.5,{tint:0x6a6a48},-.2);addCircle(p[0],p[1],.6)}}
+    for(let i=0;i<50;i++){const p=spot();if(p){M('TwistedTree_'+(1+i%5),p[0],p[1],Math.random()*6.3,.8+Math.random()*.5,{tint:0x9ab040},-.2);addCircle(p[0],p[1],.7)}}
+    for(let i=0;i<45;i++){const p=spot();if(p){const s=3+Math.random()*5;M(i%3?'Mushroom_Common':'Mushroom_Laetiporus',p[0],p[1],Math.random()*6.3,s,{tint:i%2?0xb8ff5a:0xd8e86a});if(s>5)addCircle(p[0],p[1],s*.18)}}
+    for(let i=0;i<70;i++){const p=spot();if(p)M('Bush_Common',p[0],p[1],Math.random()*6.3,.8+Math.random()*.8,{tint:0x8a9a30})}
+    for(let i=0;i<50;i++){const p=spot();if(p){const s=.6+Math.random()*1.6;M('Rock_Medium_'+(1+i%3),p[0],p[1],Math.random()*6.3,s,{tint:0x6a6a52},-.3*s);addCircle(p[0],p[1],s*1.2)}}
+    /* the old poison barrels the alchemists dumped here */
+    for(let i=0;i<14;i++){const p=spot();if(!p)continue;for(let k=0;k<3+Math.floor(Math.random()*4);k++){const x=p[0]+rr(3),z=p[1]+rr(3),tip=Math.random()<.4;M('Barrel',x,z,Math.random()*6.3,1,{tint:0x8ad83a,rz:tip?Math.PI/2:0},tip?.35:0)}addCircle(p[0],p[1],2)}
+    for(let i=0;i<4;i++){const p=spot();if(p){M('Prop_Wagon',p[0],p[1],Math.random()*6.3,1.1,{rz:.3,tint:0x6a6a50},.2);addCircle(p[0],p[1],2)}}
+    /* the ruin of the old poison brewery, with cauldrons and its chest */
+    {const bx=TX+BREW.x,bz=TZ+BREW.z,y=tH(bx,bz);K.kitHouse(B,bx,y,bz,3,3,{q:0,floors:2,wall:'UnevenBrick',tint:0x7a7a60,roofTint:0x3a4a2a,floor:'Floor_WoodDark',chimney:'2',win:'Wide_Flat'});addCircle(bx,bz,4.6);
+      for(const [dx,dz] of[[-5,8],[0,9],[5,8]]){M('Cauldron',bx+dx,bz+dz,Math.random()*6,1.8,{tint:0x6a8a4a});addCircle(bx+dx,bz+dz,1.1)}
+      for(let k=0;k<6;k++)M('Barrel',bx+7+rr(1.5),bz+3+rr(3),Math.random()*6,1,{tint:0x8ad83a});try{makeChest(bx,bz+11.5,'gif_brew',0,'Kist van de oude gifbrouwers')}catch(e){}}
+    /* Vira's camp at the end of the tunnel: her cart, a cauldron, crates and torches */
+    {const ax=TX+ARR.x,az=TZ+ARR.z;M('Stall_Cart_Empty',ax-6,az-2,.4,1.3,{});addCircle(ax-6,az-2,1.8);M('Cauldron',ax-2,az-5,0,1.5,{});addCircle(ax-2,az-5,.9);
+      for(const [dx,dz] of[[-9,-5],[-9.9,-4],[-8.6,-6.2]])M('Crate_Wooden',ax+dx,az+dz,Math.random(),1,{});addCircle(ax-9.2,az-5,1.4);
+      for(const [dx,dz] of[[4,-3],[-12,1]]){M('Torch_Metal',ax+dx,az+dz,0,2.2,{},1.2)}}
+    /* the tunnel back: a mouth of boulders against the mountains */
+    {const ex=TX+ARR.x,ez=TZ+ARR.z+30;mouth(B,G,ex,ez,0,1,tH);TV.exit={x:ex+0,z:ez+1}}
+    B.build(G)}
+  /* Vira the alchemist */
+  try{const a=spawnNPC('merchant',TX+ARR.x-3,TZ+ARR.z-1,{name:'Alchemist Vira',ai:'stay',cave:true,line:'gif',shop:['gifmasker','tegengif','potion','elixir'].filter(i=>ITEMS[i])});TV.vira=a}catch(e){console.warn('vira',e)}
+  /* the creatures of the valley */
+  for(let i=0;i<14;i++){const p=spot();if(p)try{spawnMonster('slime',p[0],p[1],{cave:true})}catch(e){}}
+  for(let i=0;i<4;i++){const p=spot();if(p)for(let k=0;k<3;k++)try{spawnMonster('goblin_swamp',p[0]+rr(4),p[1]+rr(4),{cave:true,tox:true})}catch(e){}}
+  for(let i=0;i<10;i++){const p=spot();if(p)spawnTX('gifspin','spider',p[0],p[1],{h:1.6,tint:0x8aff3a})}
+  for(let i=0;i<6;i++){const p=spot(RT-220);if(p)spawnTX('gifork','orc1',p[0],p[1],{h:3.3,tint:0x9ad84a})}
+  {const p=spot(60,BREW.x,BREW.z+30);if(p)for(let k=0;k<2;k++)spawnTX('gifork','orc1',p[0]+rr(4),p[1]+rr(4),{h:3.3,tint:0x9ad84a})}
+  /* green crystals to find */
+  for(let i=0;i<12;i++){const p=spot();if(p)try{makePickup(p[0],p[1],'gifkristal',1)}catch(e){}}
+  /* the poison dragon in the crater */
+  try{const md=makeDragon;makeDragon=()=>md(0x4a8a1a,0x22400c);try{TV.dragon=spawnMonster('dragon',TX+CR.x,TZ+CR.z,{cave:true,tox:true,name:'Gifdraak Virulax',sub:'Heerser van de Gifvallei',boss:'virulax',hp:9000,hpMax:9000,dmg:58,xp:6000})}finally{makeDragon=md}}catch(e){console.warn('virulax',e)}
+  if(TV.dragon)drakeLook(TV.dragon);
+  console.log('Gifvallei built in',Math.round(performance.now()-t0),'ms')}
+TV.build=build;
+/* Virulax is the Ashwing Drake of Literock Studios: a wyvern that walks on its wing-hands, painted poison green */
+function drakeLook(a){if(!window.EX||!EX.loadLR||(a.model&&a.model.drake))return;EX.loadLR('drake').then(g=>{if(!g||a.drake)return;const c=T.SkeletonUtils.clone(g.scene),tc=new T.Color(0xa8f070),done=new Map();
+    c.traverse(m=>{if(!m.isMesh)return;m.frustumCulled=false;const f=x=>{if(!done.has(x)){const y=x.clone();y.color.multiply(tc);if(y.emissive)y.emissive.setHex(0x0c2a04);done.set(x,y)}return done.get(x)};m.material=Array.isArray(m.material)?m.material.map(f):f(m.material)});
+    c.scale.setScalar(1.5);a.root.traverse(o=>{if(o.isMesh||o.isSprite)o.visible=false});a.root.add(c);if(a._sp&&a._sp.hid)for(const [o,mk] of a._sp.list)o.layers.mask=mk;a._sp=null;a.root.userData.cullHid=false;
+    const mx=new T.AnimationMixer(c),acts={};for(const cl of g.animations)acts[cl.name]=mx.clipAction(cl);a.drake={c,mx,acts,cur:null,one:0};drakePlay(a.drake,'idle_loop')})}
+function drakePlay(z,n,once){const A=z.acts[n];if(!A||z.cur===n)return;A.reset();if(once){A.setLoop(T.LoopOnce,1);A.clampWhenFinished=false;z.one=A.getClip().duration*.9}A.fadeIn(.25).play();if(z.cur&&z.acts[z.cur])z.acts[z.cur].fadeOut(.25);z.cur=n}
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;const D=TV.dragon;if(!D||!D.drake||D.dead||!inT(PL.x))return;const z=D.drake;
+  if(z.one>0){z.one-=dt}else{const air=D.aq!==undefined&&D.aq-groundH(D.x,D.z)>2;let want=air?'fly_loop':(D.brT>0?'roar':(D.vel||0)>.6?'walk_loop':'idle_loop');
+    if(!air&&D.state==='chase'&&!z.met){z.met=1;want='roar';drakePlay(z,'roar',true)}else if(!air&&D.state==='chase'&&Math.hypot(PL.x-D.x,PL.z-D.z)<7&&(D.cd||0)>0&&Math.random()<dt*2)drakePlay(z,'bite',true);else drakePlay(z,want)}
+  z.mx.update(dt*((D.vel||0)>4?1.3:1))});
+LINES.gif=['Zonder masker hou je het hier niet lang vol.','Mijn tegengif is het beste van het hele moeras.','Blijf uit het zuur! Daar helpt geen masker tegen.','Diep in de krater slaapt Virulax, de gifdraak.','Breng me gifkristallen, ik betaal goed.','De oude brouwerij in het westen... daar ligt nog een kist.'];
+{const _ka=killActor;killActor=function(a,by){const was=a&&!a.dead;_ka(a,by);try{if(was&&by&&a===TV.dragon){const first=!PL.fx.virulax;PL.fx.virulax=1;dropLoot(a.x,a.z+3,{gold:first?12000:5000,items:first?[['amu_virulax',1],['zuurzwaard',1],['gifschild',1],['gifkristal',4]]:[[pick(['amu_virulax','zuurzwaard','gifschild']),1],['gifkristal',3]]});
+  if(first)setTimeout(()=>{try{WD.kingdom.card('💚 Virulax is verslagen!','De gifdraak zakt neer in zijn krater. Het zuur borrelt minder fel. Hij liet zijn gifhart, zijn zuurzwaard en een schild van zijn schubben achter.')}catch(e){}},1200)}}catch(e){}}}
+/* ---------- in and out: a stinking tunnel at the edge of the Trollenmoeras ---------- */
+let ENT=null;
+function entrance(){const S=SITE.swamp;if(!S)return;let best=null;for(let i=0;i<36&&!best;i++){const a=i/36*6.283+.4;for(const r of[S.r*.95,S.r*1.1,S.r*1.25]){const x=S.x+Math.cos(a)*r,z=S.z+Math.sin(a)*r;if(groundH(x,z)>.8&&!inBuilding(x,z,3)){best={x,z,a};break}}}if(!best)return;
+  const K=window.KIT,y=groundH(best.x,best.z),G2=new T.Group();scene.add(G2);const ox=Math.cos(best.a),oz=Math.sin(best.a),px=-oz,pz=ox;
+  if(K&&K.Bag){const B=K.Bag();mouth(B,G2,best.x,best.z,ox,oz,groundH);
+    for(let k=0;k<5;k++){const x=best.x-ox*(3+Math.random()*3)+px*rr(6),z=best.z-oz*(3+Math.random()*3)+pz*rr(6);B.model('Barrel',x,groundH(x,z),z,Math.random()*6,1,{tint:0x8ad83a,rz:Math.random()<.5?Math.PI/2:0})}
+    for(const s of[-1,1]){const x=best.x+px*s*8-ox*2,z=best.z+pz*s*8-oz*2;B.model('DeadTree_'+(s>0?2:4),x,groundH(x,z)-.2,z,Math.random()*6,.7,{tint:0x6a6a48})}B.build(G2)}
+  ENT={x:best.x+ox*1.3,z:best.z+oz*1.3,ox,oz};TV.ent=ENT}
+const _bfT=buildFantasy;buildFantasy=function(){_bfT();try{entrance()}catch(e){console.warn('gif entrance',e)}};
+function go(x,z){if(PL.mounted)try{dismount()}catch(e){}PL.x=x;PL.z=z;PL.y=groundH(x,z)+.2;PL.vy=0}
+function tunnel(fn){const f=WD.fadeGo;if(f)f(fn);else fn()}
+let busy=0;
+ANIMS.push(dt=>{if(!started||PL.dead||busy)return;
+  if(ENT&&!PL.inCave&&!PL.mounted&&Math.abs(PL.x-ENT.x)<1.6&&Math.abs(PL.z-ENT.z)<1.6){busy=1;tunnel(()=>{build();go(TX+ARR.x+2,TZ+ARR.z+18);PL.fx=PL.fx||{};if(!PL.fx.seenGif){PL.fx.seenGif=1;giveXp(600);try{WD.kingdom.card('💚 De Gifvallei','Een stinkende tunnel brengt je in een vergiftigde vallei. De lucht is giftig! Koop een gifmasker of tegengif bij Alchemist Vira, hier vlak bij. Blijf uit het groene zuur.',null,12)}catch(e){}}});setTimeout(()=>busy=0,3000);return}
+  if(TV.exit&&inT(PL.x)&&Math.abs(PL.x-TV.exit.x)<1.6&&Math.abs(PL.z-TV.exit.z)<1.6&&ENT){busy=1;tunnel(()=>go(ENT.x-ENT.ox*5,ENT.z-ENT.oz*5));setTimeout(()=>busy=0,3000)}});
+/* ---------- the poison: the air, and the acid ---------- */
+TV.air=0;let warned=false,tick=0;
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started)return;if(inT(PL.x)&&!TV.built&&!TV.loading){TV.loading=true;build()}if(!TV.built)return;
+  const here=inT(camera.position.x);G.visible=here;if(!here||PL.dead)return;if(TV.acid){TV.acid.emissiveIntensity=.35+Math.sin(PL.t*1.7)*.1;if(TV.acid.map){TV.acid.map.offset.x=PL.t*.01;TV.acid.map.offset.y=PL.t*.006}}
+  const safe=Math.hypot(PL.x-TX-ARR.x,PL.z-TZ-ARR.z)<48,mask=(PL.inv.gifmasker||0)>0,anti=PL.buff&&PL.buff.fx&&PL.buff.fx.tox&&PL.buff.t>0;
+  tick-=dt;if(tick>0)return;tick=1;
+  if(!safe&&!mask&&!anti){TV.air++;const d=Math.max(2,PL.hpMax*.02)*(TV.air>40?1.6:1);PL.hp-=d;floatText(PL.x,PL.y+2.2,PL.z,'gif -'+Math.round(d),'#9aff4a');
+    if(!warned){warned=true;addLog('Je ademt giflucht in! Koop een gifmasker of tegengif bij Alchemist Vira.','#9aff4a')}if(PL.hp<=0){PL.hp=0;playerDie()}}
+  else TV.air=0;
+  /* acid burns, mask or not */
+  if(groundH(PL.x,PL.z)<-.6&&PL.y<.4){PL.hp-=12;PL.poisonT=Math.max(PL.poisonT||0,3);floatText(PL.x,PL.y+2.2,PL.z,'zuur!','#c8ff4a');if(PL.hp<=0){PL.hp=0;playerDie()}}});
+/* ---------- the little map ---------- */
+const _dmT=drawMini;drawMini=function(){if(!inT(PL.x))return _dmT();const c=$('mini'),g=c.getContext('2d'),S=150,k=S/220;g.fillStyle='#2a3418';g.fillRect(0,0,S,S);
+  g.fillStyle='rgba(140,255,50,.55)';for(const L of LK){g.beginPath();g.arc(S/2+(TX+L.x-PL.x)*k,S/2+(TZ+L.z-PL.z)*k,L.r*k,0,7);g.fill()}
+  for(const a of actors){if(a.dead||a.kind!=='enemy'||!inT(a.x))continue;const dx=(a.x-PL.x)*k,dz=(a.z-PL.z)*k;if(Math.abs(dx)<75&&Math.abs(dz)<75){g.fillStyle=a.boss?'#ff4a2a':'#e5913f';g.fillRect(S/2+dx-2,S/2+dz-2,4,4)}}
+  g.fillStyle='#ffd27a';g.beginPath();g.arc(S/2,S/2,3.5,0,7);g.fill();g.fillStyle='#d8ff9a';g.font='bold 12px serif';g.textAlign='center';g.fillText('De Gifvallei',S/2,14)};
+})();

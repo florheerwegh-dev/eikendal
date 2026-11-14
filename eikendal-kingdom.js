@@ -593,4 +593,100 @@ ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;let best=null,bd=60;
     const d=Math.hypot(k.x-PL.x,k.z-PL.z);if(d<bd&&PL.t-r.hitT<12&&!!k.cave===!!PL.inCave){bd=d;best=k}}
   if(!best&&!RBAR.el)return;const el=royalBar();if(!best){el.style.opacity=0;return}const bb=document.getElementById('bossbar');el.style.top=bb&&bb.style.opacity==='1'?'calc(116px + env(safe-area-inset-top,0px))':'';
   el.style.opacity=1;el.querySelector('.t').textContent='👑 '+best.name+(PL.t<best._roy.shieldT?' (schild)':'');el.querySelector('i').style.width=Math.max(0,best.hp/best.hpMax*100)+'%'});
+
+
+/* ---------- castle gates stay free ----------
+   Every gate of a castle or walled city keeps a free lane, inwards and outwards. A house that would be built in such
+   a lane is moved aside, and the decorations of the places never choose a spot in it. */
+const KGATE=WD.gates=WD.gates||[];
+WD.addGate=(x,z,dx,dz,o={})=>{const l=Math.hypot(dx,dz)||1;KGATE.push({x,z,dx:dx/l,dz:dz/l,w:o.w||6.5,out:o.out??42,in:o.in??26,n:o.n||''})};
+WD.inGate=(x,z,m=0)=>{for(const g of KGATE){const rx=x-g.x,rz=z-g.z,al=rx*g.dx+rz*g.dz;if(al<-g.in-m||al>g.out+m)continue;if(Math.abs(rz*g.dx-rx*g.dz)<g.w+m)return g}return null};
+WD.addGate(-290,240,1,0,{in:30,n:'Burcht Valkenhorst'});
+WD.addGate(300,-140,0,1,{in:30,n:'Zilverburg'});WD.addGate(220,-220,-1,0,{in:30,n:'Zilverburg'});
+for(const [x,z,dx,dz] of[[730,467,0,-1],[652,545,-1,0],[808,545,1,0]])WD.addGate(x,z,dx,dz,{in:36,n:'Zilverhaven'});
+WD.addGate(-66,91,0,-1,{w:4,in:6,out:30,n:'Landhuis Eikenhof'});
+let gateMoved=0;
+{const _mhG=makeHouse;makeHouse=function(o){try{if(o&&KGATE.length&&typeof o.x==='number'){const m=Math.max(o.w||8,o.d||7)*.55;for(let k=0;k<4;k++){const g=WD.inGate(o.x,o.z,m);if(!g)break;
+  const rx=o.x-g.x,rz=o.z-g.z,side=rz*g.dx-rx*g.dz,sg=side>=0?1:-1,need=g.w+m+1.5-Math.abs(side);o.x+=-g.dz*sg*need;o.z+=g.dx*sg*need;gateMoved++}}}catch(e){}return _mhG.apply(this,arguments)}}
+WD.gateMoved=()=>gateMoved;
+/* ---------- no houses through walls or through other buildings ----------
+   Places are built by many parts of the game, some of them later than others, so now and then a plain house ended up
+   half inside a cathedral, across a long wall or fence, or on top of market stalls. Once the world is built (and again
+   whenever new buildings appear) such a house is taken away: hidden, its walls no longer block you, nobody lives there
+   any more. Shops, inns, halls, churches and smithies always stay. */
+const TIDY={n:0,gone:[]};WD.tidy=TIDY;
+function tidyHouses(){if(typeof BUILDINGS==='undefined'||typeof cgrid==='undefined')return 0;const keepSet=new Set(Object.values(typeof SHOP!=='undefined'?SHOP:{}));
+  const plain=b=>b&&(b.kind==='home'||!b.kind)&&!keepSet.has(b)&&!/kazerne|paleis|kasteel|burcht|toren|^huis van /i.test(b.name||'')&&b.group;
+  const frame=b=>{const c=Math.cos(b.th||0),s=Math.sin(b.th||0);return{loc:(x,z)=>{const dx=x-b.x,dz=z-b.z;return[dx*c-dz*s,dx*s+dz*c]},c,s}};
+  const corners=(b,m)=>{const c=Math.cos(b.th||0),s=Math.sin(b.th||0),hw=b.w/2-m,hd=b.d/2-m;return[[-hw,-hd],[hw,-hd],[hw,hd],[-hw,hd]].map(([lx,lz])=>[b.x+lx*c+lz*s,b.z-lx*s+lz*c])};
+  const sepAx=(A,B,ax)=>ax.some(([ux,uz])=>{let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9;for(const [x,z] of A){const p=x*ux+z*uz;a0=Math.min(a0,p);a1=Math.max(a1,p)}for(const [x,z] of B){const p=x*ux+z*uz;b0=Math.min(b0,p);b1=Math.max(b1,p)}return a1<b0||b1<a0});
+  const axes=b=>{const c=Math.cos(b.th||0),s=Math.sin(b.th||0);return[[c,-s],[s,c]]};
+  const bad=new Set(),L=BUILDINGS.filter(b=>b.w&&b.d);
+  /* 1. two buildings in each other: the plain house goes (of two plain houses, the smaller) */
+  for(let i=0;i<L.length;i++)for(let j=i+1;j<L.length;j++){const a=L[i],b=L[j];if(Math.abs(a.x-b.x)>30||Math.abs(a.z-b.z)>30)continue;if(Math.hypot(a.x-b.x,a.z-b.z)>(Math.hypot(a.w,a.d)+Math.hypot(b.w,b.d))/2)continue;
+    const A=corners(a,.4),B=corners(b,.4);if(sepAx(A,B,[...axes(a),...axes(b)]))continue;const pa=plain(a),pb=plain(b);if(pa&&pb)bad.add(a.w*a.d<b.w*b.d?a:b);else if(pa)bad.add(a);else if(pb)bad.add(b)}
+  /* 2. a wall, fence or tower running through a plain house */
+  for(const b of L){if(bad.has(b)||!plain(b))continue;const {loc}=frame(b),hw=b.w/2,hd=b.d/2,inS=(x,z)=>{const [lx,lz]=loc(x,z);return Math.abs(lx)<hw-1.1&&Math.abs(lz)<hd-1.1},outE=(x,z)=>{const [lx,lz]=loc(x,z);return Math.abs(lx)>hw+.6||Math.abs(lz)>hd+.6};
+    const R=Math.hypot(b.w,b.d)/2+3,seen=new Set();let hit=false;
+    for(let i=Math.floor((b.x-R)/CELL);i<=Math.floor((b.x+R)/CELL)&&!hit;i++)for(let j=Math.floor((b.z-R)/CELL);j<=Math.floor((b.z+R)/CELL)&&!hit;j++){const a=cgrid.get(ck(i,j));if(!a)continue;
+      for(const o of a){if(o.off||seen.has(o)||o.tidy===b)continue;seen.add(o);if(o.t===0){if(o.r>=1.4&&inS(o.x,o.z)){hit=true;break}}
+        else{let n=0,q=0;for(let x=o.x0;x<=o.x1+.01&&!(n>2&&q>2);x+=.5)for(let z=o.z0;z<=o.z1+.01;z+=.5){if(inS(x,z))n++;else if(outE(x,z))q++}if(n>2&&q>2){hit=true;break}}}}
+    if(hit)bad.add(b)}
+  for(const b of bad)removeHouse(b);TIDY.n+=bad.size;return bad.size}
+function removeHouse(b){const i=BUILDINGS.indexOf(b);if(i<0)return;BUILDINGS.splice(i,1);TIDY.gone.push(b.name+' @'+Math.round(b.x)+','+Math.round(b.z));
+  if(b.group){b.group.visible=false;if(b.group.parent)b.group.parent.remove(b.group)}
+  /* its own walls and furniture no longer block the way */
+  const c=Math.cos(b.th||0),s=Math.sin(b.th||0),inE=(x,z)=>{const dx=x-b.x,dz=z-b.z,lx=dx*c-dz*s,lz=dx*s+dz*c;return Math.abs(lx)<b.w/2+.8&&Math.abs(lz)<b.d/2+.8},R=Math.hypot(b.w,b.d)/2+2;
+  for(let i=Math.floor((b.x-R)/CELL);i<=Math.floor((b.x+R)/CELL);i++)for(let j=Math.floor((b.z-R)/CELL);j<=Math.floor((b.z+R)/CELL);j++){const a=cgrid.get(ck(i,j));if(!a)continue;
+    for(const o of a){if(o.t===0?(o.r<1.4&&inE(o.x,o.z)):(inE(o.x0,o.z0)&&inE(o.x1,o.z1)&&inE(o.x0,o.z1)&&inE(o.x1,o.z0)))o.off=true}}
+  for(let k=INTER.length-1;k>=0;k--){const q=INTER[k];if(b.doorPos&&Math.hypot(q.x-b.doorPos[0],q.z-b.doorPos[1])<1.6)INTER.splice(k,1)}
+  for(const a of actors)if(a.homeB===b){a.homeB=null;a.route=null;if(a.inHome){a.inHome=false;if(b.doorPos){a.x=b.doorPos[0];a.z=b.doorPos[1]}}}}
+WD.tidyHouses=tidyHouses;
+{let lastN=-1,quiet=0;setInterval(()=>{if(typeof worldReady==='undefined'||!worldReady||typeof BUILDINGS==='undefined')return;if(BUILDINGS.length===lastN){quiet++;if(quiet!==2)return}else{lastN=BUILDINGS.length;quiet=0;return}
+  try{const n=tidyHouses();lastN=BUILDINGS.length;if(n)console.log('tidy: '+n+' houses through walls removed')}catch(e){console.warn('tidy',e)}},2500)}
+/* ---------- the ruler's house is easy to recognise ----------
+   A ruler often does not live in the middle of the village: the king of Eikendal sits in his hall in Burcht
+   Valkenhorst. So the house of every ruler looks royal and different from all other houses: a golden roof, two tall
+   flag masts at the entrance, banners beside the door, a red carpet with golden edges up to the door, lantern posts
+   along the carpet and two royal guards at the door. A palace of the great realms gets the masts, carpet, lanterns and
+   guards as well. No signs, no map markers: you see it in the world. Villagers can still tell you where the ruler sits. */
+const live=R=>{const r=R.ruler;return r&&!r.dead&&!r.gone?r:null};
+const seat=R=>{const t=R.throne;if(!t)return R.name;const s=typeof siteAt==='function'&&!R.cave?siteAt(t.x,t.z):null;return s?s.name:R.name};
+const kmTxt=d=>d<1000?Math.max(10,Math.round(d/10)*10)+' m':(d/1000).toFixed(1).replace('.',',')+' km';
+const compass=(x,z)=>['noorden','noordoosten','oosten','zuidoosten','zuiden','zuidwesten','westen','noordwesten'][((Math.round(Math.atan2(x-PL.x,PL.z-z)/(Math.PI/4))%8)+8)%8];
+const sameSpace=R=>!!R.throne&&(R.cave?PL.inCave&&PL.x<-30000:!PL.inCave);
+const hereRealm=()=>REALMS.find(R=>sameSpace(R)&&inArea(R,PL.x,PL.z))||null;
+const nearRealm=()=>{let b=null,bd=1e9;for(const R of REALMS){if(!sameSpace(R))continue;const d=Math.hypot(R.throne.x-PL.x,R.throne.z-PL.z);if(d<bd){bd=d;b=R}}return b};
+let GOLD=null;const goldOf=m=>{GOLD=GOLD||new Map();if(!GOLD.has(m.uuid)){const g=m.clone();g.map=null;g.color=new T.Color(0xf4b830);if('metalness' in g){g.metalness=.3;g.roughness=.4}if(g.emissive)g.emissive.setHex(0x2e1c00);GOLD.set(m.uuid,g)}return GOLD.get(m.uuid)};
+let RUG=null;const rugMats=()=>RUG||(RUG={red:new T.MeshStandardMaterial({color:0xa8121c,roughness:.95,side:T.DoubleSide}),gold:new T.MeshStandardMaterial({color:0xe0b040,metalness:.5,roughness:.4,side:T.DoubleSide})});
+function entrance(R,dx,dz,x0,z0,big){const b=KIT.Bag(),ry=Math.atan2(dx,dz),px=-dz,pz=dx,L=big?16:12,y0=groundH(x0,z0)+.05,M=rugMats();
+  /* the red carpet with golden edges */
+  {const g=new T.PlaneGeometry(2.6,L);g.rotateX(-Math.PI/2);g.translate(0,0,L/2);b.add(g,M.red,x0,y0,z0,ry);for(const s of[-1,1]){const e=new T.PlaneGeometry(.22,L);e.rotateX(-Math.PI/2);e.translate(s*1.38,.005,L/2);b.add(e,M.gold,x0,y0,z0,ry)}}
+  /* lantern posts along it, two tall flag masts where it begins */
+  for(let k=1;k<=3;k++)for(const s of[-1,1]){const x=x0+dx*k*L/3.4+px*s*2.2,z=z0+dz*k*L/3.4+pz*s*2.2,y=groundH(x,z),vx=-s*px,vz=-s*pz;b.model('Lantern_Wall',x,y+.9,z,Math.atan2(-vz,vx),1.3);b.box(.14,3,.14,MAT.iron,x,y+1.5,z);addCircle(x,z,.25)}
+  for(const s of[-1,1]){const x=x0+dx*(L+1)+px*s*3.4,z=z0+dz*(L+1)+pz*s*3.4;KIT.flag(b,x,groundH(x,z),z,ry+s*.6,big?4.2:3.2,s<0?'Banner_1_Cloth':'Banner_2_Cloth');addCircle(x,z,.4)}
+  const G=new T.Group();scene.add(G);b.build(G);
+  /* two royal guards at the door, looking outwards */
+  for(const s of[-1,1]){const x=x0+dx*1.6+px*s*2.4,z=z0+dz*1.6+pz*s*2.4;try{const a=spawnNPC('guard',x,z,{name:'Koninklijke wacht',ai:'stay',livery:LIVERY[R.id],cave:!!R.cave,face:ry});if(a){a.face=ry;a.rot=ry}}catch(e){}}}
+function royal(R){if(R._royal||!R.throne)return;const t=R.throne;
+  /* a great realm: the palace */
+  const cap=WD.great&&WD.great.cap&&WD.great.cap[R.id];if(cap&&cap.pal){R._royal=1;entrance(R,0,1,cap.pal.x,cap.pal.z-1.6,true);return}
+  /* an old realm: the hall where the ruler sits */
+  let b=null,bd=8;for(const q of BUILDINGS){const d=Math.hypot(q.x-t.x,q.z-t.z);if(d<bd&&q.doorPos){bd=d;b=q}}if(!b)return;R._royal=1;
+  if(b.group)b.group.traverse(o=>{if(!o.isMesh)return;const m=o.material;if(!Array.isArray(m)&&m&&/RoundTiles|Tile|Roof/i.test(m.name||'')||m===MAT.tile)o.material=goldOf(m)});
+  let dx=b.doorPos[0]-b.x,dz=b.doorPos[1]-b.z;const l=Math.hypot(dx,dz)||1;dx/=l;dz/=l;
+  entrance(R,dx,dz,b.doorPos[0]+dx*.4,b.doorPos[1]+dz*.4,false);
+  /* banners on the front wall, beside the door */
+  const bb=KIT.Bag(),px=-dz,pz=dx,ry=Math.atan2(dx,dz),y=(b.y!==undefined?b.y:groundH(b.x,b.z));for(const s of[-1,1]){const x=b.doorPos[0]+px*s*2.3+dx*.25,z=b.doorPos[1]+pz*s*2.3+dz*.25;bb.model(s<0?'Banner_1_Cloth':'Banner_2_Cloth',x,y+4.6,z,ry,1.6);bb.cyl(.05,.05,1.6,MAT.iron,x,y+4.62,z,6,0,Math.PI/2)}
+  const G=new T.Group();scene.add(G);bb.build(G)}
+setInterval(()=>{if(!KG.ready||typeof worldReady==='undefined'||!worldReady||!window.KIT)return;for(const R of REALMS)if(R.throne&&!R._royal)try{royal(R)}catch(e){console.warn('koningshuis',e);R._royal=1}},2000);
+/* villagers know where the ruler sits */
+function whereKing(a){const R=(a&&a.realm&&RB[a.realm])||hereRealm()||nearRealm();if(!R){card('👑 De heerser','"Hier in de buurt woont geen koning of koningin, hoor."',null,8);return}
+  const r=live(R),t=r||R.throne,d=Math.hypot(t.x-PL.x,t.z-PL.z),w=seat(R);
+  if(mine(R)){card('👑 '+(a.name||'Iemand'),'"Maar... u bent toch zelf de heerser van '+R.name+'? Uw troon staat in '+w+'!"',null,10);return}
+  card('👑 '+(a.name||'Een dorpeling'),r?'"'+r.name+' is de heerser van '+R.name+'. Je vindt de troon in '+w+', '+kmTxt(d)+' naar het '+compass(t.x,t.z)+' van hier. Je herkent het huis meteen: een gouden dak, grote vlaggen, een rode loper en wachters bij de deur."'
+    :'"De troon van '+R.name+' is leeg! Het zegel ligt nog bij de troon in '+w+', '+kmTxt(d)+' naar het '+compass(t.x,t.z)+'. Zoek het huis met het gouden dak en de rode loper."',null,14)}
+const _dmKW=dlgMain;dlgMain=function(a,text){_dmKW(a,text);try{if(!a||a.kind!=='npc'||a.ruler||a.name==='Koninklijke wacht'||!REALMS.some(sameSpace))return;const box=document.querySelector('#dlg #dopts');if(!box)return;
+  const b=document.createElement('button');b.className='btn';b.textContent='👑 Waar is de koning?';b.onclick=()=>{closeModals();whereKing(a)};box.appendChild(b)}catch(e){}};
+KG.whereKing=whereKing;
 })();

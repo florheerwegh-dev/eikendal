@@ -37,7 +37,12 @@ ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;S.frames++;S.ft+=dt;if(S.ft>=1){
     const d=Math.hypot(m.x-cam.x,m.z-cam.z)-m.r;show(o,m,d<S.D*(m.small?.3:m.r>25?1.6:1))}
   /* people and animals: their moving 3D bodies are the costliest things to draw, so only the ones near you are drawn */
   const A=actors,na=A.length,pa=Math.max(150,Math.ceil(na/8)),CH=Math.min(90,S.D*.35);
-  for(let k=0;k<pa&&k<na;k++){S.ai=((S.ai||0)+1)%na;const a=A[S.ai];if(!a||!a.root)continue;let q=a._sp;if(!q){q=a._sp={list:[],hid:false};a.root.traverse(o=>{if(o.isMesh)q.list.push([o,o.layers.mask])})}
+  for(let k=0;k<pa&&k<na;k++){S.ai=((S.ai||0)+1)%na;const a=A[S.ai];if(!a||!a.root)continue;let q=a._sp;
+    /* a body that changed (an animal that got its real model, new gear): show the old parts again and list them anew,
+       or the new parts stay drawn with a skeleton that is never moved (that drew a deer a kilometre long at the start) */
+    const sig=a.root.children.length*1000+(a.model&&a.model.g&&a.model.g!==a.root?a.model.g.children.length:0);
+    if(q&&q.sig!==sig){if(q.hid)for(const [o,mk] of q.list)o.layers.mask=mk;a.root.userData.cullHid=false;q=a._sp=null}
+    if(!q){q=a._sp={list:[],hid:false,sig};a.root.traverse(o=>{if(o.isMesh)q.list.push([o,o.layers.mask])})}
     const big=a.boss||a.titan||(a.hh||0)>4||a.flyM,want=!S.on||a===PL.mounted||Math.hypot(a.x-cam.x,a.z-cam.z)<CH*(big?3:1);if(want===!q.hid)continue;q.hid=!want;a.root.userData.cullHid=!want;for(const [o,mk] of q.list)o.layers.mask=want?mk:0}});
 
 /* ---------- less work every frame ----------

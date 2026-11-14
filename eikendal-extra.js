@@ -6,7 +6,8 @@
 'use strict';
 const EX={tex:{},cx:{},bx:{},fish:null,faces:null,bird:null};window.EX=EX;
 const TL=new T.TextureLoader();
-function tex(u,o={}){return new Promise(r=>TL.load(u,t=>{t.anisotropy=4;t.encoding=T.LinearEncoding;if(o.flip===false)t.flipY=false;if(o.rep)t.wrapS=t.wrapT=T.RepeatWrapping;r(t)},undefined,()=>r(null)))}
+/* a picture that fails to load is tried once more (a busy connection), so a model never ends up without it */
+function tex(u,o={},tries=2){return new Promise(r=>TL.load(u,t=>{t.anisotropy=4;t.encoding=T.LinearEncoding;if(o.flip===false)t.flipY=false;if(o.rep)t.wrapS=t.wrapT=T.RepeatWrapping;r(t)},undefined,()=>{if(tries>1)setTimeout(()=>tex(u,o,tries-1).then(r),800);else r(null)}))}
 async function glb(u){const buf=await asFetchBin(u);return await new Promise((res,rej)=>new T.GLTFLoader().parse(buf,'',res,rej))}
 function hdr(buf){const dv=new DataView(buf),hl=dv.getUint32(0,true);return{h:JSON.parse(new TextDecoder().decode(new Uint8Array(buf,4,hl))),base:4+hl}}
 const dm=()=>new T.Object3D();
@@ -203,7 +204,7 @@ async function loadBX(k){const D=BXD[k];
     const v=[1,2,3].map(i=>tex('assets/bestiary/'+k+'_'+i+'.jpg',{flip:false}));const [t1,t2,t3,nrm,em]=await Promise.all([...v,tex('assets/bestiary/'+k+'_n.jpg',{flip:false}),tex('assets/bestiary/'+k+'_e.jpg',{flip:false})]);
     D.T={v:[t1,t2,t3],nrm,em};D.mats={};D.ok=true}catch(e){console.warn('bestiary '+k,e);D.ok=false}}
 function bxMat(k,vi,tint,glow){const D=BXD[k],key=vi+'|'+(tint||0)+'|'+(glow||0);if(D.mats[key])return D.mats[key];
-  return D.mats[key]=new T.MeshStandardMaterial({map:D.T.v[vi-1]||D.T.v[0],normalMap:D.T.nrm,emissiveMap:D.T.em,emissive:glow||0xffffff,emissiveIntensity:glow?2.2:1,roughness:.78,metalness:.05,color:tint?new T.Color(tint):new T.Color(0xffffff),skinning:true})}
+  return D.mats[key]=new T.MeshStandardMaterial({map:D.T.v[vi-1]||D.T.v[0],normalMap:D.T.nrm,emissiveMap:D.T.em||null,emissive:D.T.em?(glow||0xffffff):(glow||0),emissiveIntensity:D.T.em?(glow?2.2:1):(glow?.2:0),roughness:.78,metalness:.05,color:tint?new T.Color(tint):new T.Color(0xffffff),skinning:true})}
 /* a humanoid built the same way as the skinned villagers, so all their animation code drives it */
 function makeBeastH(k,o){const D=BXD[k],model=T.SkeletonUtils.clone(D.src);model.userData.bones=boneMap(model);
   model.traverse(m=>{if(!m.isMesh)return;m.material=bxMat(k,o.v||1,o.tint,o.glow);m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false});
@@ -216,6 +217,11 @@ function makeBeastH(k,o){const D=BXD[k],model=T.SkeletonUtils.clone(D.src);model
   Object.defineProperty(h,'idleClip',{get(){return this._ic},set(v){this._ic=v==='Crouch_Idle_Loop'?'Idle_Loop':v},configurable:true});
   try{animHuman(h,0,0,{})}catch(e){}h.mixer.update(Math.random()*2);return h}
 EX.makeBeastH=makeBeastH;EX.bx=BXD;EX.cxd=CXD;
+/* ---------- models by Literock Studios (Filip downloaded them): props, the Ashwing drake and the deer.
+   Loaded only when something needs them; their pictures are read like the game's own (no colour conversion). ---------- */
+const LR={};EX.lr=LR;
+EX.loadLR=n=>LR[n]||(LR[n]=glb('assets/literock/'+n+'.glb').then(g=>{g.scene.updateMatrixWorld(true);g.scene.traverse(m=>{if(!m.isMesh)return;m.castShadow=true;m.receiveShadow=true;
+    for(const x of Array.isArray(m.material)?m.material:[m.material]){for(const k of['map','emissiveMap'])if(x[k]){x[k].encoding=T.LinearEncoding;x[k].needsUpdate=true}x.needsUpdate=true}});return g}).catch(e=>{console.warn('literock '+n,e);return null}));
 
 /* ================= fish: 25 species in one atlas, swimming with a tail wiggle in the shader ================= */
 const FSH={ok:false,geo:{},mat:null,t:{value:0}};
@@ -284,7 +290,8 @@ const BEAST={goblin:['puglin',{v:1,h:1.25}],goblinbrute:['puglin',{v:3,h:1.95}],
 const _smX=spawnMonster;
 spawnMonster=function(type,x,z,o={}){
   if(type==='troll'&&CXD.orc1.ok)return spawnCX('troll','orc1',x,z,o,{h:3.35,tint:0xb4c49a});
-  if(type==='goblinking'&&CXD.orc2.ok){const a=spawnCX('goblinking','orc2',x,z,o,{h:2.75});a.name=MON.goblinking.n;return a}
+  /* the boss of the goblin tunnels is a mega goblin, as big as a house (Grukk the orc moved to Noordheim) */
+  if(type==='goblinking'&&BXD.puglin.ok){EX.beast={kind:'puglin',v:3,h:4.4};try{const a=_smX(type,x,z,o);a.name=MON.goblinking.n;a.rad=1.5;a.hh=4.6;return a}finally{EX.beast=null}}
   if(type==='spider'&&CXD.spider.ok)return spawnCX('spider','spider',x,z,o,{h:1.25});
   if(type==='shadowwolf'&&CXD.wolf.ok)return spawnCX('shadowwolf','wolf',x,z,o,{h:1.3,tint:0x34323e,eyes:0xff2a2a});
   if(type==='terrorbird'){if(!CXD.tbird.ok)return _smX('spider',x,z,o);return spawnCX('terrorbird','tbird',x,z,o,{h:2.5})}

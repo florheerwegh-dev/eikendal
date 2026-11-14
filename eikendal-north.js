@@ -2,7 +2,8 @@
    Beyond the mountains of Eikendal lies Noordheim: a land of snow and ice as
    large as Eikendal, with snowy pine forests, a frozen lake, the Nordic village of Ysdal, the northern lights at night
    and falling snow. Five places each hold a boss:
-     De IJsburcht      - IJsreus Hrimtor, a frost giant whose slam freezes you (drops the Frost Heart and the Ice Shield)
+     De Oude Orkenburcht - Orkenkrijgsheer Grukk, the orc chief, in an old worn castle full of orcs; his slam makes you
+                         stagger (drops the Frost Heart, the Ice Shield and his great axe)
      Het Wolvenhol     - Wolvenkoning Fenrik, a giant white wolf who calls his pack
      De Runenkring     - De Rijpkoning, a skeleton king who raises the dead
      De Gletsjertop    - IJsdraak Glacius, an ice dragon (fights like Vyrnax)
@@ -17,7 +18,7 @@ const X2=-40000,Z2=0,RW=880,NH=50,rr=(a=1)=>(Math.random()*2-1)*a,inN=x=>x<-3000
 const busy=t=>{let d=$('exload');if(!d){d=document.createElement('div');d.id='exload';document.body.appendChild(d)}if(t===false){d.style.display='none';return}d.textContent=t;d.style.display='grid'};
 const N={blds:[],built:false,g:null,trees:[],tv:[],last:{x:1e9,z:1e9},flakes:null,aur:[],was:false,hidden:[]};WD.north=N;
 const W=(lx,lz)=>[X2+lx,Z2+lz];
-const P={gate:{x:0,z:690,r:26,h:9,n:'De Noordpas'},ysdal:{x:-120,z:250,r:62,h:7,n:'Ysdal'},castle:{x:430,z:280,r:64,h:26,n:'De IJsburcht'},
+const P={gate:{x:0,z:690,r:26,h:9,n:'De Noordpas'},ysdal:{x:-120,z:250,r:62,h:7,n:'Ysdal'},castle:{x:430,z:280,r:64,h:26,n:'De Oude Orkenburcht'},
   runes:{x:-420,z:-300,r:38,h:11,n:'De Runenkring'},den:{x:-560,z:150,r:32,h:10,n:'Het Wolvenhol'},glacier:{x:300,z:-540,r:52,h:38,n:'De Gletsjertop'},storm:{x:-170,z:-540,r:64,h:6,n:'De Stormvlakte'}};
 const LK={x:80,z:-60,r:140};
 const CF=(()=>{const l=Math.hypot(P.castle.x,P.castle.z);return{x:-P.castle.x/l,z:-P.castle.z/l}})();   /* the castle gate looks towards the middle of Noordheim */
@@ -177,7 +178,7 @@ function buildPlaces(add){
     const fx=cx+10,fz=cz-14;for(let i=0;i<8;i++){const a=i/8*6.283;add(mesh(new T.DodecahedronGeometry(.3,0),MAT.rock,fx+Math.cos(a)*1.1,y('ysdal')+.2,fz+Math.sin(a)*1.1))}const fl=mesh(new T.ConeGeometry(.6,1.8,7),new T.MeshBasicMaterial({color:0xff8a2a}),fx,y('ysdal')+1,fz,false);fl.userData.dyn=true;add(fl);LAMPS.push({x:fx,y:y('ysdal')+1.6,z:fz,flame:fl,fire:true});addCircle(fx,fz,1.2);
     for(const [dx,dz] of[[-50,0],[50,0],[0,-55],[0,55]]){const x=cx+dx,z=cz+dz,yy=H2(x,z);add(mesh(new T.CylinderGeometry(.35,.45,5,6),MAT.bark,x,yy+2.5,z));add(mesh(new T.BoxGeometry(1.6,.5,.5),MAT.bark,x,yy+4.4,z))}
     try{if(WD.banner){WD.banner(cx-6,cz+9,'#2f4a8a','tower',0);WD.banner(cx+6,cz+9,'#2f4a8a','tower',0)}}catch(e){}}
-  /* De IJsburcht: a fortress of ice on a hill */
+  /* De Oude Orkenburcht: an old, worn castle on a hill where the orcs live */
   buildIceCastle(add);
   /* De Runenkring: standing stones with glowing runes */
   {const [cx,cz]=at('runes'),yy=y('runes'),rm=new T.MeshBasicMaterial({map:WD.tx('rune_magic.png'),color:0x7ac8ff,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide});
@@ -229,11 +230,16 @@ let flakeEm=null;const snowflakeTex=()=>flakeEm||(flakeEm=canvasTex(256,256,(c,w
 let bannerT=null;const bannerTex=()=>bannerT||(bannerT=canvasTex(128,384,(c,w,h)=>{c.fillStyle='#1b3768';c.fillRect(0,0,w,h);c.fillStyle='#cfe4f4';c.fillRect(0,0,w,10);c.fillRect(0,0,8,h);c.fillRect(w-8,0,8,h);
   c.beginPath();c.moveTo(0,h-60);c.lineTo(w/2,h);c.lineTo(w,h-60);c.lineTo(w,h);c.lineTo(0,h);c.fill();c.translate(w/2,150);c.strokeStyle='#e4f2ff';c.lineCap='round';
   for(let i=0;i<6;i++){c.save();c.rotate(i/6*6.283);c.lineWidth=7;c.beginPath();c.moveTo(0,0);c.lineTo(0,-44);c.stroke();c.lineWidth=4;c.beginPath();c.moveTo(0,-24);c.lineTo(10,-34);c.moveTo(0,-24);c.lineTo(-10,-34);c.stroke();c.restore()}}));
+let obT=null;const orcBannerTex=()=>obT||(obT=canvasTex(128,384,(c,w,h)=>{c.clearRect(0,0,w,h);c.fillStyle='#4a1410';c.beginPath();c.moveTo(0,0);c.lineTo(w,0);for(let x=w;x>=0;x-=14)c.lineTo(x,h-14-Math.random()*80);c.closePath();c.fill();
+  for(let i=0;i<50;i++){c.fillStyle=`rgba(20,8,4,${Math.random()*.4})`;c.fillRect(Math.random()*w,Math.random()*h,4+Math.random()*16,3+Math.random()*12)}
+  c.fillStyle='#d8cfb8';c.beginPath();c.arc(w/2,128,30,0,6.283);c.fill();c.fillRect(w/2-20,138,40,30);c.fillStyle='#2a0a08';c.beginPath();c.arc(w/2-12,126,8,0,6.283);c.fill();c.beginPath();c.arc(w/2+12,126,8,0,6.283);c.fill();c.fillRect(w/2-14,156,28,4);
+  c.fillStyle='#d8cfb8';for(const sd of[-1,1]){c.beginPath();c.moveTo(w/2+sd*18,166);c.lineTo(w/2+sd*28,204);c.lineTo(w/2+sd*9,168);c.fill()}
+  c.globalCompositeOperation='destination-out';for(let i=0;i<6;i++){c.beginPath();c.arc(Math.random()*w,190+Math.random()*130,3+Math.random()*8,0,6.283);c.fill()}c.globalCompositeOperation='source-over'}));
 function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(0,0);g.position.set(ox,yy,oz);g.rotation.y=CTH;add(g);
-  const ice=iceM(0x9cc6e2,.75),deep=iceM(0x5f8fc0,.9,0x0c2a52),pale=iceM(0xd8ecf8,.5,0x10304a),floorM=iceM(0xb4d4ea,.3,0x081c30,.06),
-    stone=new T.MeshStandardMaterial({map:TEX.stone,color:0x9aa6b4,roughness:.9}),
-    win=new T.MeshStandardMaterial({color:0x2a6ab0,emissive:0x5ab8ff,emissiveIntensity:1}),cry=new T.MeshStandardMaterial({color:0xaee4ff,emissive:0x3a9aff,emissiveIntensity:1.1,roughness:.1,metalness:.1}),
-    dark=new T.MeshBasicMaterial({color:0x0a1830}),B=bag(),ICI=[],CRY=[],col=[],FX=N.castleFX={flames:[],win,cry};
+  const OLDM=(c,map)=>new T.MeshStandardMaterial({map:map||TEX.stone,color:c,roughness:1,metalness:0}),ice=OLDM(0x7c766a),deep=OLDM(0x4a3a2a,TEX.wood),pale=OLDM(0x666b58),floorM=OLDM(0x5e5246,TEX.dirt),icy=iceM(0xd8ecf8,.5,0x10304a),
+    stone=new T.MeshStandardMaterial({map:TEX.stone,color:0x6e6a60,roughness:1}),
+    win=new T.MeshStandardMaterial({color:0x100c08,emissive:0x2a1200,emissiveIntensity:1}),cry=new T.MeshStandardMaterial({map:TEX.stone,color:0x5a564e,roughness:1,metalness:0}),
+    dark=new T.MeshBasicMaterial({color:0x0a1830}),B=bag(),ICI=[],CRY=[],RUB=[],col=[],FX=N.castleFX={flames:[],win,cry};
   const circ=(lx,lz,r)=>col.push([lx,lz,r]);
   /* a round tower with a corbelled crown, battlements, glowing windows and an ice spire; returns its top */
   function tower(x,z,r,h,o={}){const y0=o.y0||0,sp=o.sp||r*3.4;
@@ -241,9 +247,9 @@ function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(
     B.add(suv(new T.CylinderGeometry(r*.92,r*1.06,h,20,1,true),2*Math.PI*r/7,h/7),ice,MX(x,y0+h/2,z));
     B.add(new T.CylinderGeometry(r+1.1,r*.92,1.8,20),pale,MX(x,y0+h+.9,z));
     B.add(suv(new T.CylinderGeometry(r+1.1,r+1.1,3.2,20),2*Math.PI*r/7,.5),ice,MX(x,y0+h+3.4,z));
-    const nm=Math.max(8,Math.round(r*2.4));for(let i=0;i<nm;i++){const a=i/nm*6.283;B.add(boxGeo(1.3,1.7,.9),ice,MX(x+Math.sin(a)*(r+.75),y0+h+5.85,z+Math.cos(a)*(r+.75),a))}
-    B.add(suv(new T.ConeGeometry(r+.6,sp,16,1,true),2*Math.PI*r/7,sp/7),deep,MX(x,y0+h+5+sp/2,z));
-    B.add(new T.OctahedronGeometry(1,0),cry,MX(x,y0+h+5+sp+1.2,z,0,.45*r/4+.3,1.8*r/4+.8,.45*r/4+.3));
+    const nm=Math.max(8,Math.round(r*2.4));for(let i=0;i<nm;i++){const a=i/nm*6.283;if(Math.random()<.3)continue;B.add(boxGeo(1.3,1.7,.9),ice,MX(x+Math.sin(a)*(r+.75),y0+h+5.85,z+Math.cos(a)*(r+.75),a))}
+    if(o.keep||Math.random()<.3)B.add(suv(new T.ConeGeometry(r+.6,sp*.8,9,1,true),2*Math.PI*r/7,sp/7),deep,MX(x,y0+h+5+sp*.4,z,Math.random()*3,1,1,1,(Math.random()-.5)*.12,(Math.random()-.5)*.12));
+    else for(let k=0;k<5;k++)RUB.push([x+rr(r+3),z+rr(r+3),.8+Math.random()*1.4]);
     for(let k=0;k<(o.lv||3);k++)for(let i=0;i<4;i++){const a=i/4*6.283+(k%2)*.785+(o.wa||0),wy=y0+h*(.3+k*.22);if(wy>y0+h-2)continue;B.add(boxGeo(.55,2.4,.4),win,MX(x+Math.sin(a)*r*.98,wy,z+Math.cos(a)*r*.98,a))}
     for(let i=0;i<Math.round(r*3);i++){const a=i/Math.round(r*3)*6.283+.2;ICI.push([x+Math.sin(a)*(r+.9),y0+h,z+Math.cos(a)*(r+.9),.7+Math.random()*1.6])}
     return y0+h+5+sp}
@@ -251,20 +257,20 @@ function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(
   function wall(ax,az,bx,bz,wh,banner){const dx=bx-ax,dz=bz-az,L=Math.hypot(dx,dz),ry=Math.atan2(-dz,dx),mx=(ax+bx)/2,mz=(az+bz)/2,ml=Math.hypot(mx,mz),nx=mx/ml,nz=mz/ml;
     B.add(boxGeo(L,3,4.6,6),stone,MX(mx,1.5,mz,ry));B.add(boxGeo(L,wh,3.2,6),ice,MX(mx,wh/2,mz,ry));B.add(boxGeo(L,.5,3.8,6),pale,MX(mx,wh+.25,mz,ry));
     B.add(boxGeo(L,.4,.7,6),pale,MX(mx+nx*1.85,wh-.3,mz+nz*1.85,ry));
-    const n=Math.floor(L/2.4);for(let i=0;i<n;i++){const t=(i+.5)/n-.5,x=mx+dx*t+nx*1.4,z=mz+dz*t+nz*1.4;B.add(boxGeo(1.4,1.8,.8),ice,MX(x,wh+1.4,z,ry))}
+    const n=Math.floor(L/2.4);for(let i=0;i<n;i++){if(Math.random()<.35)continue;const t=(i+.5)/n-.5,x=mx+dx*t+nx*1.4,z=mz+dz*t+nz*1.4;B.add(boxGeo(1.4,1.8,.8),ice,MX(x,wh+1.4,z,ry))}
     for(let t=-.48;t<=.48;t+=1.5/L)ICI.push([mx+dx*t+nx*2.05,wh-.5,mz+dz*t+nz*2.05,.6+Math.random()*1.8]);
     for(let t=-.5;t<=.5;t+=1.8/L)circ(mx+dx*t,mz+dz*t,2.1);
-    if(banner){const b=new T.Mesh(new T.PlaneGeometry(2.6,8),new T.MeshStandardMaterial({map:bannerTex(),side:T.DoubleSide,roughness:.8}));b.position.set(mx+nx*1.7,wh-4.6,mz+nz*1.7);b.rotation.y=Math.atan2(nx,nz);g.add(b)}}
+    if(banner){const b=new T.Mesh(new T.PlaneGeometry(2.6,8),new T.MeshStandardMaterial({map:orcBannerTex(),side:T.DoubleSide,roughness:.9,alphaTest:.5,transparent:false}));b.position.set(mx+nx*1.7,wh-4.6,mz+nz*1.7);b.rotation.y=Math.atan2(nx,nz);g.add(b)}}
   /* the curtain wall: eight sides, towers on the corners, the gate in front */
   const V8=[];for(let i=0;i<8;i++){const a=(i+.5)*Math.PI/4;V8.push([Math.sin(a)*CR,Math.cos(a)*CR])}
-  for(let i=0;i<8;i++){if(i===7)continue;const [ax,az]=V8[i],[bx,bz]=V8[(i+1)%8];wall(ax,az,bx,bz,14,i%2===0)}
+  for(let i=0;i<8;i++){if(i===7)continue;const [ax,az]=V8[i],[bx,bz]=V8[(i+1)%8];if(i===2){for(let k=0;k<14;k++){const t=Math.random();RUB.push([ax+(bx-ax)*t+rr(3),az+(bz-az)*t+rr(3),1+Math.random()*2.2])}continue}wall(ax,az,bx,bz,14,i%2===0)}
   for(const [x,z] of V8){tower(x,z,5,24,{sp:17});circ(x,z,5.6)}
   /* the gatehouse */
   const z0=CR*Math.cos(Math.PI/8);
   {const ag=new T.ExtrudeGeometry(archShape(7.6,13,15,21),{depth:6,bevelEnabled:false});ag.translate(0,0,-3);suv(ag,1/6,1/6);B.add(ag,ice,MX(0,0,z0));
     for(let i=0;i<6;i++)B.add(boxGeo(1.4,1.8,.9),ice,MX(-6.25+i*2.5,21.9,z0+2.6));B.add(boxGeo(15.6,.5,6.6),pale,MX(0,21.2,z0));
     for(let x=-3.4;x<=3.4;x+=.7){const yh=Math.abs(x)<3.8*.62?13-Math.pow(Math.abs(x)/3.8,2)*13*.38:8;ICI.push([x,yh-.2,z0+2.9,1+Math.random()*1.2]);ICI.push([x,yh-.2,z0-2.9,.8+Math.random()*1])}
-    const em=new T.Mesh(new T.PlaneGeometry(6,6),new T.MeshBasicMaterial({map:snowflakeTex(),transparent:true,blending:T.AdditiveBlending,depthWrite:false}));em.position.set(0,16.6,z0+3.05);g.add(em);
+    
     for(const sd of[-1,1]){tower(sd*10,z0,5.6,27,{sp:20,lv:4});circ(sd*10,z0,6);for(let x=4.6;x<=7.4;x+=1.2)circ(sd*x,z0,1.5)}
     /* the causeway over the moat, with fire posts */
     B.add(boxGeo(9,.25,20,4),stone,MX(0,.06,z0+12.5));
@@ -278,25 +284,18 @@ function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(
   for(let x=-12;x<=12;x+=4)for(const wy of[6,11.5])if(Math.abs(x)>4||wy>10)B.add(boxGeo(1,3,.4),win,MX(x,wy,kz+11.05));
   B.add(boxGeo(20,14,15,6),ice,MX(0,23,kz-1));B.add(boxGeo(20.8,.6,15.8,6),pale,MX(0,30.3,kz-1));
   for(let x=-8;x<=8;x+=2.6)B.add(boxGeo(1.2,1.5,1.2),ice,MX(x,31.3,kz+6.5));
-  {const rw=new T.Mesh(new T.CircleGeometry(3.2,32),new T.MeshBasicMaterial({map:snowflakeTex(),color:0x9ad8ff,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));rw.position.set(0,24,kz+6.56);g.add(rw);
+  {
     B.add(new T.TorusGeometry(3.3,.35,8,32),pale,MX(0,24,kz+6.6))}
   {const dg=new T.ExtrudeGeometry(archShape(5.6,10,9,13),{depth:1.4,bevelEnabled:false});suv(dg,1/6,1/6);B.add(dg,pale,MX(0,0,kz+11));
-    const dh=new T.Mesh(new T.ShapeGeometry(archHole(5.6,10)),new T.MeshStandardMaterial({color:0x061224,emissive:0x1a4a8a,emissiveIntensity:.8}));dh.position.set(0,0,kz+11.05);g.add(dh);
+    const dh=new T.Mesh(new T.ShapeGeometry(archHole(5.6,10)),new T.MeshStandardMaterial({color:0x0a0806,roughness:1}));dh.position.set(0,0,kz+11.05);g.add(dh);
     for(let k=0;k<5;k++)B.add(boxGeo(11-k*.6,.45,1.3),stone,MX(0,.22+k*.45,kz+16.4-k*1.25))}
-  const top=tower(0,kz-1,6.8,32,{y0:30,sp:28,lv:4,wa:.4});
+  const top=tower(0,kz-1,6.8,32,{y0:30,sp:28,lv:4,wa:.4,keep:true});
   for(const [x,z] of[[-15,-4],[15,-4],[-15,-26],[15,-26]]){tower(x,kz+(z+15),3.4,22,{sp:11,lv:2});circ(x,kz+(z+15),3.8)}
   for(const [x,z] of[[-10,-8.5],[10,-8.5],[-10,-23.5],[10,-23.5]])tower(x,kz+(z+15)-1,2.5,20,{y0:16,sp:9,lv:2});
   /* flying buttresses from the corner turrets to the great tower */
   for(const [x,z] of[[-15,-4],[15,-4],[-15,-26],[15,-26]]){const a=new T.Vector3(x,24,kz+z+15),b=new T.Vector3(x*.42,46,kz-1+(z+15)*.42),d=b.clone().sub(a),L=d.length();
     const q=new T.Quaternion().setFromUnitVectors(new T.Vector3(0,1,0),d.clone().normalize()),m=new T.Matrix4().compose(a.clone().add(b).multiplyScalar(.5),q,new T.Vector3(1,1,1));B.add(boxGeo(1.1,L,1.8,4),pale,m)}
   for(let x=-15;x<=15;x+=2.5)for(let z=kz-11;z<=kz+11;z+=2.5)circ(x,z,1.9);for(let x=-5;x<=5;x+=2.5)circ(x,kz+13,1.6);
-  /* the crystal on top, with shards around it and a beam into the sky */
-  {const c=new T.Mesh(new T.OctahedronGeometry(2.6,0),cry);c.scale.set(1,2.2,1);c.position.set(0,top+5,kz-1);c.userData.dyn=true;g.add(c);FX.crystal=c;FX.cy=top+5;
-    FX.shards=[];for(let i=0;i<5;i++){const s=new T.Mesh(new T.OctahedronGeometry(.7,0),cry);s.scale.set(1,2,1);s.userData.dyn=true;g.add(s);FX.shards.push(s)}
-    const bm=new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide,uniforms:{t:{value:0},k:{value:1}},
-      vertexShader:'varying vec2 vU;void main(){vU=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-      fragmentShader:'uniform float t,k;varying vec2 vU;void main(){float a=(1.-vU.y)*(1.-vU.y)*(.55+.45*sin(vU.y*40.-t*3.));gl_FragColor=vec4(vec3(.45,.75,1.)*a*k*.55,1.);}'});
-    const beam=new T.Mesh(new T.CylinderGeometry(.6,1.6,320,16,1,true),bm);beam.position.set(0,top+5+160,kz-1);beam.userData.dyn=true;g.add(beam);FX.beam=bm}
   /* the frozen moat (open in front, where the causeway runs) */
   {const gap=.3,mg=new T.RingGeometry(48.2,54.8,72,1,1.5*Math.PI+gap/2,2*Math.PI-gap),m=new T.Mesh(mg,new T.MeshStandardMaterial({map:iceTex(),color:0x8fb8d0,roughness:.06,metalness:.2}));
     m.rotation.x=-Math.PI/2;m.position.y=-4.42;m.receiveShadow=true;g.add(m)}
@@ -305,19 +304,36 @@ function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(
   B.add(boxGeo(7,1,5),stone,MX(0,.5,4));B.add(boxGeo(5,2,3.6),ice,MX(0,2,4));B.add(boxGeo(5.4,8,1.2),ice,MX(0,5,2.4));B.add(boxGeo(1,2.6,3.6),pale,MX(-2.8,2.3,4));B.add(boxGeo(1,2.6,3.6),pale,MX(2.8,2.3,4));
   for(let i=0;i<7;i++){const a=(i/6-.5)*1.8;B.add(new T.OctahedronGeometry(1,0),cry,MX(Math.sin(a)*3.4,8.6+Math.cos(a)*2.4,2.2,0,.5,2.2-Math.abs(i-3)*.3,.5,0,-a))}circ(0,4,3.4);
   for(let i=0;i<6;i++){const a=(i/6)*6.283+.52,x=Math.sin(a)*27,z=Math.cos(a)*27;if(z<kz+12&&Math.abs(x)<17)continue;B.add(new T.CylinderGeometry(.8,1.1,2.4,10),stone,MX(x,1.2,z));B.add(new T.CylinderGeometry(1.5,.7,.9,14),pale,MX(x,2.85,z));FX.flames.push([x,3.4,z,1.2]);circ(x,z,1.3)}
-  for(const [x,z] of[[-7,19],[7,19],[-7,31],[7,31]]){B.add(new T.CylinderGeometry(.55,1.25,9,4),deep,MX(x,4.5,z,.785));B.add(new T.OctahedronGeometry(.8,0),cry,MX(x,9.8,z,0,1,1.6,1));circ(x,z,1.3);
-    for(let k=0;k<4;k++){const r=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:WD.tx('rune_magic.png'),color:0x8ad0ff,transparent:true,blending:T.AdditiveBlending,depthWrite:false,side:T.DoubleSide}));const a=k*Math.PI/2+.785;r.position.set(x+Math.sin(a)*.62,5.5,z+Math.cos(a)*.62);r.rotation.y=a;g.add(r)}}
+  for(const [x,z] of[[-7,19],[7,19],[-7,31],[7,31]]){B.add(new T.CylinderGeometry(.55,1.25,9,4),deep,MX(x,4.5,z,.785));B.add(new T.OctahedronGeometry(.8,0),cry,MX(x,9.8,z,0,1,1.6,1));circ(x,z,1.3);}
   /* crystals growing on the hill and along the walls */
   for(let i=0;i<70;i++){const a=Math.random()*6.283,out=i<40,r=out?CR+14+Math.random()*10:CR-7+Math.random()*2.5,x=Math.sin(a)*r,z=Math.cos(a)*r;if(Math.abs(x)<7&&z>0)continue;if(!out&&z<kz+13&&Math.abs(x)<18)continue;
-    const [wx,wz]=CW(x,z);CRY.push([x,H2(wx,wz)-yy-.4,z,.7+Math.random()*1.4,2+Math.random()*4.5,Math.random()*6,rr(.35),rr(.35)])}
+    const [wx,wz]=CW(x,z);CRY.push([x,H2(wx,wz)-yy-.3,z,1.2+Math.random()*1.8,.5+Math.random()*1.1,Math.random()*6,rr(.5),rr(.5)])}
+  /* the orcs moved in long ago: rubble where towers and a wall fell, crude dark huts, cages, a cooking pot over a fire,
+     weapon racks, barrels and an old broken wagon */
+  {const K=window.KIT;if(K&&K.Bag&&window.AS&&AS.lib&&AS.lib.Barrel){const KB=K.Bag(),ly=(x,z)=>{const [wx,wz]=CW(x,z);return H2(wx,wz)-yy},M=(n,x,z,ry=0,s=1,o={},dy=0)=>KB.model(n,x,dy,z,ry,s,o);
+    for(const [x,z,sc] of RUB){KB.model('Rock_Medium_'+(1+Math.floor(Math.random()*3)),x,ly(x,z)-.35*sc,z,Math.random()*6.3,sc,{tint:0x8a8478});if(sc>1.5)circ(x,z,sc*1.1)}
+    for(const [x,z,q] of[[-28,14,1],[28,14,3],[-30,-10,1],[30,-10,3]]){K.kitHouse(KB,x,0,z,3,2,{q,wall:'UnevenBrick',tint:0x6a6258,roofTint:0x4a3e34,floor:'Floor_WoodDark',chimney:false,win:'Wide_Flat'});circ(x,z,3.4)}
+    M('Cauldron',-14,10,0,1.6);FX.flames.push([-14,.15,10,.55]);circ(-14,10,1);for(let k=0;k<7;k++){const a=k/7*6.283;M('Rock_Medium_'+(1+k%3),-14+Math.sin(a)*1.5,10+Math.cos(a)*1.5,a,.16,{tint:0x4a4642})}
+    for(const [x,z,ry] of[[20,-2,.3],[22.5,1.5,-.4],[19,3,1.1]]){M('Cage_Small',x,z,ry,2.2);circ(x,z,1)}
+    for(const [x,z,ry] of[[-18,28,.6],[18,28,-.6],[16,10,-1.2]]){M('WeaponStand',x,z,ry,1.3);circ(x,z,.9)}
+    M('Anvil_Log',14,12,.4,1.1);circ(14,12,.6);M('Shield_Wooden',-17,27.2,.6,1.3,{rx:-.3},.4);M('Shield_Wooden',17.5,26.8,-.6,1.3,{rx:-.3},.4);M('Axe_Bronze',15,12,.4,1.4,{rz:1.2},1.1);
+    for(const [x,z] of[[-20,-2],[-21.2,-.6],[-19.2,-3.6],[-22,-3]])M('Barrel',x,z,Math.random()*6.3,1.05,{tint:0x8a7a68});circ(-20.6,-2.3,2);
+    for(const [x,z,y] of[[24,22,0],[25.1,23.2,0],[24.5,22.6,.95]])M('Crate_Wooden',x,z,Math.random()*.6,1.05,{tint:0x8a7a68},y);circ(24.6,22.6,1.4);
+    M('Prop_Wagon',-9,-1,.5,1.2,{rz:.22,tint:0x7a6a5a},.2);circ(-9,-1,2);
+    for(const [x,z,s,n] of[[-30,26,.7,2],[31,24,.6,4],[-24,-24,.55,3]]){M('DeadTree_'+n,x,z,Math.random()*6.3,s);circ(x,z,.5)}
+    /* the orcs patched the fallen wall with planks and fences */
+    {const [ax,az]=V8[2],[bx,bz]=V8[3],ry=Math.atan2(-(bz-az),bx-ax);for(let t=.08;t<.95;t+=.115){const x=ax+(bx-ax)*t+rr(.6),z=az+(bz-az)*t+rr(.6);M('Prop_WoodenFence_Single',x*.93,z*.93,ry+rr(.25),1.6,{tint:0x7a6a58,rz:rr(.12)})}}
+    for(let i=0;i<26;i++){const a=Math.random()*6.283,r=CR+3+Math.random()*4,x=Math.sin(a)*r,z=Math.cos(a)*r;if(z>30&&Math.abs(x)<14)continue;KB.model('Rock_Medium_'+(1+i%3),x,ly(x,z)-.3,z,Math.random()*6.3,.5+Math.random()*.9,{tint:0x7c766a})}
+    const n0=g.children.length;KB.build(g);
+    for(let i=n0;i<g.children.length;i++){const me=g.children[i];if(!me.isMesh)continue;const nm=(me.material.name||'');if(/RoundTiles|Roof/i.test(nm)){me.material=me.material.clone();me.material.map=null;me.material.color.setHex(0x3c3a36);me.material.roughness=1}}}}
   B.build(g);
   /* icicles and crystals as instances */
-  {const ig=new T.ConeGeometry(.22,1,5);ig.rotateX(Math.PI);ig.translate(0,-.5,0);const im=new T.InstancedMesh(ig,pale,ICI.length),d=new T.Object3D();
+  {const ig=new T.ConeGeometry(.22,1,5);ig.rotateX(Math.PI);ig.translate(0,-.5,0);const im=new T.InstancedMesh(ig,icy,ICI.length),d=new T.Object3D();
     ICI.forEach(([x,y,z,l],k)=>{d.position.set(x,y,z);d.rotation.set(0,Math.random()*6,0);d.scale.set(.8+l*.25,l,.8+l*.25);d.updateMatrix();im.setMatrixAt(k,d.matrix)});g.add(im)}
   {const cg=new T.OctahedronGeometry(1,0),im=new T.InstancedMesh(cg,cry,CRY.length),d=new T.Object3D();
-    CRY.forEach(([x,y,z,s,h,ry,tx,tz],k)=>{d.position.set(x,y+h*.5,z);d.rotation.set(tx,ry,tz);d.scale.set(s*.5,h,s*.5);d.updateMatrix();im.setMatrixAt(k,d.matrix)});im.castShadow=true;g.add(im)}
-  /* blue flames */
-  const fm=new T.MeshBasicMaterial({color:0x6ac8ff,transparent:true,opacity:.85,blending:T.AdditiveBlending,depthWrite:false}),fm2=new T.MeshBasicMaterial({color:0xdff4ff,transparent:true,opacity:.9,blending:T.AdditiveBlending,depthWrite:false});
+    CRY.forEach(([x,y,z,s,h,ry,tx,tz],k)=>{d.position.set(x,y+h*.3,z);d.rotation.set(tx,ry,tz);d.scale.set(s*.8,h,s*.7);d.updateMatrix();im.setMatrixAt(k,d.matrix)});im.castShadow=true;g.add(im)}
+  /* the orcs' fires */
+  const fm=new T.MeshBasicMaterial({color:0xff7a2a,transparent:true,opacity:.85,blending:T.AdditiveBlending,depthWrite:false}),fm2=new T.MeshBasicMaterial({color:0xffd890,transparent:true,opacity:.9,blending:T.AdditiveBlending,depthWrite:false});
   FX.fl=FX.flames.map(([x,y,z,s])=>{const o=new T.Group();o.position.set(x,y,z);o.scale.setScalar(s);o.add(new T.Mesh(new T.ConeGeometry(.55,1.9,8),fm));const i2=new T.Mesh(new T.ConeGeometry(.28,1.1,8),fm2);i2.position.y=-.3;o.add(i2);o.userData.dyn=true;g.add(o);return o});
   for(const [x,z,r] of col){const [wx,wz]=CW(x,z);addCircle(wx,wz,r)}}
 ANIMS.push(dt=>{const F=N.castleFX;if(!F||!N.built||!inN(PL.x))return;const t=PL.t,n=ENV.night||0;
@@ -326,16 +342,16 @@ ANIMS.push(dt=>{const F=N.castleFX;if(!F||!N.built||!inN(PL.x))return;const t=PL
   if(F.beam){F.beam.uniforms.t.value+=dt;F.beam.uniforms.k.value=.45+n*.9}
   for(const o of F.fl||[]){const k=1+Math.sin(t*13+o.position.x)*.12+Math.sin(t*7.3+o.position.z)*.08;o.scale.y=o.scale.x*k}});
 /* ---------- people and bosses ---------- */
-LINES.north=['Brr, koud vandaag... zoals altijd.','De IJsreus in de burcht laat ons niet met rust.','Bij de Runenkring dwalen de doden van de Rijpkoning.','Pas op in het westen: daar jaagt de Wolvenkoning.','Op de Stormvlakte rent iets dat sneller is dan de wind.','Zie je het noorderlicht vannacht? Dan zijn de goden blij.','Boven op de gletsjer woont een draak van ijs.'];
-Object.assign(ITEMS,{frost_heart:{n:'IJshart van Hrimtor',g:'mat',price:1600,ico:'❄',rar:'l'},fenrik_fang:{n:'Slagtand van Fenrik',g:'mat',price:900,ico:'▲',rar:'l'},rime_crown:{n:'Kroon van de Rijpkoning',g:'head',def:9,fx:{hp:60,dmg:.12},price:2600,ico:'♛',rar:'l'},
+LINES.north=['Brr, koud vandaag... zoals altijd.','De orks in de oude burcht laten ons niet met rust.','Grukk, de orkenkrijgsheer, woont nu in de oude burcht. Hij kwam uit de goblintunnels.','Bij de Runenkring dwalen de doden van de Rijpkoning.','Pas op in het westen: daar jaagt de Wolvenkoning.','Op de Stormvlakte rent iets dat sneller is dan de wind.','Zie je het noorderlicht vannacht? Dan zijn de goden blij.','Boven op de gletsjer woont een draak van ijs.'];
+Object.assign(ITEMS,{frost_heart:{n:'IJshart van de Orkenburcht',g:'mat',price:1600,ico:'❄',rar:'l'},fenrik_fang:{n:'Slagtand van Fenrik',g:'mat',price:900,ico:'▲',rar:'l'},rime_crown:{n:'Kroon van de Rijpkoning',g:'head',def:9,fx:{hp:60,dmg:.12},price:2600,ico:'♛',rar:'l'},
   storm_hood:{n:'Kap van de Stormloper',g:'head',def:8,hat:'hood',fx:{spd:.15,dmg:.1,hp:30},price:5800,ico:'▲',rar:'m'},storm_vest:{n:'Vest van de Stormloper',g:'armor',def:20,tunic:0x4a7ac8,pants:0x2a3a5a,fx:{spd:.15,hp:70,regen:1},price:7400,ico:'▣',rar:'m'},
   storm_cloak:{n:'Mantel van de Stormloper',g:'cloak',def:9,col:0x6a9ad8,fx:{spd:.15,stam:90,dmg:.06},price:6200,ico:'▤',rar:'m'},storm_boots:{n:'Laarzen van de Stormloper (L = Stormsprong)',g:'boots',def:8,fx:{spd:.25,jump:.5},price:6900,ico:'▼',rar:'m'}});
-Object.assign(MON,{frostgiant:{n:'IJsreus Hrimtor',hp:2200,dmg:46,speed:4.2,aggro:36,range:5.5,xp:1800,loot:'frostgiant',rad:2.6,hh:7.5,boss:'hrimtor',respawn:3600},
+Object.assign(MON,{frostgiant:{n:'Orkenkrijgsheer Grukk',hp:3200,dmg:52,speed:4.8,aggro:36,range:4,xp:2400,loot:'frostgiant',rad:1.6,hh:5.2,boss:'grukk',respawn:3600},
   wolfking:{n:'Wolvenkoning Fenrik',hp:1300,dmg:34,speed:9.5,aggro:34,range:2.8,xp:1100,loot:'wolfking',rad:1.4,hh:2.6,boss:'fenrik',respawn:3000},
   stormrunner:{n:'Zefyr de Stormloper',hp:4800,dmg:46,speed:14,aggro:40,range:2.4,xp:1600,loot:'stormrunner',rad:.6,hh:2,boss:'zefyr',respawn:3600}});
 /* the gear of the north: from the bosses and from the chests hidden at their lairs */
 Object.assign(ITEMS,{
-  axe_frost:{n:'IJsbijl van Hrimtor',g:'weapon',kind:'axe',dmg:122,spd:.62,rng:3.2,price:9000,ico:'⛏',col:0xbfe8ff,rar:'l'},
+  axe_frost:{n:'IJsbijl van Noordheim',g:'weapon',kind:'axe',dmg:122,spd:.62,rng:3.2,price:9000,ico:'⛏',col:0xbfe8ff,rar:'l'},
   sword_frost:{n:'Vorstzwaard',g:'weapon',kind:'sword',dmg:98,spd:.45,rng:3,price:6400,ico:'⚔',col:0x9ad8ff,rar:'e'},
   armor_frost:{n:'IJsharnas',g:'armor',def:21,tunic:0xbfe0f0,pants:0x5a7a98,fx:{hp:40},price:7200,ico:'▣',rar:'e'},
   helm_frost:{n:'Vorsthelm',g:'head',def:8,hat:'helm',fx:{hp:25},price:3800,ico:'♔',rar:'e'},
@@ -344,7 +360,7 @@ Object.assign(ITEMS,{
   ring_frost:{n:'Rijpring',g:'ring',fx:{dmg:.1,hp:20},price:4200,ico:'○',rar:'e'},
   amu_glacius:{n:'Drakenijs-amulet',g:'amulet',fx:{hp:60,regen:1},price:8800,ico:'◈',rar:'l'}});
 const roll=(p,id,n=1)=>Math.random()<p?[[id,n]]:[];
-LOOTX.frostgiant=()=>({gold:1000,items:[['frost_heart',1],['gem',5],['elixir',2],...roll(.6,'shield_frost'),...roll(.6,'axe_frost'),...roll(.4,'armor_frost')]});
+LOOTX.frostgiant=()=>({gold:1400,items:[['frost_heart',1],['gem',5],['elixir',2],...roll(.55,'axe_grukk'),...roll(.6,'shield_frost'),...roll(.6,'axe_frost'),...roll(.4,'armor_frost')]});
 LOOTX.wolfking=()=>({gold:500,items:[['fenrik_fang',1],['fur',6],['gem',3],['cloak_frost',1],...roll(.5,'boots_frost')]});
 LOOTX.rimeking=()=>({gold:700,items:[['rime_crown',1],['relic',2],['gem',4],...roll(.5,'sword_frost'),...roll(.4,'ring_frost')]});
 LOOTX.stormrunner=()=>({gold:800,items:[['storm_hood',1],['storm_vest',1],['storm_cloak',1],['storm_boots',1]]});
@@ -361,14 +377,15 @@ function populate(){const at=k=>W(P[k].x,P[k].z);
   for(let i=0;i<10;i++){const u=rr(RW-220),v=rr(RW-220);if(Math.hypot(u-P.ysdal.x,v-P.ysdal.z)<120)continue;spawnEnemy('wolf',X2+u,Z2+v,{cave:true});spawnEnemy('wolf',X2+u+3,Z2+v+2,{cave:true})}
   for(let i=0;i<5;i++){const [x,z]=at('den');spawnEnemy('wolf',x+rr(10),z+rr(10),{cave:true})}
   for(let i=0;i<4;i++){const [x,z]=CW(rr(14),14+rr(10));spawnMonster('troll',x,z,{cave:true})}
+  for(const [lx,lz] of[[-24,14],[24,14],[-26,-10],[26,-10],[-12,8],[12,26],[0,30]]){const [x,z]=CW(lx,lz);spawnMonster('troll',x,z,{cave:true})}
   for(let i=0;i<5;i++){const [x,z]=at('runes');spawnEnemy('skeleton',x+rr(12),z+rr(12),{cave:true})}
   /* treasure chests at the lairs */
   try{const C=(k,dx,dz,loot,name)=>{const [x,z]=W(P[k].x+dx,P[k].z+dz);makeChest(x,z,loot,Math.random()*6,name)};
-    {const [x,z]=CW(0,-34);makeChest(x,z,'nh_castle',CTH,'Schatkist van de IJsburcht')}
+    {const [x,z]=CW(0,-34);makeChest(x,z,'nh_castle',CTH,'Orkenbuit van Grukk')}
     C('den',-8,4,'nh_den','Kist vol botten');C('runes',0,-10,'nh_runes','Runenkist');C('glacier',8,-12,'nh_glacier','Bevroren kist');C('storm',-14,10,'nh_storm','Stormkist');
     {const [x,z]=W(LK.x+64,LK.z+34);makeChest(x,z,'nh_lake',0,'Kist van de ijsvisser')}}catch(e){console.warn('nh chests',e)}
   /* the bosses */
-  {const [x,z]=CW(0,12);N.giant=cxBoss('frostgiant','orc1',x,z,{h:7.5,tint:0xa8dcff})}
+  {const [x,z]=CW(0,12);N.giant=cxBoss('frostgiant','orc2',x,z,{h:5.2})}
   {const [x,z]=at('den');N.wolf=cxBoss('wolfking','wolf',x,z-3,{h:2.6,tint:0xf4f8ff,eyes:0x6ad8ff})}
   {const [x,z]=at('runes');N.king=humanBoss('skeleton',x,z,{skin:0xdcd6c2,tunic:0x9ab8d8,pants:0xbab49f,hair:0xdcd6c2,skull:1,hat:'crown',hatc:0xbfe8ff,scale:1.6},{name:'De Rijpkoning',hp:1300,dmg:32,speed:3.8,aggro:30,range:2.6,xp:1300,loot:'rimeking',boss:'rijpkoning',respawn:3600,hh:3});try{setHeld(N.king.h,'sword_knight','shield_iron')}catch(e){}}
   {const [x,z]=at('glacier'),md=makeDragon;makeDragon=()=>md(0x2a6aaa,0x1a3a6a);try{N.dragon=spawnMonster('dragon',x,z,{cave:true,ice:true,name:'IJsdraak Glacius',sub:'Wachter van de Gletsjer',boss:'glacius',hp:2400,hpMax:2400,dmg:36,xp:2400})}finally{makeDragon=md}}
@@ -380,10 +397,11 @@ Object.assign(CHEST_LOOT,{nh_castle:{gold:900,items:[['armor_frost',1],['gem',4]
 /* ---------- boss abilities ---------- */
 const FX=(x,y,z,n,c1,c2,sp=5)=>{if(window.PW&&PW.ps)pwBurst(PW.ps,x,y,z,n,sp,1,.5,.08,c1,c2,2,3,1,1)};
 ANIMS.push(dt=>{if(!N.built||!inN(PL.x))return;const t=PL.t;
-  /* IJsreus: a freezing slam */
-  const G=N.giant;if(G&&!G.dead&&G.state==='chase'){G.slCd=(G.slCd??5)-dt;const d=Math.hypot(PL.x-G.x,PL.z-G.z);if(G.slCd<=0&&d<10){G.slCd=G.hp<G.hpMax*.4?4.5:7;FX(G.x,G.y+.5,G.z,90,[.8,.95,1],[.4,.7,1],9);if(window.PW)PW.shake=Math.max(PW.shake||0,.6);try{WD.roar(.9)}catch(e){}
-    if(d<9){damagePlayer(30,G);PL.frostT=3;addLog('De IJsreus slaat de grond: je bevriest!','#9ad8ff')}}}
+  /* Grukk: a slam that makes you stagger, and his orcs come to help him */
+  const G=N.giant;if(G&&!G.dead&&G.state==='chase'){G.slCd=(G.slCd??5)-dt;const d=Math.hypot(PL.x-G.x,PL.z-G.z);if(G.slCd<=0&&d<10){G.slCd=G.hp<G.hpMax*.4?4.5:7;FX(G.x,G.y+.5,G.z,90,[.7,.62,.5],[.45,.38,.3],9);if(window.PW)PW.shake=Math.max(PW.shake||0,.6);try{WD.roar(.9)}catch(e){}
+    if(d<9){damagePlayer(30,G);PL.frostT=3;addLog('Grukk slaat met zijn bijl op de grond: je wankelt!','#e5766a')}}}
   if(PL.frostT>0){PL.frostT-=dt;PL.slow=.45;PL.frozen=1}else if(PL.frozen){PL.frozen=0;PL.slow=1}
+  if(G&&!G.dead){for(const [k,f] of[['o1',.6],['o2',.3]])if(!G[k]&&G.hp<G.hpMax*f){G[k]=1;addLog('Grukk brult: "Orks! Naar jullie krijgsheer!"','#e5766a');try{WD.roar(.9)}catch(e){}for(let i=0;i<3;i++){const e=spawnMonster('troll',G.x+rr(8),G.z+rr(8),{cave:true,respawn:1e9});if(e){e.provoked=true;e.temp=true}}}}
   /* Fenrik calls his pack */
   const F=N.wolf;if(F&&!F.dead){for(const [k,f] of[['h1',.7],['h2',.35]])if(!F[k]&&F.hp<F.hpMax*f){F[k]=1;addLog('Fenrik huilt. Zijn roedel komt eraan!','#cfe8ff');try{WD.roar(.6)}catch(e){}for(let i=0;i<3;i++)spawnEnemy('wolf',F.x+rr(6),F.z+rr(6),{cave:true,provoked:true,respawn:1e9})}}
   /* the Rime King raises the dead */
@@ -485,7 +503,7 @@ const _dbN=drawBigMap;drawBigMap=function(){const h=document.querySelector('#map
   /* little drawings of the places you found */
   const D=PL.discovered;
   if(D.n_ysdal){const t=P.ysdal;for(let q=0;q<7;q++){const a=q/7*6.283,r=q?22:0;house(g,X(X2+t.x+Math.cos(a)*r),Z(Z2+t.z+Math.sin(a)*r),11*k)}}
-  if(D.n_castle){const t=P.castle,cx=X(X2+t.x),cy=Z(Z2+t.z),R=44/(2*E)*S;g.fillStyle='rgba(200,225,240,.85)';g.strokeStyle='#4a6a8a';g.lineWidth=2.5*k;g.beginPath();for(let q=0;q<=8;q++){const a=q/8*6.283+.39;q?g.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R):g.moveTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R)}g.fill();g.stroke();
+  if(D.n_castle){const t=P.castle,cx=X(X2+t.x),cy=Z(Z2+t.z),R=44/(2*E)*S;g.fillStyle='rgba(140,128,110,.85)';g.strokeStyle='#4a3a2a';g.lineWidth=2.5*k;g.beginPath();for(let q=0;q<=8;q++){const a=q/8*6.283+.39;q?g.lineTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R):g.moveTo(cx+Math.cos(a)*R,cy+Math.sin(a)*R)}g.fill();g.stroke();
     for(let q=0;q<8;q++){const a=q/8*6.283+.39;g.fillStyle='#9ac0dc';g.beginPath();g.arc(cx+Math.cos(a)*R,cy+Math.sin(a)*R,3.5*k,0,7);g.fill();g.stroke()}g.fillStyle='#bfe0f4';g.fillRect(cx-6*k,cy-6*k,12*k,12*k);g.strokeRect(cx-6*k,cy-6*k,12*k,12*k)}
   if(D.n_runes){const t=P.runes;g.fillStyle='#6a6a70';for(let q=0;q<10;q++){const a=q/10*6.283;g.fillRect(X(X2+t.x+Math.cos(a)*18)-2*k,Z(Z2+t.z+Math.sin(a)*18)-4*k,4*k,8*k)}}
   if(D.n_den){const t=P.den;g.fillStyle='#2a2a30';g.beginPath();g.ellipse(X(X2+t.x),Z(Z2+t.z),9*k,6*k,0,Math.PI,0);g.fill()}

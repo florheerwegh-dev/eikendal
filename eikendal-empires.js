@@ -129,6 +129,9 @@ for(const R of RLM){const S=SITE[R.site];
     areas:()=>[[S.x,S.z,R.hw*1.45]].concat(R.vill.map(v=>[SITE[v].x,SITE[v].z,70])),square:()=>[S.x+8,S.z+9]})}catch(e){console.warn('great realm',e)}}
 /* travel stones outside the south gates of the capitals */
 for(const R of RLM){const S=SITE[R.site];WAYDEF.push([R.site,'Reissteen '+R.name,S.x+14,S.z+R.hw+20])}
+/* the four gates of every capital, and the gate of Fort Oostwacht, keep a free lane */
+if(WD.addGate){for(const R of RLM){const S=SITE[R.site],H=R.hw,i=Math.min(40,H-24);WD.addGate(S.x,S.z-H,0,-1,{in:i,n:R.name});WD.addGate(S.x,S.z+H,0,1,{in:i,n:R.name});WD.addGate(S.x-H,S.z,-1,0,{in:i,n:R.name});WD.addGate(S.x+H,S.z,1,0,{in:i,n:R.name})}
+  {const S=SITE.oostwacht;if(S)WD.addGate(S.x,S.z,1,0,{in:35,out:35,w:7,n:'Fort Oostwacht'})}}
 
 /* ---------- words ---------- */
 Object.assign(LINES,{

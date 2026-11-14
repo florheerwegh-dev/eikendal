@@ -13,7 +13,7 @@
 (function(){
 const TT={
   fourhands:{n:'Reuzen-Vierhand',hp:16000,dmg:70,xp:9000,easy:true,next:[.5],cap:.03,coreK:.4,slamK:.22,waveK:.15,lvlK:.03,lvlD:.02,col:0xff5a1a,pal:'fire',core:'Vuurkern',adds:['lavaturtle','skeleton','skeleton'],wave:true,coreR:[22,30]},
-  kraken:{n:'De Kraak',hp:55000,dmg:135,xp:8000,col:0x2affc0,pal:'ice',core:'Inktkristal',adds:['serpent','piranha','piranha','piranha'],ink:true,dive:true,coreR:[16,26]},
+  kraken:{n:'De Kraak',hp:16000,dmg:70,xp:8000,easy:true,next:[.5],cap:.03,coreK:.4,slamK:.22,lvlK:.03,lvlD:.02,col:0x2affc0,pal:'ice',core:'Inktkristal',adds:['serpent','piranha','piranha','piranha'],ink:true,dive:true,coreR:[16,26]},
   yeti:{n:'Yeti Ysgrauw',hp:62000,dmg:160,xp:8500,col:0x9ad8ff,pal:'ice',core:'IJskern',adds:['wolf','wolf','skeleton'],wave:true,coreR:[18,26]}};
 WD.titans=TT;
 const lv=()=>Math.max(0,(PL.lvl||1)-20);

@@ -10,7 +10,7 @@ const R=(a,b)=>a+Math.random()*(b-a),rr=(a=1)=>(Math.random()*2-1)*a,TAU=6.283,P
 /* these small models are made at real size, so the sizes used for them below are scaled back here */const FIX={Mushroom_Common:.33,Mushroom_Laetiporus:.22,Coin:.3,Coin_Pile:.3,Coin_Pile_2:.3,Pickaxe_Bronze:.6,Rope_1:.7,Rope_3:.55,Chain_Coil:.65,Carrot:.5},fit=(n,sc)=>sc*(FIX[n]||1);
 const shop=L=>L.filter(i=>ITEMS[i]);
 const place=id=>{const s=SITE[id]||HIDDEN.find(h=>h.id===id);if(!s)return null;const G=new T.Group();G.position.set(s.x,0,s.z);scene.add(G);const b=KIT.Bag(),P={s,G,b,taken:[],claim(x,z,r){P.taken.push([s.x+x,s.z+z,r])},
-  free(x,z,m){let h=-9;try{h=terrainH(x,z)}catch(e){}if(h<.25)return false;for(const t of P.taken)if(Math.hypot(t[0]-x,t[1]-z)<t[2]+m)return false;{const p={x,z};try{if(collide(p,Math.min(m,3)))return false}catch(e){}}for(const c of BUILDINGS)if(Math.abs(c.x-x)<34&&Math.abs(c.z-z)<34&&Math.hypot(c.x-x,c.z-z)<Math.max(c.w||7,c.d||6)/2+m)return false;try{if(roadDist(x,z)<Math.min(m,3.2))return false}catch(e){}return true},
+  free(x,z,m){let h=-9;try{h=terrainH(x,z)}catch(e){}if(h<.25)return false;if(WD.inGate&&WD.inGate(x,z,Math.min(m,6)))return false;for(const t of P.taken)if(Math.hypot(t[0]-x,t[1]-z)<t[2]+m)return false;{const p={x,z};try{if(collide(p,Math.min(m,3)))return false}catch(e){}}for(const c of BUILDINGS)if(Math.abs(c.x-x)<34&&Math.abs(c.z-z)<34&&Math.hypot(c.x-x,c.z-z)<Math.max(c.w||7,c.d||6)/2+m)return false;try{if(roadDist(x,z)<Math.min(m,3.2))return false}catch(e){}return true},
   at(a,r,m=5){for(let g=0;g<3;g++)for(let k=0;k<16;k++){const q=a+k*.4,r2=r+g*7,x=s.x+Math.cos(q)*r2,z=s.z+Math.sin(q)*r2;if(P.free(x,z,m))return{x:x-s.x,z:z-s.z,y:terrainH(x,z),wx:x,wz:z}}const x=s.x+Math.cos(a)*r,z=s.z+Math.sin(a)*r;return{x:x-s.x,z:z-s.z,y:Math.max(terrainH(x,z),.3),wx:x,wz:z}},
   hy:(x,z)=>Math.max(terrainH(s.x+x,s.z+z),.05),solid:(x,z,r)=>addCircle(s.x+x,s.z+z,r),rect:(a,c,e,g)=>addBox(s.x+Math.min(a,e),s.z+Math.min(c,g),s.x+Math.max(a,e),s.z+Math.max(c,g)),
   m(n,x,z,ry=0,sc=1,dy=0,o){b.model(n,x,P.hy(x,z)+dy,z,ry,fit(n,sc),o)},
@@ -221,4 +221,37 @@ const _bfP=buildFantasy;buildFantasy=function(){_bfP();const t0=performance.now(
 /* lanterns light up at dusk; swans swim */
 ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;const n=ENV.night||0;LAMP.emissiveIntensity=n>.15?Math.min(1.4,n*2):0;const V=WD.valkenland;if(!V||!SWANS.length||Math.hypot(PL.x-V.LK.x,PL.z-V.LK.z)>360)return;const t=performance.now()*.001;for(const q of SWANS){q.a+=q.sp*dt;const x=V.LK.x+Math.cos(q.a)*q.r,z=V.LK.z+Math.sin(q.a)*q.r*.86;q.g.position.set(x,.02+Math.sin(t*1.2+q.ph)*.03,z);q.g.rotation.y=Math.atan2(-Math.sin(q.a)*Math.sign(q.sp),Math.cos(q.a)*Math.sign(q.sp))}});
 WD.plaatsen={SWANS};
+})();
+
+/* ================= Real props by Literock Studios (Filip's downloads) =================
+   Hay bales and grain sacks by barns, farms and mills; crates and barrels by shops, warehouses, the harbours and
+   the trading houses; barrels by the inns; a crate and a barrel by the smithies. They stand outside, beside the
+   door, never in the way of the door. Drawn as instances, grouped per piece of land, so far away ones cost nothing. */
+(function(){
+const KINDS={hay:['hay_bale',.95],sack:['grain_sacks',1],crate:['crates',.95],barrel:['barrel',.85]};
+function want(b){const n=(b.name||'').toLowerCase(),k=b.kind||'';
+  if(/schuur|hoeve|boerderij|stal|oogst|graan/.test(n))return['hay','hay','sack','sack','hay'];
+  if(/molen/.test(n))return['sack','sack','sack','hay'];
+  if(/pakhuis|haven|handel|wissel|markt|koopman|kraam|bazaar|visafslag/.test(n))return['crate','crate','barrel','barrel','crate'];
+  if(k==='inn'||/herberg|taverne|mededrink/.test(n))return['barrel','barrel','barrel'];
+  if(k==='smith'||/smid/.test(n))return['crate','barrel'];
+  if(k==='shop')return['crate','barrel'];
+  return null}
+function place(){const out={hay:[],sack:[],crate:[],barrel:[]};
+  /* where the old simple hay stacks stood: two real bales, one on top of the other half the time */
+  if(typeof HAYS!=='undefined')for(const [x,z] of HAYS){const y=groundH(x,z),r=Math.random()*6.283;out.hay.push({x,z,y,r});if(Math.random()<.6)out.hay.push({x:x+Math.cos(r)*1.5,z:z+Math.sin(r)*1.5,y:groundH(x+Math.cos(r)*1.5,z+Math.sin(r)*1.5),r:r+1.2})}
+  for(const b of BUILDINGS){if(!b.doorPos)continue;const L=want(b);if(!L)continue;let ox=b.doorPos[0]-b.x,oz=b.doorPos[1]-b.z;const l=Math.hypot(ox,oz)||1;ox/=l;oz/=l;const px=-oz,pz=ox;
+    let side=Math.random()<.5?1:-1,n=0;for(const t of L){for(let k=0;k<6;k++){const s=side*(2.4+n*.7+Math.random()*1.2),f=.4+Math.random()*1.8,x=b.doorPos[0]+px*s+ox*f,z=b.doorPos[1]+pz*s+oz*f;
+        if(inBuilding(x,z,.4))continue;const g=groundH(x,z);if(g<.1)continue;out[t].push({x,z,y:g,r:Math.random()*6.283});addCircle(x,z,.55);n++;break}side=-side}}
+  return out}
+async function build(){if(!window.EX||!EX.loadLR)return;const P=place(),cell=320;let made=0;
+  for(const [t,[file,sc]] of Object.entries(KINDS)){const list=P[t];if(!list.length)continue;const g=await EX.loadLR(file);if(!g)continue;
+    let src=null;g.scene.traverse(o=>{if(o.isMesh&&/LOD1$/.test(o.name))src=o});if(!src)g.scene.traverse(o=>{if(!src&&o.isMesh)src=o});if(!src)continue;
+    const geo=src.geometry,mat=src.material,groups=new Map();for(const q of list){const k=Math.floor(q.x/cell)+','+Math.floor(q.z/cell);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(q)}
+    const o=new T.Object3D();for(const qs of groups.values()){const im=new T.InstancedMesh(geo,mat,qs.length);qs.forEach((q,i)=>{o.position.set(q.x,q.y-.02,q.z);o.rotation.set(0,q.r,0);o.scale.setScalar(sc*(.92+Math.random()*.16));o.updateMatrix();im.setMatrixAt(i,o.matrix)});
+      im.castShadow=true;im.receiveShadow=true;im.instanceMatrix.needsUpdate=true;im.computeBoundingSphere&&im.computeBoundingSphere();
+      if(!im.boundingSphere){let cx=0,cz=0;for(const q of qs){cx+=q.x;cz+=q.z}cx/=qs.length;cz/=qs.length;let r=0;for(const q of qs)r=Math.max(r,Math.hypot(q.x-cx,q.z-cz));im.geometry=geo;im.frustumCulled=false}
+      scene.add(im);made+=qs.length}}
+  WD.props={made};console.log('Literock props placed:',made)}
+let go=false;const iv=setInterval(()=>{if(go||typeof worldReady==='undefined'||!worldReady||typeof BUILDINGS==='undefined'||!BUILDINGS.length)return;if(WD.tidy&&WD.tidy.n===undefined)return;go=true;clearInterval(iv);setTimeout(()=>build().catch(e=>console.warn('props',e)),12000)},2000);
 })();

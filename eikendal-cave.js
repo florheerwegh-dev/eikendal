@@ -132,7 +132,7 @@ buildGoblinTunnels=function(){
 /* ================= populate ================= */
 Object.assign(MON,{
   goblinshaman:{n:'Goblinsjamaan',hp:70,dmg:13,speed:4.4,aggro:26,range:2,xp:45,loot:'goblinshaman',rad:.45,hh:1.7,ranged:true},
-  goblinking:Object.assign(MON.goblinking||{},{n:'Krijgsheer Grukk',hp:1100,dmg:34,speed:4.6,aggro:30,range:3.2,xp:900,loot:'goblinking',rad:1,hh:3,boss:'grukk',respawn:2400})});
+  goblinking:Object.assign(MON.goblinking||{},{n:'Megagoblin Snotgrom',hp:1300,dmg:34,speed:4.4,aggro:30,range:3.4,xp:900,loot:'goblinking',rad:1.5,hh:4.6,boss:'snotgrom',respawn:2400})});
 LOOTX.goblinshaman=()=>({gold:Math.floor(rnd(10,40)),items:[['goblin_ear',1]].concat(Math.random()<.35?[['crystal',1]]:[]).concat(Math.random()<.2?[['potion',1]]:[])});
 const _pgt0=populateGoblinTunnels;
 populateGoblinTunnels=function(){_pgt0();
@@ -147,7 +147,7 @@ populateGoblinTunnels=function(){_pgt0();
   for(const v of CV.veins)INTER.push({x:v.x,z:v.z,r:2.4,cave:true,txt:()=>PL.t-v.t<150?'Deze ader is leeg':'Hak '+(v.gold?'goudader':'ijzererts')+' (F)',fn:()=>mineVein(v)});
   if(CV.lake){const k=CV.lake;INTER.push({x:k.x,z:k.z+k.r+.6,r:2.6,cave:true,txt:()=>PL.t-k.t<90?'De gloeivissen verstoppen zich':'Grijp een gloeivis uit het water',fn:()=>{if(PL.t-k.t<90)return;k.t=PL.t;if(Math.random()<.6){giveItem('glowfish',1);giveXp(12);addLog('Je vangt een gloeiende vis!','#6affd8')}else{giveItem('fish',1);addLog('Je vangt een bleke grotvis.')}sfx('splash')}})}
   for(const c of CV.cages)INTER.push({x:c.x,z:c.z,r:2.6,cave:true,txt:()=>c.open?'':'Bevrijd '+c.who,fn:()=>freePrisoner(c)});
-  RUMORS.push({t:'Onder de grond houden de goblins gevangenen in kooien. Wie ze bevrijdt, krijgt vast een beloning.'},{t:'De goblins hebben een krijgsheer, een reusachtige groene ork met twee bijlen. Hij heet Grukk.'},{t:'In de goblintunnels is een mijn. Met een beetje kracht hak je er ijzer en goud uit.'})};
+  RUMORS.push({t:'Onder de grond houden de goblins gevangenen in kooien. Wie ze bevrijdt, krijgt vast een beloning.'},{t:'De goblins hebben een nieuwe baas: een megagoblin, zo groot als een huis. Hij heet Snotgrom. Hun oude krijgsheer Grukk is naar de orks in Noordheim getrokken.'},{t:'In de goblintunnels is een mijn. Met een beetje kracht hak je er ijzer en goud uit.'})};
 function mineVein(v){if(PL.t-v.t<150){addLog('Deze ader is leeg. Kom later terug.');return}v.t=PL.t;try{swingAnim()}catch(e){}sfx('hit');
   setTimeout(()=>{if(v.gold){PL.gold+=Math.floor(rnd(25,70));addLog('Je hakt goudklompen uit de rots!','#e0b04a');sfx('coin');if(Math.random()<.3)giveItem('gem',1)}else{giveItem('iron',Math.floor(rnd(1,3.9)));if(Math.random()<.12)giveItem('gem',1)}giveXp(6);
     v.g.children.slice(1).forEach(o=>o.visible=false);setTimeout(()=>v.g.children.forEach(o=>o.visible=true),150000)},350)}
@@ -156,15 +156,16 @@ function freePrisoner(c){if(c.open)return;const near=actors.some(a=>!a.dead&&a.k
   addLog(c.who+': "Dank je, redder! Neem dit, ik heb het verstopt voor de goblins."','#9cc552');
   dropLoot(c.x+1.5,c.z,{gold:g?220:90,items:g?[['shield_iron',1],['potion',2]]:[['elixir',1],['bread',3]]})}
 Object.assign(CHEST_LOOT,{goblinmine:{gold:180,items:[['iron',6],['gem',2],['potion',2]]},
-  goblinking:{gold:1400,items:[['gem',6],['elixir',3],['sword_elven',1],['ring_gold',1],['amu_wind',1],['axe_grukk',1]]}});
-Object.assign(ITEMS,{axe_grukk:{n:'Bijl van Grukk',g:'weapon',kind:'axe',dmg:52,spd:.62,rng:2.8,price:1600,ico:'⛏',col:0x7a9a6a,rar:'l'}});
-LOOTX.goblinking=()=>({gold:Math.floor(rnd(500,800)),items:[['goblin_ear',4],['gem',4],['elixir',1]].concat(Math.random()<.5?[['axe_grukk',1]]:[['ring_power',1]])});
+  goblinking:{gold:1400,items:[['gem',6],['elixir',3],['sword_elven',1],['ring_gold',1],['amu_wind',1],['club_snotgrom',1]]}});
+Object.assign(ITEMS,{axe_grukk:{n:'Grote Bijl van Grukk',g:'weapon',kind:'axe',dmg:132,spd:.6,rng:3.2,price:9800,ico:'⛏',col:0x7a9a6a,rar:'m'},
+  club_snotgrom:{n:'Knots van Snotgrom',g:'weapon',kind:'axe',dmg:56,spd:.66,rng:2.9,price:1700,ico:'🏏',col:0x6a8a3a,rar:'l'}});
+LOOTX.goblinking=()=>({gold:Math.floor(rnd(500,800)),items:[['goblin_ear',4],['gem',4],['elixir',1]].concat(Math.random()<.5?[['club_snotgrom',1]]:[['ring_power',1]])});
 
 /* ---------- Grukk: phases, roars and reinforcements ---------- */
 const _ueG=updateEnemy;updateEnemy=function(a,dt){_ueG(a,dt);if(a.type!=='goblinking'||a.dead)return;
   if(a.hp>=a.hpMax){a.ph2=a.ph3=false}
-  if(!a.ph2&&a.hp<a.hpMax*.55){a.ph2=true;if(a.model)a.model.roarT=1.6;addLog('Grukk brult: "Goblins! Bescherm je krijgsheer!"','#e5766a');sfx('thunder');for(let i=0;i<4;i++){const an=i/4*6.283;spawnMonster(i%2?'goblin':'goblinbrute',a.x+Math.cos(an)*6,a.z+Math.sin(an)*6,{cave:true,temp:true,respawn:1e9})}}
-  if(!a.ph3&&a.hp<a.hpMax*.25){a.ph3=true;a.speed*=1.35;a.dmg*=1.25;if(a.model)a.model.roarT=1.6;addLog('Grukk is woedend!','#e5766a');sfx('thunder')}};
+  if(!a.ph2&&a.hp<a.hpMax*.55){a.ph2=true;if(a.model)a.model.roarT=1.6;addLog('Snotgrom krijst: "Goblins! Bescherm je baas!"','#e5766a');sfx('thunder');for(let i=0;i<4;i++){const an=i/4*6.283;spawnMonster(i%2?'goblin':'goblinbrute',a.x+Math.cos(an)*6,a.z+Math.sin(an)*6,{cave:true,temp:true,respawn:1e9})}}
+  if(!a.ph3&&a.hp<a.hpMax*.25){a.ph3=true;a.speed*=1.35;a.dmg*=1.25;if(a.model)a.model.roarT=1.6;addLog('Snotgrom is woedend!','#e5766a');sfx('thunder')}};
 
 /* ---------- goblin shamans throw green fire ---------- */
 const _sarC=shootArrow;
@@ -205,8 +206,8 @@ drawMini=function(){_dmC();if(!PL.inCave||!GT.built||PL.x>-6000||PL.x<-8000)retu
 const BB={el:null,cur:null};
 function bossBar(){if(!BB.el){const d=document.createElement('div');d.id='bossbar';d.innerHTML='<div class="t"></div><div class="b"><i></i></div>';document.body.appendChild(d);BB.el=d;
     const st=document.createElement('style');st.textContent='#bossbar{position:fixed;top:calc(64px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);width:min(520px,70vw);z-index:6;text-align:center;font-family:var(--f-display);color:#f3d9b0;text-shadow:0 2px 4px #000;pointer-events:none;opacity:0;transition:opacity .4s}#bossbar .t{font-size:19px;letter-spacing:.05em}#bossbar .b{height:14px;border:2px solid #5a4a2a;background:#140e08;border-radius:8px;overflow:hidden;margin-top:4px;box-shadow:0 0 12px rgba(0,0,0,.6)}#bossbar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#6a1010,#e04a2a);transition:width .25s}';document.head.appendChild(st)}return BB.el}
-setInterval(()=>{if(typeof started==='undefined'||!started)return;let best=null,bd=55;for(const a of actors){if(a.dead||a.kind!=='enemy'||!(a.boss||a.type==='goblinking')||a.type==='fourhands')continue;if(!!a.cave!==!!PL.inCave)continue;const d=Math.hypot(a.x-PL.x,a.z-PL.z);if(d<bd&&(a.state==='chase'||a.hp<a.hpMax)){bd=d;best=a}}
-  const el=bossBar(),gb=document.getElementById('gbar'),giant=gb&&gb.style.opacity!=='0'&&gb.style.opacity!=='';
+setInterval(()=>{if(typeof started==='undefined'||!started)return;let best=null,bd=55;for(const a of actors){if(a.dead||a.kind!=='enemy'||!(a.boss||a.type==='goblinking')||a.type==='fourhands'||a.titan||(WD.titans&&WD.titans[a.type])||a._roy||a.ruler)continue;   /* titans and rulers have their own bar */if(!!a.cave!==!!PL.inCave)continue;const d=Math.hypot(a.x-PL.x,a.z-PL.z);if(d<bd&&(a.state==='chase'||a.hp<a.hpMax)){bd=d;best=a}}
+  const el=bossBar(),gb=document.getElementById('gbar'),tb=document.getElementById('tbar'),giant=gb&&gb.style.opacity!=='0'&&gb.style.opacity!==''||tb&&tb.style.opacity==='1';
   if(!best||giant||PL.dead){el.style.opacity=0;return}el.style.opacity=1;el.querySelector('.t').textContent='☠ '+best.name;el.querySelector('i').style.width=Math.max(0,best.hp/best.hpMax*100)+'%'},250);
 
 /* ================= loot: mythic treasure of the four-handed giant, lesser treasure of the lava turtles ================= */

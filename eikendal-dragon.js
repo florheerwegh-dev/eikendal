@@ -94,7 +94,7 @@ function wakePet(byYou){const P=PET;if(!P)return;P.sleep=0;P.awake=240+Math.rand
 const F={alt:0,vy:0,acc:.12};
 /* the seat: on her back between the wings, fixed to a bone of the spine so you move along when she flies */
 const SEATV=new T.Vector3();
-function seatPos(h){const m=h.model;if(m.seatB===undefined){m.seatB=null;m.g.traverse(o=>{if(o.isBone&&o.name==='Bone002')m.seatB=o})}h.root.updateMatrixWorld(true);
+function seatPos(h){const m=h.model;if(m.seatB===undefined){m.seatB=null;m.g.traverse(o=>{if(o.isBone&&(o.name==='Bone002'||o.name==='spine_02'))m.seatB=o})}h.root.updateMatrixWorld(true);
   if(m.seatB){m.seatB.getWorldPosition(SEATV);SEATV.y+=.62*h.root.scale.y;return SEATV}return SEATV.set(h.root.position.x,h.root.position.y+3.3*h.root.scale.y,h.root.position.z)}
 const trueGround=(x,z)=>groundH(x,z);
 function mountPet(){const P=PET;if(!P||P.grow<1||carrying())return;if(P.sleep>0){addLog('Vonk slaapt. Maak haar eerst wakker.');return}if((PL.inCave&&PL.x>-9000)||(WD.spider&&WD.spider.inside&&WD.spider.inside())){addLog('Hier is te weinig ruimte om te vliegen.');return}
@@ -125,11 +125,13 @@ const _upD=updatePlayer;updatePlayer=function(dt){const h=PL.mounted;if(!h||!h.f
    ground burns where it breathes; below a fifth it calls a rain of fire from the sky. */
 Object.assign(MON.dragon,{n:'Vyrnax de Asvorst',hp:2600,dmg:38,speed:5.4,aggro:52,range:6.5,xp:2600,rad:3.2,hh:8});
 ITEMS.dragon_heart={n:'Drakenhart van Vyrnax',g:'mat',price:1800,ico:'❤',rar:'l'};
-const FIRES=[],METEORS=[],frostM=new T.MeshBasicMaterial({color:0x7ac8ff,transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false}),warnI=new T.MeshBasicMaterial({color:0x4aa8ff,transparent:true,opacity:.45,depthWrite:false,side:T.DoubleSide}),FC=[[1,.85,.3],[1,.25,0]],IC=[[.85,.97,1],[.35,.65,1]],fireM=new T.MeshBasicMaterial({color:0xff6a1a,transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false}),warnM=new T.MeshBasicMaterial({color:0xff2a10,transparent:true,opacity:.45,depthWrite:false,side:T.DoubleSide});
+const FIRES=[],METEORS=[],frostM=new T.MeshBasicMaterial({color:0x7ac8ff,transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false}),warnI=new T.MeshBasicMaterial({color:0x4aa8ff,transparent:true,opacity:.45,depthWrite:false,side:T.DoubleSide}),FC=[[1,.85,.3],[1,.25,0]],IC=[[.85,.97,1],[.35,.65,1]],TC=[[.75,1,.4],[.3,.8,.1]],fireM=new T.MeshBasicMaterial({color:0xff6a1a,transparent:true,opacity:.75,blending:T.AdditiveBlending,depthWrite:false}),warnM=new T.MeshBasicMaterial({color:0xff2a10,transparent:true,opacity:.45,depthWrite:false,side:T.DoubleSide});
 const _smV=spawnMonster;spawnMonster=function(type,x,z,o={}){const a=_smV(type,x,z,o);if(type==='dragon'&&a&&a.model){a.model.g.scale.setScalar(1.35);
   a.model.g.traverse(m=>{if(m.isMesh&&m.name==='Eye'){const gl=new T.Sprite(new T.SpriteMaterial({map:WD.tx('glare.png'),color:a.ice?0x8ad8ff:0xffa020,transparent:true,opacity:.8,blending:T.AdditiveBlending,depthWrite:false}));gl.scale.set(60,60,1);m.add(gl);(a.eyes=a.eyes||[]).push(gl)}})}return a};
 function burn(x,z,life=8,ice){const y=groundH(x,z),m=new T.Mesh(new T.CircleGeometry(2.2,16),ice?frostM:fireM);m.rotation.x=-Math.PI/2;m.position.set(x,y+.08,z);m.userData.dyn=true;scene.add(m);FIRES.push({m,x,z,t:life,tick:0,ice})}
-function head(a){const f=1.35,fx=Math.sin(a.rot),fz=Math.cos(a.rot);return{x:a.x+fx*5.2*f,y:a.y+3.4*f,z:a.z+fz*5.2*f,fx,fz}}
+function head(a){const f=1.35,fx=Math.sin(a.rot),fz=Math.cos(a.rot),m=a.model;
+  /* the Ashwing drake breathes from its own mouth */if(m&&m.drake){if(m.mouth===undefined){m.mouth=null;m.g.traverse(o=>{if(o.isBone&&o.name==='breath_socket')m.mouth=o})}if(m.mouth){m.g.updateMatrixWorld(true);const p=m.mouth.getWorldPosition(new T.Vector3());return{x:p.x,y:p.y,z:p.z,fx,fz}}}
+  return{x:a.x+fx*5.2*f,y:a.y+3.4*f,z:a.z+fz*5.2*f,fx,fz}}
 function bossTick(a,dt){const d=Math.hypot(PL.x-a.x,PL.z-a.z),t=PL.t,rage=a.hp<a.hpMax*.5;
   if(window.PW&&PW.ps&&Math.random()<dt*(rage?14:6)){const h=head(a);pwEm(PW.ps,h.x+rr(.4),h.y,h.z+rr(.4),rr(.3),1+Math.random(),rr(.3),1.4,.35,.6,[.3,.28,.26],[.1,.1,.1],.5,-.2,.5);pwEm(PW.ps,a.x+rr(3),a.y+1+Math.random()*3,a.z+rr(3),rr(.4),1.5,rr(.4),1.2,.12,.02,[1,.6,.2],[1,.2,0],1,-.3,.4)}
   if(a.eyes)for(const e of a.eyes)e.material.opacity=(rage?1:.7)+Math.sin(t*6)*.15;
@@ -140,13 +142,13 @@ function bossTick(a,dt){const d=Math.hypot(PL.x-a.x,PL.z-a.z),t=PL.t,rage=a.hp<a
   if(!a.rain&&a.hp<a.hpMax*.2){a.rain=1;addLog(a.ice?'De lucht wordt wit: '+a.name+' laat ijs regenen!':'De lucht kleurt rood: '+a.name+' laat vuur regenen!',a.ice?'#9ad8ff':'#ff3a1a')}
   /* fire breath */
   a.brCd=(a.brCd??5)-dt;if(a.brT>0){a.brT-=dt;a.rot+=angDiff(a.rot,Math.atan2(PL.x-a.x,PL.z-a.z))*Math.min(1,dt*1.6);a.vel=0;const h=head(a);
-    if(window.PW&&PW.ps)for(let i=0;i<9;i++){const sp=16+Math.random()*8;pwEm(PW.ps,h.x,h.y,h.z,h.fx*sp+rr(3),-3+rr(2),h.fz*sp+rr(3),.9,.7,1.6,...(a.ice?IC:FC),1,-2,.2)}
+    if(window.PW&&PW.ps)for(let i=0;i<9;i++){const sp=16+Math.random()*8;pwEm(PW.ps,h.x,h.y,h.z,h.fx*sp+rr(3),-3+rr(2),h.fz*sp+rr(3),.9,.7,1.6,...(a.tox?TC:a.ice?IC:FC),1,-2,.2)}
     const dx=PL.x-h.x,dz=PL.z-h.z,dd=Math.hypot(dx,dz),ang=Math.acos(Math.max(-1,Math.min(1,(dx*h.fx+dz*h.fz)/(dd||1))));a.brTick=(a.brTick||0)-dt;
-    if(dd<17&&ang<.45&&a.brTick<=0){a.brTick=.3;damagePlayer(9,a);if(a.ice)PL.frostT=Math.max(PL.frostT||0,1.2);floatText(PL.x,PL.y+2,PL.z,a.ice?'IJs!':'Vuur!',a.ice?'#9ad8ff':'#ff8a2a')}
+    if(dd<17&&ang<.45&&a.brTick<=0){a.brTick=.3;damagePlayer(9,a);if(a.ice)PL.frostT=Math.max(PL.frostT||0,1.2);floatText(PL.x,PL.y+2,PL.z,a.tox?'Gif!':a.ice?'IJs!':'Vuur!',a.tox?'#9aff4a':a.ice?'#9ad8ff':'#ff8a2a')}
     if(rage&&Math.random()<dt*3){const r=6+Math.random()*10;burn(h.x+h.fx*r+rr(2),h.z+h.fz*r+rr(2),8,a.ice)}return}
-  if(a.brCd<=0&&d<18&&!a.dive){a.brCd=rage?5:8;a.brT=2.4;try{sfx('thunder')}catch(e){}addLog(a.name+' haalt diep adem...','#ffb070')}
+  if(a.brCd<=0&&d<18&&!a.dive){a.brCd=rage?5:8;a.brT=2.4;try{if(a.model&&a.model.play)a.model.play('roar',true)}catch(e){}try{sfx('thunder')}catch(e){}addLog(a.name+' haalt diep adem...','#ffb070')}
   /* tail swipe when you stand behind it */
-  a.tlCd=(a.tlCd??2)-dt;{const ba=Math.abs(angDiff(a.rot,Math.atan2(PL.x-a.x,PL.z-a.z)));if(a.tlCd<=0&&d<9&&ba>2.2){a.tlCd=3;damagePlayer(26,a);const k=3/(d||1);PL.x+=(PL.x-a.x)*k;PL.z+=(PL.z-a.z)*k;if(window.PW)PW.shake=Math.max(PW.shake||0,.4);addLog('Een staartzwiep slaat je weg!','#ff7a5a')}}
+  a.tlCd=(a.tlCd??2)-dt;{const ba=Math.abs(angDiff(a.rot,Math.atan2(PL.x-a.x,PL.z-a.z)));if(a.tlCd<=0&&d<9&&ba>2.2){a.tlCd=3;damagePlayer(26,a);try{if(a.model&&a.model.play)a.model.play('bite',true)}catch(e){}const k=3/(d||1);PL.x+=(PL.x-a.x)*k;PL.z+=(PL.z-a.z)*k;if(window.PW)PW.shake=Math.max(PW.shake||0,.4);addLog('Een staartzwiep slaat je weg!','#ff7a5a')}}
   /* dive from the sky */
   a.dvCd=(a.dvCd??14)-dt;if(!a.dive&&a.dvCd<=0&&d>9&&d<45){a.dvCd=rage?12:17;a.dive={t:0,x0:a.x,z0:a.z};addLog(a.name+' stijgt op...','#ffb070')}
   if(a.dive){const D=a.dive;D.t+=dt;const g=groundH(a.x,a.z);
@@ -164,9 +166,48 @@ ANIMS.push(dt=>{for(const a of actors)if(a.type==='dragon'&&!a.dead&&Math.abs(a.
     if(f.t<=0){scene.remove(f.m);FIRES.splice(i,1)}}
   for(let i=METEORS.length-1;i>=0;i--){const M=METEORS[i];M.t+=dt;const k=Math.min(1,M.t/1.1);M.m.position.lerp(new T.Vector3(M.x,M.y,M.z),k*.25+.02);M.w.material.opacity=.3+.3*Math.sin(M.t*20);
     if(k>=1||M.m.position.y<M.y+.6){scene.remove(M.m);scene.remove(M.w);METEORS.splice(i,1);if(window.PW&&PW.ps)pwBurst(PW.ps,M.x,M.y+.4,M.z,40,6,.8,.6,.1,...(M.ice?IC:[[1,.8,.3],[1,.2,0]]),3,4,1,1);burn(M.x,M.z,5,M.ice);if(Math.hypot(PL.x-M.x,PL.z-M.z)<3.2)damagePlayer(22,{type:'fire'})}}});
-const _kaV=killActor;killActor=function(a,by){const was=!a.dead;_kaV(a,by);if(was&&a.type==='dragon'&&by){dropLoot(a.x,a.z,{gold:600,items:[['dragon_heart',1],['dragon_scale',3]]});addLog(a.name+' is verslagen! Zijn hart gloeit nog na.','#ffd27a');for(const f of FIRES)f.t=Math.min(f.t,1)}};
+const _kaV=killActor;killActor=function(a,by){const was=!a.dead;_kaV(a,by);if(was&&a.type==='dragon'&&by&&!a.mother&&!a.tox&&!a.ice){dropLoot(a.x,a.z,{gold:600,items:[['dragon_heart',1],['dragon_scale',3]]});addLog(a.name+' is verslagen! Zijn hart gloeit nog na.','#ffd27a');for(const f of FIRES)f.t=Math.min(f.t,1)}};
 
 /* ---------- hooks ---------- */
 const _bfD=buildFantasy;buildFantasy=function(){_bfD();try{buildNest()}catch(e){console.warn('dragon nest',e)}};
 const _sgD=startGame;startGame=function(...a){_sgD(...a);try{if(PL.fx&&PL.fx.babyDragon){if(EGG.m)EGG.m.visible=false;EGG.state='hatched';if(!PET)spawnPet(PL.x+2,PL.z+2,false);PET.name=PL.fx.babyDragon.name||'Vonk'}}catch(e){console.warn('pet',e)}};
+
+/* ================= The Dragon Mother lands =================
+   Sometimes, when she flies over, she comes down on open ground some fifty metres from you, roars and fights: fire
+   breath, tail swipes, dives from the sky and, when she is nearly beaten, a rain of fire. Fight her, or run: get far
+   enough away (or leave her alone for a while) and she takes off again and flies on. No blow takes more than a small
+   part of her life. Beat her and she leaves her heart, scales and a big treasure. */
+Object.assign(ITEMS,{moederhart:{n:'Hart van de Draakmoeder',g:'amulet',fx:{hp:220,regen:6,dmg:3},col:0x3ac8a0,price:30000,ico:'💚',rar:'m',desc:'Het hart van de Draakmoeder. Meer leven, je geneest vanzelf en je slaat vier keer zo hard.'}});
+LOOTX.draakmoeder=()=>({gold:0,items:[]});   /* her real treasure is dropped below */
+const DM={state:null,a:null,t:0,from:null,to:null,tried:false,quiet:0};WD.dragonMother=DM;
+function dmSpot(){const M=MOTHER.p,base=Math.atan2(M.z-PL.z,M.x-PL.x);for(let k=0;k<16;k++){const an=base+(k%2?1:-1)*Math.ceil(k/2)*.4,r=50+Math.random()*12,x=PL.x+Math.cos(an)*r,z=PL.z+Math.sin(an)*r,g=groundH(x,z);
+    if(g<.6||inBuilding(x,z,9))continue;let flat=true;for(let q=0;q<6;q++){const b=q/6*6.283;if(Math.abs(groundH(x+Math.cos(b)*8,z+Math.sin(b)*8)-g)>4){flat=false;break}}if(flat)return{x,y:g,z}}return null}
+function dmLand(){const to=dmSpot();if(!to)return false;DM.state='land';DM.t=0;DM.from={x:MOTHER.p.x,y:MOTHER.p.y,z:MOTHER.p.z};DM.to=to;MOTHER.on=false;MOTHER.t=1e9;MOTHER.g.visible=true;
+  addLog('De Draakmoeder cirkelt omlaag... ze gaat landen!','#e5766a');try{WD.roar(1.2)}catch(e){}return true}
+function dmTouchdown(){const T0=DM.to,md=makeDragon;let a=null;makeDragon=()=>md(0x1f6a5a,0x103a30);
+  try{a=spawnMonster('dragon',T0.x,T0.z,{name:'De Draakmoeder',sub:'Moeder van alle draken',boss:'draakmoeder',hp:24000,hpMax:24000,dmg:72,xp:9000,speed:5.2,aggro:70,range:7,respawn:1e12,mother:true,provoked:true,loot:'draakmoeder'})}catch(e){console.warn('draakmoeder',e)}finally{makeDragon=md}
+  MOTHER.g.visible=false;if(!a){DM.state=null;MOTHER.t=rnd(150,330);return}
+  a.model.g.scale.setScalar(2.4);a.rad=4.2;a.hh=13;a.rot=Math.atan2(PL.x-a.x,PL.z-a.z);a.state='chase';placeActor(a);DM.a=a;DM.state='ground';DM.quiet=0;
+  if(window.PW)PW.shake=Math.max(PW.shake||0,1.4);try{WD.roar(1.6)}catch(e){}try{if(a.model.play)a.model.play('roar',true)}catch(e){}
+  try{WD.kingdom.card('🐉 De Draakmoeder is geland!','De grond trilt onder haar gewicht. Ze kijkt je recht aan. Vecht... of ren zo ver als je kunt.',null,8)}catch(e){addLog('De Draakmoeder is geland! Vecht of ren weg!','#e5766a')}}
+function dmTakeoff(why){const a=DM.a;DM.state='takeoff';DM.t=0;const x=a?a.x:DM.to.x,z=a?a.z:DM.to.z;
+  if(a){a.dead=true;a.gone=true;a.hp=0;a.respawn=1e12;a.temp=true;a.deadT=99;a.root.visible=false}DM.a=null;
+  const away=Math.atan2(z-PL.z,x-PL.x);DM.from={x,y:groundH(x,z),z};DM.dir=away;MOTHER.g.visible=true;MOTHER.g.position.set(x,DM.from.y,z);
+  addLog(why||'De Draakmoeder spreidt haar vleugels en vliegt weg.','#cfd86a');try{WD.roar(.9)}catch(e){}}
+{const _h=hitActor;hitActor=function(a,dmg,by,dir){if(a&&a===DM.a&&!a.dead){dmg=Math.min(dmg,a.hpMax*.02);DM.quiet=0}return _h(a,dmg,by,dir)}}
+{const _k=killActor;killActor=function(a,by){const was=a&&a===DM.a&&!a.dead;_k(a,by);if(!was)return;DM.a=null;DM.state=null;MOTHER.t=rnd(1500,2400);
+  PL.fx=PL.fx||{};const first=!PL.fx.motherBeaten;PL.fx.motherBeaten=(PL.fx.motherBeaten||0)+1;
+  dropLoot(a.x,a.z+4,{gold:first?15000:6000,items:[['dragon_scale',5],['gem',6],['pearl',3]].concat(first||Math.random()<.35?[['moederhart',1]]:[]).filter(([i])=>ITEMS[i])});
+  if(first)setTimeout(()=>{try{WD.kingdom.card('💚 De Draakmoeder is verslagen!','Met een laatste brul valt de moeder van alle draken neer. Haar hart gloeit nog na. Iedereen in het land zal hierover praten.',null,10)}catch(e){}},1200)}}
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started||typeof MOTHER==='undefined'||!MOTHER.g)return;
+  if(MOTHER.on&&MOTHER.life<1)DM.tried=false;
+  if(!DM.state){if(MOTHER.on&&!DM.tried&&!PL.inCave&&!PL.inside&&!PL.dead){const d=Math.hypot(MOTHER.p.x-PL.x,MOTHER.p.z-PL.z);if(d<380){DM.tried=true;if(Math.random()<.5)dmLand()}}return}
+  const g=MOTHER.g,m=MOTHER.m;
+  if(DM.state==='land'){DM.t+=dt;const k=Math.min(1,DM.t/5.5),e=k*k*(3-2*k),F=DM.from,T0=DM.to;const x=F.x+(T0.x-F.x)*e,z=F.z+(T0.z-F.z)*e,y=T0.y+(F.y-T0.y)*(1-e)*(1-e);
+    g.position.set(x,y,z);const look=k<.7?Math.atan2(T0.x-F.x,T0.z-F.z):Math.atan2(PL.x-x,PL.z-z);g.rotation.set(0,look,0);try{animHorse(m,dt,9)}catch(e){}if(k>=1)dmTouchdown();return}
+  if(DM.state==='ground'){const a=DM.a;if(!a||a.dead){DM.state=null;return}DM.quiet+=dt;const d=Math.hypot(PL.x-a.x,PL.z-a.z);
+    if(PL.dead)dmTakeoff('De Draakmoeder brult triomfantelijk en vliegt weg.');else if(d>160)dmTakeoff('Je bent ontsnapt! De Draakmoeder vliegt weg.');else if(DM.quiet>100)dmTakeoff();return}
+  if(DM.state==='takeoff'){DM.t+=dt;const k=Math.min(1,DM.t/6),F=DM.from,dist=k*k*160,x=F.x+Math.cos(DM.dir)*dist,z=F.z+Math.sin(DM.dir)*dist,y=F.y+k*150;
+    g.position.set(x,y,z);g.rotation.set(0,Math.atan2(Math.cos(DM.dir),Math.sin(DM.dir)),0);try{animHorse(m,dt,9)}catch(e){}
+    if(k>=1){MOTHER.p.x=x;MOTHER.p.y=y;MOTHER.p.z=z;MOTHER.dir=DM.dir;MOTHER.life=46;MOTHER.roared=true;MOTHER.on=true;MOTHER.t=rnd(150,330);DM.state=null}}});
 })();

@@ -72,7 +72,8 @@ function loadFBX(){if(fbxP)return fbxP;D.fbx={};if(!T.FBXLoader||typeof asFetchB
     o.traverse(q=>{if(!q.isMesh)return;q.castShadow=true;q.receiveShadow=true;const conv=m=>{const c=m.color?m.color.clone().convertLinearToSRGB():new T.Color(0x888888);return new T.MeshStandardMaterial({color:c,roughness:.85,metalness:0,skinning:!!q.isSkinnedMesh})};q.material=Array.isArray(q.material)?q.material.map(conv):conv(q.material)});
     const b=new T.Box3().setFromObject(o);D.fbx[k]={o,box:b,size:b.getSize(new T.Vector3())}}catch(e){console.warn('dino model '+n,e)}})).then(()=>D.fbx);return fbxP}
 D.loadFBX=loadFBX;
-function fbxModel(kind){const F=D.fbx&&D.fbx[kind];if(!F||!T.SkeletonUtils)return null;const g0=T.SkeletonUtils.clone(F.o),s=DK[kind].L/Math.max(F.size.x,F.size.z),g=new T.Group();
+function fbxModel(kind){const F=D.fbx&&D.fbx[DK[kind].fbx||kind];if(!F||!T.SkeletonUtils)return null;const g0=T.SkeletonUtils.clone(F.o),s=DK[kind].L/Math.max(F.size.x,F.size.z),g=new T.Group();
+  if(DK[kind].tint){const tc=new T.Color(...DK[kind].tint),mc=new Map(),f=m=>{if(!mc.has(m)){const c=m.clone();if(c.color)c.color.multiply(tc);mc.set(m,c)}return mc.get(m)};g0.traverse(q=>{if(q.isMesh)q.material=Array.isArray(q.material)?q.material.map(f):f(q.material)})}
   g0.scale.multiplyScalar(s);g0.position.y=-F.box.min.y*s;g0.rotation.y=D.fbxRot||0;g.add(g0);g0.traverse(q=>{if(q.isMesh)q.frustumCulled=false});
   const mixer=new T.AnimationMixer(g0),acts={};for(const c of F.o.animations)acts[c.name]=mixer.clipAction(c);const find=re=>Object.keys(acts).find(n=>re.test(n));
   const m={g,mixer,acts,idle:find(/idle/i),walk:find(/walk/i),run:find(/run/i),atk:find(/attack/i),cur:null,dino:kind,fbx:true,L:DK[kind].L};fplay(m,m.idle);m.mixer.update(Math.random()*2);return m}
@@ -85,10 +86,10 @@ function spawnDino(kind,x,z,o={}){const d=DK[kind],m=fbxModel(kind)||dinoModel(k
   scene.add(a.root);placeActor(a);return a}
 D.spawn=spawnDino;
 /* the T-rex roars when it sees you */
-const _uED=updateEnemy;updateEnemy=function(a,dt){const r=_uED(a,dt);if(a.type==='trex'&&a.state==='chase'&&PL.t-(a.roarT||-1e9)>14){a.roarT=PL.t;floatText(a.x,a.y+7,a.z,'ROOOAAARRR!','#ff7a4a');try{if(window.PW)PW.shake=Math.max(PW.shake||0,.6)}catch(e){}sfx('thunder')}return r};
+const _uED=updateEnemy;updateEnemy=function(a,dt){const r=_uED(a,dt);if((a.type==='trex'||a.type==='oerkoning')&&a.state==='chase'&&PL.t-(a.roarT||-1e9)>14){a.roarT=PL.t;const big=a.type==='oerkoning';floatText(a.x,a.y+(big?17:7),a.z,big?'GROOOOAAAARRRR!':'ROOOAAARRR!','#ff7a4a');try{if(window.PW)PW.shake=Math.max(PW.shake||0,big?1.3:.6)}catch(e){}sfx('thunder')}return r};
 /* ---------- building the valley ---------- */
 const G=new T.Group();
-function build(){if(D.built)return;D.built=true;const t0=performance.now();scene.add(G);
+function build(){if(D.built)return;D.built=true;const t0=performance.now();scene.add(G);D.arena=arenaSpot();
   /* the land */
   const mat=new T.MeshStandardMaterial({vertexColors:true,map:TEX.grass||null,roughness:1}),CH=200;
   for(let cx=-4;cx<4;cx++)for(let cz=-4;cz<4;cz++){const ox=X3+cx*CH+CH/2,oz=Z3+cz*CH+CH/2,SEG=40,g=new T.PlaneGeometry(CH,CH,SEG,SEG);g.rotateX(-Math.PI/2);const p=g.attributes.position,n=p.count,cols=new Float32Array(n*3),uv=new Float32Array(n*2);
@@ -103,7 +104,7 @@ function build(){if(D.built)return;D.built=true;const t0=performance.now();scene
   /* plants: tree ferns, monkey-puzzle trees, cycads and ferns on the ground (instanced) */
   const leaf=new T.MeshStandardMaterial({color:0x3f6a24,roughness:.8,side:T.DoubleSide}),leaf2=new T.MeshStandardMaterial({color:0x2c4f1c,roughness:.8,side:T.DoubleSide}),bark=new T.MeshStandardMaterial({color:0x4a3a28,roughness:1});
   const frond=(()=>{const gs=[];for(let i=0;i<8;i++){const p=new T.PlaneGeometry(.7,3.2,1,3);p.translate(0,1.6,0);const P=p.attributes.position;for(let k=0;k<P.count;k++){const yy=P.getY(k);P.setZ(k,-yy*yy*.08)}p.rotateX(-1.05);p.rotateY(i/8*6.283);gs.push(p)}return T.BufferGeometryUtils.mergeBufferGeometries(gs)})();
-  const ok=(x,z,h)=>{const u=x-X3,v=z-Z3;if(Math.hypot(u,v)>RD-190||h<.6||h>70)return false;if(Math.hypot(u-VOL.x,v-VOL.z)<VOL.r*1.1)return false;if(Math.hypot(u-LAND.x,v-LAND.z)<40)return false;return true};
+  const ok=(x,z,h)=>{const u=x-X3,v=z-Z3;if(Math.hypot(u,v)>RD-190||h<.6||h>70)return false;if(Math.hypot(u-VOL.x,v-VOL.z)<VOL.r*1.1)return false;if(Math.hypot(u-LAND.x,v-LAND.z)<40)return false;if(D.arena&&Math.hypot(x-D.arena.x,z-D.arena.z)<54)return false;return true};
   const place=(n,fn)=>{const L=[];for(let t=0;t<n*6&&L.length<n;t++){const x=X3+rr(RD),z=Z3+rr(RD),h=dH(x,z);if(ok(x,z,h))L.push(fn(x,z,h))}return L};
   const inst=(geo,mat,list,mtx)=>{const im=new T.InstancedMesh(geo,mat,list.length),o=new T.Object3D();list.forEach((q,i)=>{mtx(o,q);o.updateMatrix();im.setMatrixAt(i,o.matrix)});im.castShadow=true;im.receiveShadow=true;G.add(im);return im};
   const ferns=place(900,(x,z,h)=>({x,z,h,s:.8+Math.random()*.7,r:Math.random()*6.3,t:3+Math.random()*4}));
@@ -138,6 +139,7 @@ function build(){if(D.built)return;D.built=true;const t0=performance.now();scene
   D.ptera=[];const pm2=mt(0x7a5a4a);for(let i=0;i<12;i++){const g=new T.Group();g.add(new T.Mesh(new T.CylinderGeometry(.18,.1,1.6,6),pm2).rotateX(Math.PI/2));const hd=new T.Mesh(new T.ConeGeometry(.12,1.1,5),pm2);hd.rotation.x=Math.PI/2;hd.position.z=1.2;g.add(hd);
     const wl=[];for(const s of[-1,1]){const w=new T.Mesh(new T.PlaneGeometry(2.6,1),new T.MeshStandardMaterial({color:0x8a6a5a,side:T.DoubleSide}));w.rotation.x=-Math.PI/2;w.position.x=s*1.35;const piv=new T.Group();piv.add(w);g.add(piv);wl.push({piv,s})}
     G.add(g);D.ptera.push({g,wl,cx:X3+rr(400),cz:Z3+rr(400),r:60+Math.random()*120,y:70+Math.random()*60,sp:(.15+Math.random()*.15)*(Math.random()<.5?1:-1),a:Math.random()*6.3})}
+  try{oerBuild()}catch(e){console.warn('oerkoning',e)}
   console.log('Oertijd built in',Math.round(performance.now()-t0),'ms')}
 D.build=build;
 
@@ -178,7 +180,106 @@ function back(){const R=WD.great&&WD.great.rader&&WD.great.rader.tm;timeJump(()=
 /* after loading a game saved in the Oertijd, the valley must exist */
 ANIMS.push(dt=>{if(!started)return;if(inD(PL.x)&&!D.built&&!D.loading){D.loading=true;loadFBX().then(build)}if(!D.built)return;const here=inD(camera.position.x);G.visible=here;if(!here)return;const t=PL.t;
   if(D.rings)D.rings.forEach((r,i)=>{if(i===0)r.rotation.x+=dt*.6;else if(i===1)r.rotation.y+=dt*.95;else{r.rotation.x+=dt*.9;r.rotation.z+=dt*.6}});if(D.core)D.core.scale.setScalar(1+Math.sin(t*4)*.12);
-  for(const p of D.ptera){p.a+=dt*p.sp;p.g.position.set(p.cx+Math.cos(p.a)*p.r,p.y+Math.sin(t*.7+p.r)*4,p.cz+Math.sin(p.a)*p.r);p.g.rotation.y=-p.a+(p.sp>0?0:Math.PI);for(const w of p.wl)w.piv.rotation.z=w.s*Math.sin(t*5+p.r)*.35}
+  for(const p of D.ptera){if(p.dive)continue;p.a+=dt*p.sp;p.g.position.set(p.cx+Math.cos(p.a)*p.r,p.y+Math.sin(t*.7+p.r)*4,p.cz+Math.sin(p.a)*p.r);p.g.rotation.y=-p.a+(p.sp>0?0:Math.PI);for(const w of p.wl)w.piv.rotation.z=w.s*Math.sin(t*5+p.r)*.35}
   if(window.PW&&PW.ps&&Math.random()<dt*12){const x=X3+VOL.x+rr(8),z=Z3+VOL.z+rr(8),y=dH(X3+VOL.x,Z3+VOL.z)+4;pwEm(PW.ps,x,y,z,rr(1.5),4+Math.random()*3,rr(1.5),5,3,10,[.35,.32,.3],[.15,.14,.14],.5,.3,1);if(Math.random()<.3)pwEm(PW.ps,x,y,z,rr(3),7+Math.random()*4,rr(3),1.6,.4,.1,[1,.6,.2],[1,.2,0],1,-9,1)}
   if(D.lava)D.lava.material.color.setHSL(.05+Math.sin(t*2)*.01,1,.5+Math.sin(t*3)*.06)});
+/* ================= De Oerkoning: Gigantor, the giant dinosaur by the volcano, end boss of the Oertijd =================
+   Two and a half times as big as the T-rex and stronger than the Yeti. He sleeps in a ring of boulders and dead trees
+   at the foot of the Vuurberg. Like the other titans he only takes a sliver of damage per blow, hides behind a shield of
+   four volcano cores at 75%, 50% and 25% while his raptors attack, stamps shock waves you must jump over and slams
+   red circles. He drops the Oer-uitrusting: the strongest gear in the whole game. */
+DK.oerkoning={n:'Oerkoning Gigantor',hp:90000,dmg:190,speed:6.8,aggro:60,range:8.5,rad:5,hh:16,xp:20000,bi:1,L:30,H:9.5,col:0x2a1a12,col2:0x5a2a1a,boss:'oerkoning',fbx:'trex',tint:[.62,.36,.3],ico:'🦖',
+  lore:'De Oerkoning van de Vuurberg, een Gigantosaurus van dertig meter. Zelfs de T-rex gaat voor hem opzij. Zijn stappen laten schokgolven door de grond gaan.'};
+MON.oerkoning={n:DK.oerkoning.n,hp:90000,dmg:190,speed:6.8,aggro:60,range:8.5,xp:20000,loot:'oerkoning',rad:5,hh:16,boss:'oerkoning'};
+addEventListener('load',()=>{try{if(WD.titans)WD.titans.oerkoning={n:'Oerkoning Gigantor',hp:90000,dmg:190,xp:20000,col:0xff5a1a,pal:'fire',core:'Vulkaankern',adds:['raptor','raptor','raptor','raptor'],wave:true,coreR:[24,34],waveK:.4,slamK:.5,lvlK:.07,lvlD:.05}}catch(e){}});
+/* the gear of the Oerkoning: far beyond the Sterren- and Vierhand gear */
+Object.assign(ITEMS,{
+  oer_klauw:{n:'Oerklauw van Gigantor',g:'weapon',kind:'sword',dmg:420,spd:.38,rng:4,fx:{spd:2,dmg:.6,regen:5},col:0x8a2a10,price:250000,ico:'⚔',rar:'m',desc:'Een klauw van de Oerkoning als zwaard. +200% snelheid, +60% kracht.'},
+  oer_schild:{n:'Oerschild van Gigantor',g:'shield',kind:'shield',def:.99,fx:{spd:2,hp:200},col:0x5a2410,price:220000,ico:'◔',rar:'m',desc:'Gemaakt van zijn kopschild. Houdt bijna alles tegen. +200% snelheid.'},
+  oer_pantser:{n:'Oerpantser van Gigantor',g:'armor',def:95,tunic:0x5a2a14,pants:0x2a140a,armor:1,fx:{hp:400,regen:8,spd:2,dmg:.3},price:260000,ico:'🛡',rar:'m',desc:'Schubben van de Oerkoning. +400 leven, +200% snelheid.'},
+  oer_kroon:{n:'Oerkroon van Gigantor',g:'head',def:30,fx:{dmg:1,hp:200,regen:4},hat:'dragonhelm',col:0x8a3a1a,price:200000,ico:'♔',rar:'m',desc:'Zijn tanden als kroon. Dubbele kracht.'},
+  oer_hart:{n:'Hart van de Vuurberg',g:'amulet',fx:{dmg:20,hp:300,regen:10},col:0xff4a1a,price:300000,ico:'❤',rar:'m',desc:'Het gloeiende hart van de Oerkoning. Je slaat 21 keer zo hard.'}});
+const OER=['oer_klauw','oer_schild','oer_pantser','oer_kroon','oer_hart'];
+LOOTX.oerkoning=()=>{PL.fx=PL.fx||{};const first=!PL.fx.oerKill;PL.fx.oerKill=(PL.fx.oerKill||0)+1;
+  const items=first?OER.map(i=>[i,1]):[[OER[Math.floor(Math.random()*5)],1]];items.push(['trex_tand',4],['barnsteen',5],['gem',6]);
+  if(first)setTimeout(()=>{try{WD.kingdom.card('🦖 De Oerkoning is verslagen!','Je hebt Gigantor verslagen, de reuzendino van de Vuurberg. Hij liet de volledige Oer-uitrusting achter: de sterkste spullen van de hele wereld.')}catch(e){}},1500);
+  return{gold:first?60000:20000,items:items.filter(([i])=>ITEMS[i])}};
+LOOTX.raptormoeder=()=>({gold:Math.floor(rnd(300,600)),items:[['raptorklauw',3],['dino_ei',1]].filter(([i])=>ITEMS[i])});
+/* raptors, triceratops and the rest can be called as helpers (the titan shield calls spawnMonster) */
+const _smO=spawnMonster;spawnMonster=function(t,x,z,o={}){if(DK[t])return spawnDino(t,x,z,o);return _smO(t,x,z,o)};
+
+/* the arena: a flat spot at the foot of the volcano, ringed by boulders and dead trees */
+function arenaSpot(){let best=null,bs=1e9;for(let i=0;i<48;i++){const an=i/48*6.283;for(const R of[235,265,295]){const u=VOL.x+Math.cos(an)*R,v=VOL.z+Math.sin(an)*R,x=X3+u,z=Z3+v,h=dH(x,z);
+  if(Math.hypot(u,v)>RD-240||h<2||h>36)continue;if(LAKES.some(L=>Math.hypot(u-L.x,v-L.z)<L.r+60))continue;if(Math.hypot(u-LAND.x,v-LAND.z)<220)continue;
+  let s=0;for(let k=0;k<8;k++){const a2=k/8*6.283;s+=Math.abs(dH(x+Math.cos(a2)*30,z+Math.sin(a2)*30)-h)}if(s<bs){bs=s;best={x,z}}}}
+  return best||{x:X3+VOL.x-250,z:Z3+VOL.z+90}}
+function oerBuild(){const A=D.arena||(D.arena=arenaSpot());const K=window.KIT;
+  if(K&&K.Bag&&window.AS&&AS.lib){const B=K.Bag(),toC=Math.atan2(X3-A.x,Z3-A.z),R=46;
+    for(let i=0;i<26;i++){const an=i/26*6.283;if(Math.abs(angDiff(an,toC))<.32)continue;const r=R+rr(4),x=A.x+Math.sin(an)*r,z=A.z+Math.cos(an)*r,s=2.4+Math.random()*1.4;
+      B.model('Rock_Medium_'+(1+i%3),x,dH(x,z)-s*.25,z,Math.random()*6.3,s,{tint:0x6a5a50});addCircle(x,z,s*1.25)}
+    for(let i=0;i<9;i++){const an=Math.random()*6.283;if(Math.abs(angDiff(an,toC))<.4)continue;const r=R-6+rr(3),x=A.x+Math.sin(an)*r,z=A.z+Math.cos(an)*r;B.model('DeadTree_'+(1+i%5),x,dH(x,z)-.3,z,Math.random()*6.3,.8+Math.random()*.4,{});addCircle(x,z,.6)}
+    for(let i=0;i<12;i++){const an=Math.random()*6.283,r=10+Math.random()*28,x=A.x+Math.sin(an)*r,z=A.z+Math.cos(an)*r;B.model('Rock_Medium_'+(1+i%3),x,dH(x,z)-.3,z,Math.random()*6.3,.3+Math.random()*.4,{tint:0x4a3a32})}
+    /* two great boulders guard the way in */
+    for(const s of[-1,1]){const an=toC+s*.42,x=A.x+Math.sin(an)*(R+4),z=A.z+Math.cos(an)*(R+4);B.model('Rock_Medium_2',x,dH(x,z)-1,z,an,4.5,{tint:0x5a4a42});addCircle(x,z,5.5)}
+    B.build(G)}
+  const a=spawnDino('oerkoning',A.x,A.z);a.rot=Math.atan2(X3-A.x,Z3-A.z);D.king=a;return a}
+
+/* ---------- the Oertijd is never dull: ambushes, stampedes, volcano bombs, angry mothers and diving pteranodons ---------- */
+const EV={amb:rnd(50,90),stamp:rnd(90,150),rock:6,dive:rnd(30,60),seenRock:false};D.ev=EV;
+const nearKing=()=>D.king&&!D.king.dead&&Math.hypot(PL.x-D.king.x,PL.z-D.king.z)<160;
+const nearTM=()=>Math.hypot(PL.x-X3-LAND.x,PL.z-Z3-LAND.z)<110;
+const tempN=f=>actors.filter(a=>a.dinoTemp&&!a.dead&&(!f||f(a))).length;
+function freeAt(x,z){const h=dH(x,z);return h>.6&&h<60&&Math.hypot(x-X3,z-Z3)<RD-200}
+function ambush(){const back=(PL.yaw||PL.rot||0)+Math.PI;let n=0;for(let t=0;t<30&&n<4;t++){const an=back+rr(1),r=20+Math.random()*8,x=PL.x+Math.sin(an)*r,z=PL.z+Math.cos(an)*r;if(!freeAt(x,z))continue;
+    const a=spawnDino('raptor',x,z,{temp:true,dinoTemp:true,respawn:1e12});a.provoked=true;a.state='chase';n++}
+  if(n){addLog('Geritsel in de varens achter je... raptors!','#e5766a');sfx('hurt')}}
+function stampede(){const an=Math.random()*6.283,sx=Math.sin(an),sz=Math.cos(an),px=-sz,pz=sx,kind=Math.random()<.5?'para':'trike';
+  const ox=PL.x-sx*75,oz=PL.z-sz*75,tx=PL.x+sx*90,tz=PL.z+sz*90;if(!freeAt(ox,oz)||!freeAt(tx,tz))return false;let n=0;
+  for(let i=0;i<8;i++){const off=rr(14),back=Math.random()*25,x=ox+px*off-sx*back,z=oz+pz*off-sz*back;if(!freeAt(x,z))continue;
+    const a=spawnDino(kind,x,z,{temp:true,dinoTemp:true,respawn:1e12});a.stamp={tx:tx+px*off,tz:tz+pz*off,t:22};a.rot=Math.atan2(sx,sz);n++}
+  if(n){addLog('De grond trilt... een kudde '+(kind==='para'?'parasaurussen':'triceratopsen')+' op hol! Ga opzij!','#ffb86a');try{if(window.PW)PW.shake=Math.max(PW.shake||0,.5)}catch(e){}sfx('thunder')}return n>0}
+const _uEO=updateEnemy;updateEnemy=function(a,dt){if(!a.stamp||a.dead)return _uEO(a,dt);const S=a.stamp;S.t-=dt;
+  const done=stepTo(a,dt,S.tx,S.tz,11.5,3);if(a.stuck>2){a.x+=Math.sin(a.rot)*.5;a.z+=Math.cos(a.rot)*.5;a.stuck=0}
+  if(!S.hit&&!PL.dead&&Math.hypot(PL.x-a.x,PL.z-a.z)<a.rad+1.3&&PL.y-groundH(PL.x,PL.z)<1.5){S.hit=1;damagePlayer(35+(PL.lvl||1)*2,a);try{PL.vy=7}catch(e){}}
+  if(done||S.t<=0){a.dead=true;a.hp=0;a.deadT=99;a.root.visible=false;return}
+  animHorse(a.model,dt,a.vel)};
+const _hitO=hitActor;hitActor=function(a,dmg,by,dir){if(a&&a.stamp&&by){a.stamp=null;a.provoked=true}return _hitO(a,dmg,by,dir)};
+let rockM=null;
+function bomb(x,z){const y0=dH(x,z),R=3.6,T0=1.7;let o=null;
+  try{if(AS.lib&&AS.lib.Rock_Medium_1){o=asProp('Rock_Medium_'+(1+Math.floor(Math.random()*3)),scene,x,y0+60,z,Math.random()*6.3,1.3);if(o){if(!rockM)rockM=new T.MeshStandardMaterial({color:0x3a2018,emissive:0xff4a10,emissiveIntensity:.6,roughness:.9});o.traverse(m=>{if(m.isMesh)m.material=rockM})}}}catch(e){}
+  let t=0;PW.zones.push({u(dt){t+=dt;if(o){const k=Math.min(1,t/T0);o.position.y=y0+60*(1-k*k)-(k>=1?.6:0);o.rotation.x+=dt*2*(1-k)}if(t>T0+14){if(o)scene.remove(o);return true}return false}});
+  giantWarn(x,z,R,T0,0xff6a1a,()=>{try{pwBurst(PW.ps,x,y0+.6,z,30,R*1.3,.7,.8,.1,PC.fire[0],PC.fire[1],1.4,2,1,1.4)}catch(e){}try{if(window.PW)PW.shake=Math.max(PW.shake||0,.5)}catch(e){}
+    if(Math.hypot(PL.x-x,PL.z-z)<R&&inD(PL.x)&&!PL.dead)damagePlayer(30+(PL.lvl||1)*2.2,{x,z})})}
+function dive(){const fr=(D.ptera||[]).filter(q=>!q.dive),p=fr[Math.floor(Math.random()*fr.length)];if(!p)return;
+  const s=p.g.position.clone(),tx=PL.x,tz=PL.z;p.dive={t:0,s,tx,tz,hit:false};addLog('Een pteranodon duikt op je af! Rol weg (X)!','#ffb86a');sfx('hurt')}
+function diveStep(p,dt){const V=p.dive;V.t+=dt;const T1=2.2,T2=4.6;
+  if(V.t<T1){const k=V.t/T1,e=k*k;V.tx+=(PL.x-V.tx)*Math.min(1,dt*1.2);V.tz+=(PL.z-V.tz)*Math.min(1,dt*1.2);const ty=groundH(V.tx,V.tz)+1.6;p.g.position.set(V.s.x+(V.tx-V.s.x)*e,V.s.y+(ty-V.s.y)*e,V.s.z+(V.tz-V.s.z)*e);
+    p.g.lookAt(V.tx,ty,V.tz);for(const w of p.wl)w.piv.rotation.z=w.s*.15}
+  else{if(!V.hit){V.hit=true;if(Math.hypot(PL.x-p.g.position.x,PL.z-p.g.position.z)<3.2&&Math.abs(PL.y+1-p.g.position.y)<3&&!PL.dead)damagePlayer(22+(PL.lvl||1)*1.6,{x:p.g.position.x,z:p.g.position.z})}
+    const k=(V.t-T1)/(T2-T1),e=1-(1-k)*(1-k),bx=p.cx+Math.cos(p.a)*p.r,bz=p.cz+Math.sin(p.a)*p.r;p.g.position.set(V.tx+(bx-V.tx)*e,groundH(V.tx,V.tz)+1.6+(p.y-groundH(V.tx,V.tz)-1.6)*e,V.tz+(bz-V.tz)*e);
+    for(const w of p.wl)w.piv.rotation.z=w.s*Math.sin(PL.t*9)*.5;if(V.t>=T2)p.dive=null}}
+/* stealing an egg wakes the mother */
+const _tpO=takePickup;takePickup=function(p){const egg=p&&p.id==='dino_ei'&&inD(PL.x);const r=_tpO(p);
+  if(egg&&D.built&&Math.random()<.55&&!actors.some(a=>a.mother&&!a.dead)){const an=Math.random()*6.283,x=PL.x+Math.sin(an)*24,z=PL.z+Math.cos(an)*24;if(freeAt(x,z)){
+    const m=spawnDino('raptor',x,z,{temp:true,dinoTemp:true,respawn:1e12,mother:true,name:'Raptormoeder',loot:'raptormoeder',hp:900,hpMax:900,dmg:34,speed:8.2,rad:.9,hh:2.6,xp:600});m.root.scale.setScalar(1.6);m.provoked=true;m.state='chase';
+    for(let k=0;k<2;k++){const b=spawnDino('raptor',x+rr(4),z+rr(4),{temp:true,dinoTemp:true,respawn:1e12});b.provoked=true}
+    addLog('Een woedend gekrijs... de raptormoeder komt haar ei terughalen!','#e5766a');sfx('hurt')}}
+  return r};
+/* the first sight of the Oerkoning */
+function intro(a){if(!window.cinematic||(window.CIN&&CIN.on))return;const V=(x,y,z)=>new T.Vector3(x,y,z),dx=PL.x-a.x,dz=PL.z-a.z,d=Math.hypot(dx,dz)||1,ux=dx/d,uz=dz/d,y=a.y;
+  cinematic([{d:2.6,from:V(a.x+ux*70-uz*20,y+8,a.z+uz*70+ux*20),to:V(a.x+ux*48-uz*10,y+5,a.z+uz*48+ux*10),lf:V(a.x,y+8,a.z),lt:V(a.x,y+12,a.z)},
+    {d:2.8,from:V(a.x+ux*20+uz*18,y+2,a.z+uz*20-ux*18),to:V(a.x+ux*16+uz*8,y+1.5,a.z+uz*16-ux*8),lf:V(a.x,y+12,a.z),lt:V(a.x,y+15,a.z)}],
+    'De Oerkoning','Gigantor, de reuzendino van de Vuurberg');a.roarT=-1e9;try{if(window.PW)PW.shake=Math.max(PW.shake||0,1.5)}catch(e){}sfx('thunder')}
+ANIMS.push(dt=>{if(!started||!D.built||PL.dead||!inD(PL.x))return;
+  for(const p of D.ptera||[])if(p.dive)diveStep(p,dt);
+  const K=D.king;if(K&&!K.dead&&Math.hypot(PL.x-K.x,PL.z-K.z)<95){PL.fx=PL.fx||{};if(!PL.fx.oerSeen){PL.fx.oerSeen=1;intro(K)}}
+  if(window.CIN&&CIN.on)return;
+  const dv=Math.hypot(PL.x-X3-VOL.x,PL.z-Z3-VOL.z),safe=nearTM();
+  /* the volcano throws burning rocks at anyone near it */
+  if(dv<VOL.r*2.2&&!safe){EV.rock-=dt;if(EV.rock<=0){EV.rock=dv<VOL.r*1.5?rnd(5,9):rnd(9,16);const n=dv<VOL.r*1.5?3:2;for(let i=0;i<n;i++){const an=Math.random()*6.283,r=Math.random()*12;bomb(PL.x+Math.sin(an)*r,PL.z+Math.cos(an)*r)}
+    if(!EV.seenRock){EV.seenRock=true;addLog('De Vuurberg spuwt brandende rotsen! Ren weg uit de rode cirkels.','#ff7a4a')}}}
+  if(safe||nearKing())return;
+  EV.amb-=dt;if(EV.amb<=0){EV.amb=rnd(70,130);if(tempN(a=>a.type==='raptor')<6)ambush()}
+  EV.stamp-=dt;if(EV.stamp<=0){EV.stamp=stampede()?rnd(120,200):20}
+  EV.dive-=dt;if(EV.dive<=0){EV.dive=rnd(35,70);if(PL.y-groundH(PL.x,PL.z)<2)dive()}});
 })();

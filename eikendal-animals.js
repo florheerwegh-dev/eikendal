@@ -31,12 +31,14 @@ updateAnimal=function(a,dt){if(a.frz>0){a.vel=0;return}const d=Math.hypot(PL.x-a
 /* ---------- the new models ---------- */
 const A2={ok:false,lib:{}};WD.animals2=A2;
 /* the Quaternius farm animals looked odd in motion, so only the realistic doe is used for now */
-const MAPA={deer:{k:'doe',h:1.45},elk:{k:'doe',h:1.95,tint:0x8a6a4a},rabbit:{k:'rabbit',h:.34},hare:{k:'rabbit',h:.46,tint:0x9a8060}};
+/* the deer of Literock Studios (a doe and a buck on one skeleton, with idle, grazing and running) comes first; the old doe is the fallback */
+const MAPA={deer:{k:'deer2',alt:'doe',h:1.45},elk:{k:'deer2',alt:'doe',h:1.95,tint:0x8a6a4a,buck:true},rabbit:{k:'rabbit',h:.34},hare:{k:'rabbit',h:.46,tint:0x9a8060}};
 async function loadA2(){const mgr=new T.LoadingManager();mgr.setURLModifier(u=>{const m=/(doe-body|doe-head|Fur-skin|rabbit-skinn)\.png$/i.exec(u);return m?'assets/animals2/'+m[1]+'.jpg':u});
   const fbx=async n=>{const buf=await asFetchBin('assets/animals2/'+n+'.fbx');return new T.FBXLoader(mgr).parse(buf,'assets/animals2/')};
   try{const g=await fbx('rabbit');g.traverse(m=>{if(!m.isMesh)return;for(const x of Array.isArray(m.material)?m.material:[m.material]){x.normalMap=null;x.needsUpdate=true}});A2.lib.rabbit={scene:g,clips:g.animations||[]}}catch(e){console.warn('rabbit model',e)}
-  try{const g=await fbx('deer-female-mesh'),idle=await fbx('deer-female-anim-idle'),run=await fbx('deer-female-anim-run');const clips=[];
-    if(idle.animations[0]){const c=idle.animations[0].clone();c.name='Idle';clips.push(c)}if(run.animations[0]){const c=run.animations[0].clone();c.name='Run';clips.push(c)}A2.lib.doe={scene:g,clips};
+  let deer2=false;try{const g=window.EX&&EX.loadLR?await EX.loadLR('deer'):null;if(g&&g.animations&&g.animations.length){A2.lib.deer2={scene:g.scene,clips:g.animations,variants:true};deer2=true}}catch(e){console.warn('deer2',e)}
+  if(!deer2)try{const g=await fbx('deer-female-mesh'),idle=await fbx('deer-female-anim-idle'),run=await fbx('deer-female-anim-run');const clips=[];
+    /* each file also holds a 'Die' clip, and it comes first: take the clips by name, or a walking deer plays its death */const pickC=(f,re)=>f.animations.find(c=>re.test(c.name))||f.animations.find(c=>!/die|death/i.test(c.name));{const i0=pickC(idle,/idle/i);if(i0){const c=i0.clone();c.name='Idle';clips.push(c)}}{const r0=pickC(run,/run/i);if(r0){const c=r0.clone();c.name='Run';clips.push(c)}}A2.lib.doe={scene:g,clips};
     /* the doe's textures are named differently inside the file: give them by hand */
     const tl=new T.TextureLoader(),tb=tl.load('assets/animals2/doe-body.jpg'),th=tl.load('assets/animals2/doe-head.jpg'),done=new Set();
     g.traverse(m=>{if(!m.isMesh)return;for(const x of Array.isArray(m.material)?m.material:[m.material]){if(done.has(x))continue;done.add(x);const n=(x.name||'').toLowerCase();x.map=n.includes('head')?th:n.includes('body')?tb:null;if(!x.map)x.color.setHex(0x1a1410);else x.color.setHex(0xffffff);x.shininess=6;x.needsUpdate=true}})}catch(e){console.warn('doe model',e)}
@@ -47,11 +49,15 @@ async function loadA2(){const mgr=new T.LoadingManager();mgr.setURLModifier(u=>{
     L.scene.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false}})}
   A2.ok=Object.keys(A2.lib).length>0}
 const clipBy=(L,re)=>L.clips.find(c=>re.test(c.name));
-function upgrade(a){const M=MAPA[a.type];if(!M)return;const L=A2.lib[M.k];a.up2=true;if(!L||!a.model||!a.model.g)return;
+function upgrade(a){const M=MAPA[a.type];if(!M)return;const L=A2.lib[M.k]||A2.lib[M.alt];a.up2=true;if(!L||!a.model||!a.model.g)return;
   const c=T.SkeletonUtils.clone(L.scene),s=M.h/L.h;c.scale.multiplyScalar(s);c.position.y=-L.y0*s;
+  /* one skeleton, two bodies: a doe, or a buck with antlers */
+  if(L.variants){const buck=M.buck||Math.random()<.4;c.traverse(m=>{if(!m.isMesh)return;const n=(m.material&&m.material.name)||'';if(/buck/i.test(n))m.visible=buck;else if(/doe/i.test(n))m.visible=!buck});a.buck=buck}
   if(M.tint)c.traverse(m=>{if(m.isMesh&&m.material){m.material=m.material.clone();if(m.material.color)m.material.color.lerp(new T.Color(M.tint),.45)}});
   a.model.g.traverse(m=>{if(m.isMesh)m.visible=false});const holder=new T.Group();holder.add(c);a.model.g.add(holder);
-  const mx=new T.AnimationMixer(c),acts={};for(const [k,re] of[['walk',/walk/i],['run',/run|gallop/i],['idle',/idle|stand|basic|sitting/i],['eat',/eat|graz/i]]){const cl=clipBy(L,re);if(cl)acts[k]=mx.clipAction(cl)}
+  /* if the animal is hidden far away right now, it must be listed and placed again, or its new skeleton is never moved */
+  if(a._sp&&a._sp.hid)for(const [o,mk] of a._sp.list)o.layers.mask=mk;a._sp=null;a.root.userData.cullHid=false;c.updateMatrixWorld(true);
+  const mx=new T.AnimationMixer(c),acts={};for(const [k,re] of[['walk',/walk/i],['run',/run|gallop/i],['idle',/idle|stand|basic|sitting/i],['eat',/eat|graz|idle_2/i]]){const cl=clipBy(L,re);if(cl)acts[k]=mx.clipAction(cl)}
   if(!acts.walk&&acts.run)acts.walk=acts.run;if(!acts.walk){const j=clipBy(L,/jump|hop/i);if(j){acts.walk=mx.clipAction(j);acts.walk.timeScale=.75}}if(!acts.idle)acts.idle=acts.eat||acts.walk;let cur=null;
   const play=k=>{const A=acts[k]||acts.idle;if(!A||A===cur)return;A.reset().fadeIn(.25).play();if(cur)cur.fadeOut(.25);cur=A};play('idle');
   const hopper=!acts.walk&&!acts.run;
