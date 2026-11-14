@@ -54,7 +54,8 @@ function pump(){if(PH.busy)return;PH.busy=true;const step=()=>{if(!S.el||S.el.st
 /* ---------- creatures ---------- */
 const FN=()=>WD.fun||{},nameOf=t=>{try{return FN().nameOf(t)}catch(e){return(ANIMALS[t]&&ANIMALS[t].name)||(MON[t]&&MON[t].n)||t}};
 const ANIM=()=>new Set([...Object.keys(ANIMALS),'wolf','bear','boar','piranha','shark','terrorbird','shadowwolf']);
-function creatures(animals){let L=[];try{L=FN().allTypes()}catch(e){L=[...Object.keys(ANIMALS),...Object.keys(MON)]}const A=ANIM();return L.filter(t=>animals?A.has(t):!A.has(t))}
+const notYet=k=>!!(window.featHidden&&featHidden(k));   /* part of an update that is not in the game yet */
+function creatures(animals){let L=[];try{L=FN().allTypes()}catch(e){L=[...Object.keys(ANIMALS),...Object.keys(MON)]}const A=ANIM();return L.filter(t=>!notYet(t)&&(animals?A.has(t):!A.has(t)))}
 const seen=()=>{const f=FX();return f.seen||{}},slain=()=>{const f=FX();return f.slain||{}};
 const ico=t=>(FN().ICO&&FN().ICO[t])||(ANIMALS[t]?'🐾':'👹');
 /* ---------- where to find things you do not have yet ---------- */
@@ -98,7 +99,7 @@ function creatureHint(t){const a=liveOf('t:'+t);if(a)return'📍 Leeft'+(where(a
 const TIER=[['','Gewone',400],['r','Zeldzame',1500],['e','Epische',4000],['l','Legendarische',12000]];
 const CATN={weapon:'wapens',armor:'harnassen en schilden',wear:'kleding',jewel:'sieraden',food:'eten en drankjes',mat:'materialen en schatten',tool:'gereedschappen',seal:'zegels'};
 let SETS=null;
-function sets(){if(SETS)return SETS;const L=[],all=Object.keys(ITEMS).filter(id=>ITEMS[id]&&ITEMS[id].n&&ITEMS[id].g!=='quest');
+function sets(){if(SETS)return SETS;const L=[],all=Object.keys(ITEMS).filter(id=>ITEMS[id]&&ITEMS[id].n&&ITEMS[id].g!=='quest'&&!notYet(id));
   for(const [c,,ic] of CATS){if(c==='all')continue;const ids=all.filter(id=>catOf(ITEMS[id])===c);for(const [r,adj,base] of TIER){const g=ids.filter(id=>(ITEMS[id].rar||'')===r);if(g.length<2)continue;L.push({id:'i_'+c+'_'+(r||'g'),n:adj+' '+CATN[c],ico:ic,kind:'item',ids:g,tier:r,reward:Math.round((base+g.length*150)/50)*50})}}
   const an=creatures(true),mo=creatures(false),bo=mo.filter(t=>MON[t]&&MON[t].boss);
   L.push({id:'c_animals',n:'Alle dieren gezien',ico:'🐾',kind:'seen',ids:an,reward:5000},{id:'c_monsters',n:'Alle monsters gezien',ico:'👹',kind:'seen',ids:mo,reward:15000},{id:'c_bosses',n:'Alle eindbazen verslagen',ico:'💀',kind:'slain',ids:bo,tier:'l',reward:40000},
@@ -132,7 +133,7 @@ function placesGrid(q){return places().filter(s=>!q||(disc(s.id)&&s.name.toLower
 const S={el:null,sec:'items',cat:'all',q:'',sel:{}};
 const SECS=[['items','Spullen','🎒'],['animals','Dieren','🐾'],['monsters','Monsters','👹'],['people','Mensen','🧑'],['places','Plaatsen','🗺️'],['sets','Verzamelingen','🏆']];
 function setsGrid(q){const C=claimed();return sets().filter(S2=>!q||S2.n.toLowerCase().includes(q)).map(S2=>{const n=S2.ids.filter(i=>have(S2,i)).length,t=S2.ids.length,done=C[S2.id],col=S2.tier==='l'?'#ffb04a':S2.tier==='e'?'#c78aff':S2.tier==='r'?'#6ab8ff':'#e0c890';return'<button class="sxc sxrow'+(done?' done':'')+(S.sel.sets===S2.id?' sel':'')+'" data-id="'+S2.id+'"><span class="sxri">'+S2.ico+'</span><span class="sxrn"><b style="color:'+col+'">'+esc2(S2.n)+'</b><span class="sxrb"><i style="width:'+(n/t*100)+'%;background:'+col+'"></i></span><small>'+n+' / '+t+'</small></span><span class="sxrr">'+(done?'✅':'💰 '+S2.reward.toLocaleString('nl'))+'</span></button>'}).join('')}
-function itemList(){const F=found(),q=S.q.toLowerCase();return Object.keys(ITEMS).filter(id=>{const it=ITEMS[id];if(!it||!it.n)return false;if(S.cat!=='all'&&catOf(it)!==S.cat)return false;if(q&&!(F[id]&&it.n.toLowerCase().includes(q)))return false;return true})
+function itemList(){const F=found(),q=S.q.toLowerCase();return Object.keys(ITEMS).filter(id=>{const it=ITEMS[id];if(!it||!it.n||notYet(id))return false;if(S.cat!=='all'&&catOf(it)!==S.cat)return false;if(q&&!(F[id]&&it.n.toLowerCase().includes(q)))return false;return true})
   .sort((a,b)=>{const A=ITEMS[a],B=ITEMS[b];return CATS.findIndex(c=>c[0]===catOf(A))-CATS.findIndex(c=>c[0]===catOf(B))||(A.price||0)-(B.price||0)||A.n.localeCompare(B.n)})}
 function shapeHtml(id){const h=itemIconHtml(id);let u=null;try{u=WD.iconen.bare(id)}catch(e){}return u?'<img class="ii" alt="" src="'+u+'">':h}
 function itemInfo(id){const F=found(),it=ITEMS[id];if(!it)return'<div class="sxe">Kies iets om te zien wat het is.</div>';const has=F[id],n=PL.inv[id]||0,worn=(()=>{try{return SLOTS.some(k=>PL.eq[k]===id)}catch(e){return false}})(),r=RAR[it.rar];
@@ -145,7 +146,7 @@ function creatureInfo(t){if(!t)return'<div class="sxe">Kies een dier of monster.
 function personInfo(k){const M=FX().met||{},m=M[k];if(!m)return'<div class="sxe">Kies iemand.</div>';const key='p:'+m.n+'|'+m.job;
   return'<div class="sxbig">'+picHtml(key,JOBICO[m.job]||'🧑',0x3a5a7a)+'</div><h3>'+esc2(m.n)+'</h3><div class="sxt">'+esc2(jobName(m.job))+'</div><div class="sxh">🤝 Ontmoet op dag '+m.d+' in '+esc2(m.w)+'</div>'}
 function card(id,has,html,name,extra){return'<button class="sxc'+(has?'':' off')+(S.sel[S.sec]===id?' sel':'')+'" data-id="'+esc2(id)+'" title="'+(has?esc2(name):'???')+'"><span class="sxic">'+html+'</span><span class="sxnm">'+(has?esc2(name):'???')+'</span>'+(extra||'')+'</button>'}
-function render(){markOwned();try{checkSets()}catch(e){}const el=S.el,F=found(),all=Object.keys(ITEMS).filter(id=>ITEMS[id]&&ITEMS[id].n),fn=all.filter(id=>F[id]).length,sn=seen(),an=creatures(true),mo=creatures(false),met=FX().met||{};
+function render(){markOwned();try{checkSets()}catch(e){}const el=S.el,F=found(),all=Object.keys(ITEMS).filter(id=>ITEMS[id]&&ITEMS[id].n&&!notYet(id)),fn=all.filter(id=>F[id]).length,sn=seen(),an=creatures(true),mo=creatures(false),met=FX().met||{};
   const cnt={items:[fn,all.length],animals:[an.filter(t=>sn[t]).length,an.length],monsters:[mo.filter(t=>sn[t]).length,mo.length],people:[Object.keys(met).length,null],sets:[sets().filter(S2=>claimed()[S2.id]).length,sets().length],places:[places().filter(p=>disc(p.id)).length,places().length]};
   const secs=SECS.map(([k,nm,ic])=>'<button class="sxsec'+(S.sec===k?' on':'')+'" data-s="'+k+'">'+ic+' '+nm+' <small>'+cnt[k][0]+(cnt[k][1]!=null?'/'+cnt[k][1]:'')+'</small></button>').join('');
   let sub='',grid='',info='',bar=cnt[S.sec][1]?cnt[S.sec][0]/cnt[S.sec][1]:0;const q=S.q.toLowerCase();

@@ -75,7 +75,7 @@ def broadcast(room, obj, skip=None):
 import hmac, secrets, time, urllib.request
 DATA = os.environ.get('EIK_DATA_DIR') or os.path.join(HERE, 'data')
 FB_LOCK = threading.Lock()
-FB = {'items': [], 'updates': [], 'bans': []}
+FB = {'items': [], 'updates': [], 'bans': [], 'features': {}}   # features: updates that are ready, id -> {at, on}
 TOKENS = {}
 RATE = {}
 GH_REPO = os.environ.get('EIK_GH_REPO', '').strip()
@@ -141,7 +141,9 @@ def fb_load():
         try:
             d = json.loads(raw.decode('utf-8'))
             for k in FB:
-                FB[k] = d.get(k, [])
+                v = d.get(k)
+                if isinstance(v, type(FB[k])):
+                    FB[k] = v
         except Exception as e:
             print('feedback: bestand kapot:', e)
 
@@ -297,7 +299,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
     def body_json(self):
         n = int(self.headers.get('Content-Length', '0') or 0)
-        if n > 1800000:
+        if n > 2600000:
             raise ValueError('te groot')
         return json.loads(self.rfile.read(n).decode('utf-8') or '{}') if n else {}
 
@@ -322,6 +324,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 i.pop('cid', None)
                 i.pop('iph', None)
             return self.reply(200, {'items': items[::-1][:300], 'admin': adm})
+        if url.path == '/api/features':           # which ready updates are in the game (or when they come)
+            now = int(time.time())
+            with FB_LOCK:
+                fs = {k: {'on': bool(v.get('on') or (v.get('at') and now >= v['at'])), 'at': int(v.get('at') or 0)} for k, v in FB['features'].items()}
+            return self.reply(200, {'features': fs, 'now': now})
         if url.path == '/api/ghstatus':           # is feedback kept on GitHub? (no secrets in here)
             return self.reply(200, {'repo': bool(GH_REPO), 'token': bool(GH_TOKEN), 'last': GH_STATE['last'], 't': GH_STATE['t']})
         if url.path == '/api/updates':
@@ -334,7 +341,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self.reply(404)
             with FB_LOCK:
                 owner = next((i for i in FB['items'] if i.get('img') == iid), None)
-                upd = next((u for u in FB['updates'] if u.get('img') == iid), None)
+                upd = next((u for u in FB['updates'] if iid in (u.get('img'), u.get('img_en'))), None)
             if owner and owner.get('private') and not adm and owner.get('cid') != cid:
                 return self.reply(403)
             if not owner and not upd:
@@ -409,18 +416,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             title, text = clean(d.get('title'), 120), clean(d.get('text'), 4000)
             if not title and not text:
                 return self.reply(400, {'error': 'leeg'})
-            iid = None
-            img = str(d.get('img') or '')
-            if img.startswith('data:image/'):
-                try:
-                    raw = base64.b64decode(img.split(',', 1)[1])
-                    if len(raw) <= 900000:
-                        iid = secrets.token_hex(8)
-                        img_put(iid, raw)
-                except Exception:
-                    iid = None
+            def keep(img):
+                img = str(img or '')
+                if img.startswith('data:image/'):
+                    try:
+                        raw = base64.b64decode(img.split(',', 1)[1])
+                        if len(raw) <= 900000:
+                            iid = secrets.token_hex(8)
+                            img_put(iid, raw)
+                            return iid
+                    except Exception:
+                        pass
+                return None
+            up = {'id': secrets.token_hex(6), 't': int(time.time()), 'title': title, 'text': text, 'img': keep(d.get('img'))}
+            if d.get('title_en') or d.get('text_en'):           # the same update in English
+                up.update(title_en=clean(d.get('title_en'), 120), text_en=clean(d.get('text_en'), 4000), img_en=keep(d.get('img_en')))
             with FB_LOCK:
-                FB['updates'].append({'id': secrets.token_hex(6), 't': int(time.time()), 'title': title, 'text': text, 'img': iid})
+                FB['updates'].append(up)
+            fb_save()
+            return self.reply(200, {'ok': True})
+        if url.path == '/api/features':           # the maker plans a ready update, turns it on now, or back off
+            fid = str(d.get('id') or '')
+            if not fid.isalnum() or len(fid) > 40:
+                return self.reply(400, {'error': 'onbekende update'})
+            at = max(0, int(d.get('at') or 0))
+            with FB_LOCK:
+                if not at and not d.get('on'):
+                    FB['features'].pop(fid, None)
+                else:
+                    FB['features'][fid] = {'at': at, 'on': bool(d.get('on'))}
             fb_save()
             return self.reply(200, {'ok': True})
         if url.path in ('/api/ban', '/api/unban'):

@@ -57,7 +57,20 @@ const slow=(fn,near)=>function(a,dt){if(!a||a.boss||a.titan||a===PL.mounted||a.s
 updateNPC=slow(updateNPC,60);updateAnimal=slow(updateAnimal,60);updateEnemy=slow(updateEnemy,90);
 placeActor=function(a){let g;if(a.aq!==undefined)g=a.aq;else if(a.x===a._px&&a.z===a._pz&&!a.rider&&a!==PL.mounted)g=a._pg;else{g=groundH(a.x,a.z);a._px=a.x;a._pz=a.z;a._pg=g}a.y+=(g-a.y)*.5;a.root.position.set(a.x,a.y,a.z);a.root.rotation.y=a.rot};
 /* the distance follows how smoothly the game runs */
-function adapt(){if(!started||!S.on||paused)return;if(S.fps<24){S.lowT++;S.highT=0}else if(S.fps>45){S.highT++;S.lowT=0}else{S.lowT=0;S.highT=0}
+/* dynamic resolution, the trick many big games use: when the game gets slow, the picture is drawn with a few fewer
+   pixels (you hardly see it), so every frame is ready in time; when it is fast again, the sharpness comes back. It never
+   goes above the quality chosen in the settings, and changes in small steps, at most once every few seconds. */
+const RS={lo:0,hi:0,tr:null,block:0};
+function setPR(n){renderer.setPixelRatio(n);renderer.setSize(innerWidth,innerHeight);S.pr=n}
+function adaptRes(){try{const want=Math.min(devicePixelRatio||1,SET.pr||1),cur=renderer.getPixelRatio(),floor=Math.max(.5,want*.6);if(cur>want+.001){setPR(want);RS.tr=null;return}
+  /* a step down is only kept when it really helps: if the game is just as slow with fewer pixels (the computer, not the
+     graphics card, is the slow part), the sharpness comes back and we wait a minute before trying again */
+  if(RS.tr){if(++RS.tr.t<3)return;if(S.fps<RS.tr.fps*1.1){setPR(RS.tr.pr);RS.block=60}RS.tr=null;return}
+  if(RS.block>0)RS.block--;
+  if(S.fps<40){RS.lo++;RS.hi=0}else if(S.fps>55){RS.hi++;RS.lo=0}else{RS.lo=0;RS.hi=0}
+  if(RS.lo>=2&&cur>floor+.001&&RS.block<=0){RS.tr={pr:cur,fps:S.fps,t:0};setPR(Math.max(floor,cur-.1));RS.lo=0}
+  else if(RS.hi>=6&&cur<want-.001){setPR(Math.min(want,cur+.05));RS.hi=0}}catch(e){}}
+function adapt(){if(!started||!S.on||paused)return;adaptRes();if(S.fps<24){S.lowT++;S.highT=0}else if(S.fps>45){S.highT++;S.lowT=0}else{S.lowT=0;S.highT=0}
   if(S.lowT>=2&&S.D>110){S.D=Math.max(110,S.D-50);S.lowT=0}else{const top=window.EIK_LIGHT&&EIK_LIGHT.on?200:340;if(S.highT>=4&&S.D<top){S.D=Math.min(top,S.D+30);S.highT=0}}}
 /* a little more haze when it draws less far, so things do not pop up at the edge */
 const _ueS=updateEnv;updateEnv=function(dt,pp){_ueS(dt,pp);if(pp!==PL||!S.on||PL.inCave||!scene.fog||scene.fog.density===undefined)return;const want=.7/(S.D*1.2);if(scene.fog.density<want)scene.fog.density=want};

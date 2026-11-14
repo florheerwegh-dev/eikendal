@@ -236,7 +236,8 @@ function entrance(){const S=SITE.swamp;if(!S)return;let best=null;for(let i=0;i<
     for(let k=0;k<5;k++){const x=best.x-ox*(3+Math.random()*3)+px*rr(6),z=best.z-oz*(3+Math.random()*3)+pz*rr(6);B.model('Barrel',x,groundH(x,z),z,Math.random()*6,1,{tint:0x8ad83a,rz:Math.random()<.5?Math.PI/2:0})}
     for(const s of[-1,1]){const x=best.x+px*s*8-ox*2,z=best.z+pz*s*8-oz*2;B.model('DeadTree_'+(s>0?2:4),x,groundH(x,z)-.2,z,Math.random()*6,.7,{tint:0x6a6a48})}B.build(G2)}
   ENT={x:best.x+ox*1.3,z:best.z+oz*1.3,ox,oz};TV.ent=ENT}
-const _bfT=buildFantasy;buildFantasy=function(){_bfT();try{entrance()}catch(e){console.warn('gif entrance',e)}};
+/* the tunnel is only there once the maker has put the Gifvallei update in the game (see 'Ready updates' in eikendal-ui.js) */
+const _bfT=buildFantasy;buildFantasy=function(){_bfT();const mk=()=>{if(!ENT)try{entrance()}catch(e){console.warn('gif entrance',e)}};if(window.featWhen)featWhen('gifvallei',mk);else mk()};
 function go(x,z){if(PL.mounted)try{dismount()}catch(e){}PL.x=x;PL.z=z;PL.y=groundH(x,z)+.2;PL.vy=0}
 function tunnel(fn){const f=WD.fadeGo;if(f)f(fn);else fn()}
 let busy=0;

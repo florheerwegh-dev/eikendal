@@ -92,6 +92,7 @@ function asPrepClips(){
     for(const c of raw){const tracks=c.tracks.map(t=>{if(t.name!=='pelvis.position'||kind==='mann')return t;const v=t.values.slice();for(let i=0;i<v.length;i+=3){v[i]+=d.x;v[i+1]+=d.y;v[i+2]+=d.z}return new T.VectorKeyframeTrack(t.name,t.times,v)});
       const cl=new T.AnimationClip(c.name,c.duration<.05?1:c.duration,tracks);out[c.name]=cl}
     AS.clips[kind]=out}}
+window.EIK_RACE={add(kind,name,tpl){AS.lib[name]=tpl;AS_RIG[kind]=name;asPrepChars();asPrepClips();return!!AS.clips[kind]},ready:k=>!!(AS_RIG[k]&&AS.clips[k])};
 function asClip(kind,key){const set=AS.clips[kind];if(!set)return null;if(set[key])return set[key];
   const [name,part]=key.split('|'),c=set[name];if(!c||!part)return null;
   const cl=new T.AnimationClip(key,c.duration,c.tracks.filter(t=>AS_LOWER.has(t.name.split('.')[0])===(part==='L')));set[key]=cl;return cl}
@@ -99,12 +100,18 @@ function asAnchor(model,a){const B=model.userData.bones,g=new T.Group();B[a.bone
 const AS_HOODS=new Set(['hood']),AS_RANGER_HATS=new Set(['hood','helm','horned','dragonhelm','crown','elven']);
 function asOutfit(o){
   if(o.skull)return{kind:'mann'};
+  if(o.race&&AS_RIG[o.race]&&AS.clips[o.race]){const r=o.outfit||(o.armor||o.cape||AS_RANGER_HATS.has(o.hat)||o.ranger?'ranger':'peasant');return{kind:o.race,race:true,fem:/f$/.test(o.race),style:r,vr:0,hood:false,paul:!!o.armor}}
   const fem=!!(o.fem||o.skirt),r=o.outfit||(o.armor||o.cape||AS_RANGER_HATS.has(o.hat)||o.ranger?'ranger':'peasant');
   const seed=((o.tunic||0)*7+(o.hair||0)*3+(o.skin||0))>>>0,vr=o.ovar!==undefined?o.ovar:seed%3===0?1:0;
   return{kind:fem?'female':'male',style:r,vr,hood:r==='ranger'&&o.hat==='hood',paul:!!o.armor}}
 function makeSkinned(o){
   const out=asOutfit(o),kind=out.kind,tpl=AS.lib[AS_RIG[kind]];if(!tpl||!AS.clips[kind])return null;
   const model=T.SkeletonUtils.clone(tpl);model.userData.bones=asBones(model);model.rotation.y=AS.flip[kind]||0;
+  /* the new peoples (elves): their own body, head and hair, wearing the clothes of a human. The clothes are skinned meshes
+     of the human model; they work on the elf skeleton too, because both use the same bones with the same names */
+  if(out.race){const ht=AS.lib[AS_RIG[out.fem?'female':'male']];if(ht){const hc=T.SkeletonUtils.clone(ht),B=model.userData.bones,keep=[];
+    hc.traverse(m=>{if(m.isSkinnedMesh&&/^(Peasant|Ranger)_/.test(m.name))keep.push(m)});
+    for(const m of keep){m.parent.remove(m);m.skeleton=new T.Skeleton(m.skeleton.bones.map(b=>B[b.name]||b),m.skeleton.boneInverses);m.frustumCulled=false;m.userData.cloth=1;model.add(m)}}}
   /* parts and materials */
   if(kind!=='mann'){
     const show=n=>{if(n==='Ranger_Hood')return out.hood;if(n==='Ranger_Pauldron')return out.paul;return n.startsWith(out.style==='ranger'?'Ranger_':'Peasant_')};
@@ -112,6 +119,7 @@ function makeSkinned(o){
   }
   const armorT=o.armor?(o.tunic||0x8a8f99):null,tint=armorT!==null?armorT:o.tunic,amt=o.armor?.62:o.magic?.55:o.tint!==undefined?o.tint:.34,skin=o.skin??SKINS[1];
   model.traverse(m=>{if(!m.isMesh)return;const src=m.material,n=src.name||'';
+    if(out.race&&!m.userData.cloth){m.castShadow=true;m.receiveShadow=true;m.frustumCulled=false;return}
     if(kind==='mann'){m.material=asTinted(src,'sk'+(n.includes('Joint')?0:1),mm=>{mm.color.setHex(n.includes('Joint')?0x5a5244:(o.skin||0xdcd6c2));mm.roughness=.8})}
     else if(n.startsWith('MI_Regular')){m.material=asTinted(src,'skin'+skin,mm=>{mm.map=null;mm.color.setHex(skin)})}
     else{const feet=/Feet/.test(m.name||m.parent&&m.parent.name||''),t=feet&&o.boots?o.boots:tint,a2=feet&&o.boots?.6:amt,glow=feet&&o.bootGlow;
@@ -121,11 +129,11 @@ function makeSkinned(o){
   const g=new T.Group(),rig=new T.Group();g.add(rig);rig.add(model);const s=o.scale||1;rig.scale.setScalar(s);
   /* procedural head (face, hair, beard, hat) on the head bone */
   const A=AS.anchor[kind],head=asAnchor(model,A.head),hand=asAnchor(model,A.handR),off=asAnchor(model,A.handL),arm=asAnchor(model,A.armL),spine=asAnchor(model,A.spine);
-  const ho={...o};if(out.hood)ho.hat=null;const proc=_mh0(ho),ph=proc.head;proc.rig.remove(ph);ph.position.set(0,0,0);head.add(ph);
+  const ho={...o};if(out.hood)ho.hat=null;let ph;if(out.race){ph=new T.Group();head.add(ph)}else{const proc=_mh0(ho);ph=proc.head;proc.rig.remove(ph);ph.position.set(0,0,0);head.add(ph);
   if(kind==='mann'){ph.scale.setScalar(1.12)}else ph.scale.setScalar((out.hood?.78:.84)*(kind==='female'?.92:1));
   if(out.hood)ph.traverse(x=>{if(x.isMesh&&x.geometry&&x.geometry.type==='BoxGeometry'&&x.material!==undefined&&x.position.y>.2)x.visible=false});
   /* hats were too big for the head: smaller, and still sitting on top of it */for(const c of ph.children)if(c.userData.hat){const k=.74;c.position.set(c.position.x*k,.27+(c.position.y-.27)*k,c.position.z*k);c.scale.multiplyScalar(k)}
-  asMergeHead(ph);
+  asMergeHead(ph)}
   if(o.cape&&out.style!=='ranger'||o.cape&&o.hat==='crown'){const cp=mesh(bxg(.46,.9,.04),cm(o.cape),0,-.42,-.17);cp.rotation.x=.08;spine.add(cp)}
   if(o.amulet)spine.add(mesh(new T.SphereGeometry(.045,8,6),new T.MeshBasicMaterial({color:o.amulet}),0,-.04,.15,false));
   const dm=()=>new T.Object3D();
@@ -541,17 +549,31 @@ function asTerrainShader(mat){const U={uRock:{value:AS.tex.rocks},uNoise:{value:
        float ws=smoothstep(150.,186.,vWPos.y+(big-.5)*46.)*smoothstep(.2,.55,wn.y);
        diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.94,.96,1.)*(.9+.1*rk.r),ws);}`)};
   mat.needsUpdate=true;return mat}
+/* ---------- the land is kept in the browser ----------
+   Working out the land (the height and colour of a million points) takes many seconds. The first time, the finished
+   land is kept in the browser (IndexedDB); the next times it is read back. The key is made from the size of every game
+   file: when the game changes, the key changes and the land is worked out again, so an old land is never used. */
+const TCA={};
+function tcDb(){return TCA.db||(TCA.db=new Promise(r=>{try{const q=indexedDB.open('eikendal-cache',1);q.onupgradeneeded=()=>q.result.createObjectStore('kv');q.onsuccess=()=>r(q.result);q.onerror=()=>r(null);q.onblocked=()=>r(null)}catch(e){r(null)}}))}
+async function tcGet(k){const db=await tcDb();if(!db)return null;return new Promise(r=>{try{const q=db.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch(e){r(null)}})}
+async function tcPut(k,v){const db=await tcDb();if(!db)return;try{const st=db.transaction('kv','readwrite').objectStore('kv');st.clear();st.put(v,k)}catch(e){}}
+async function tcKey(){try{const U=[...document.scripts].map(x=>x.src).filter(u=>u&&/\/(eikendal-[^/]*|mp-config)\.js(\?|$)/.test(u)&&!/eikendal-en\.js/.test(u));U.push(location.href.split('#')[0]);
+  const TX=await Promise.all(U.map(u=>fetch(u,{cache:'force-cache'}).then(r=>r.ok?r.text():Promise.reject(r.status))));let h=2166136261;for(const t of TX){for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)}h^=t.length}
+  return'land3|'+HALF+'|'+U.length+'|'+(h>>>0).toString(36)}catch(e){return null}}
 const _btr0=buildTerrain;
 buildTerrain=async function(){if(!AS.ok||!AS.tex.rocks)return _btr0();
   setLoad('terrein en bergen');const mat=asTerrainShader(new T.MeshStandardMaterial({vertexColors:true,map:TEX.grass,roughness:1}));
   const CH=200,N=Math.round(HALF*2/CH);WD.chunks=[];
-  for(let cx=0;cx<N;cx++){for(let cz=0;cz<N;cz++){
-    const ox=-HALF+cx*CH+CH/2,oz=-HALF+cz*CH+CH/2;let mx=-1e9;for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)mx=Math.max(mx,terrainH(ox-CH/2+i*25,oz-CH/2+j*25));
+  const key=await tcKey(),old=key?await tcGet(key):null,keep=key&&!old?[]:null;let ci=-1;
+  for(let cx=0;cx<N;cx++){for(let cz=0;cz<N;cz++){ci++;
+    const ox=-HALF+cx*CH+CH/2,oz=-HALF+cz*CH+CH/2,K=old&&old[ci];let SEG;
+    if(K)SEG=K.seg;else{let mx=-1e9;for(let i=0;i<=8;i++)for(let j=0;j<=8;j++)mx=Math.max(mx,terrainH(ox-CH/2+i*25,oz-CH/2+j*25));
     /* the old land in full detail; the new land a little coarser, and the outermost ring (sea and cliffs) coarse */
-    const ed=Math.max(Math.abs(ox),Math.abs(oz)),SEG=mx<-2?10:(WD.fineChunk&&WD.fineChunk(ox,oz,mx))?36:ed>HALF-150?24:ed>1150?(mx>34?56:36):(mx>34?84:40),g=new T.PlaneGeometry(CH,CH,SEG,SEG);g.rotateX(-Math.PI/2);
+    const ed=Math.max(Math.abs(ox),Math.abs(oz));SEG=mx<-2?10:(WD.fineChunk&&WD.fineChunk(ox,oz,mx))?36:ed>HALF-150?24:ed>1150?(mx>34?56:36):(mx>34?84:40)}const g=new T.PlaneGeometry(CH,CH,SEG,SEG);g.rotateX(-Math.PI/2);
     const p=g.attributes.position,n=p.count,cols=new Float32Array(n*3),nor=new Float32Array(n*3),uv=new Float32Array(n*2);
     /* every height is worked out once: one grid per chunk with a ring around it, the normals come from the neighbours in that grid */
-    const M=SEG+1,M2=M+2,e=CH/SEG,x0=ox-CH/2,z0=oz-CH/2,GH=new Float32Array(M2*M2);for(let j=0;j<M2;j++)for(let i=0;i<M2;i++)GH[j*M2+i]=terrainH(x0+(i-1)*e,z0+(j-1)*e);
+    const M=SEG+1,M2=M+2,e=CH/SEG,x0=ox-CH/2,z0=oz-CH/2,GH=K?K.gh:new Float32Array(M2*M2);if(!K)for(let j=0;j<M2;j++)for(let i=0;i<M2;i++)GH[j*M2+i]=terrainH(x0+(i-1)*e,z0+(j-1)*e);
+    const C8=K?K.col:new Uint8Array(n*3);
     /* only the road pieces near this chunk are looked at */
     const RS=[];for(const r of ROADS){const q=r.pts,mg=r.w+3;for(let i=0;i<q.length-1;i++){const ax=q[i][0],az=q[i][1],bx=q[i+1][0],bz=q[i+1][1];if(Math.max(ax,bx)+mg<x0||Math.min(ax,bx)-mg>x0+CH||Math.max(az,bz)+mg<z0||Math.min(az,bz)-mg>z0+CH)continue;RS.push(ax,az,bx-ax,bz-az,r.w)}}
     const nearRoad=(x,z)=>{let best=1e9;for(let k=0;k<RS.length;k+=5){const ax=RS[k],az=RS[k+1],dx=RS[k+2],dz=RS[k+3],t=clamp(((x-ax)*dx+(z-az)*dz)/(dx*dx+dz*dz),0,1),d=Math.hypot(x-ax-dx*t,z-az-dz*t)-RS[k+4];if(d<best)best=d}return best};
@@ -559,6 +581,7 @@ buildTerrain=async function(){if(!AS.ok||!AS.tex.rocks)return _btr0();
       const ix=i%M,iy=(i-ix)/M,gi=(iy+1)*M2+ix+1,x=x0+ix*e,z=z0+iy*e,h=GH[gi];p.setXYZ(i,x,h,z);
       const hx=GH[gi+1]-GH[gi-1],hz=GH[gi+M2]-GH[gi-M2],l=Math.hypot(hx,2*e,hz);
       nor[i*3]=-hx/l;nor[i*3+1]=2*e/l;nor[i*3+2]=-hz/l;uv[i*2]=x/9;uv[i*2+1]=z/9;
+      if(K){cols[i*3]=C8[i*3]/255;cols[i*3+1]=C8[i*3+1]/255;cols[i*3+2]=C8[i*3+2]/255;continue}
       const slope=Math.hypot(hx,hz)/(2*e),nn=fbm(x*.05,z*.05,3),n2=fbm(x*.011+9,z*.011,3);
       let r=.27+.12*nn+.05*n2,gg=.43+.14*nn,b=.16+.05*nn;
       const fd=smooth(.5,.62,fbm(x*.008+200,z*.008+80,3));r=lerp(r,.17,fd*.5);gg=lerp(gg,.30,fd*.5);b=lerp(b,.1,fd*.5);
@@ -568,9 +591,11 @@ buildTerrain=async function(){if(!AS.ok||!AS.tex.rocks)return _btr0();
       if(h<70&&RS.length){const rd=nearRoad(x,z);if(rd<2.5){const t=1-smooth(.2,2.5,rd);r=lerp(r,.58,t);gg=lerp(gg,.49,t);b=lerp(b,.34,t)}}
       for(const q of SITES)if(q.tint){const tt=1-smooth(q.r*.55,q.r*1.25,Math.hypot(x-q.x,z-q.z));if(tt>0){const w=tt*.8;r=lerp(r,q.tint[0],w);gg=lerp(gg,q.tint[1],w);b=lerp(b,q.tint[2],w)}}
       if(WD.tintAt){const tq=WD.tintAt(x,z);if(tq){r=lerp(r,tq[0],tq[3]);gg=lerp(gg,tq[1],tq[3]);b=lerp(b,tq[2],tq[3])}}
-      cols[i*3]=r;cols[i*3+1]=gg;cols[i*3+2]=b}
+      C8[i*3]=Math.round(clamp(r,0,1)*255);C8[i*3+1]=Math.round(clamp(gg,0,1)*255);C8[i*3+2]=Math.round(clamp(b,0,1)*255);cols[i*3]=C8[i*3]/255;cols[i*3+1]=C8[i*3+1]/255;cols[i*3+2]=C8[i*3+2]/255}
+    if(keep)keep.push({seg:SEG,gh:GH,col:C8});
     g.setAttribute('color',new T.BufferAttribute(cols,3));g.setAttribute('normal',new T.BufferAttribute(nor,3));g.setAttribute('uv',new T.BufferAttribute(uv,2));g.computeBoundingSphere();
     const m=new T.Mesh(g,mat);m.receiveShadow=true;scene.add(m);WD.chunks.push({m,x:ox,z:oz,seg:SEG})}await tick()}
+  WD.landCache=old?'gelezen':keep?'nieuw':'uit';if(keep&&keep.length===N*N)setTimeout(()=>tcPut(key,keep),8000);
   /* a quick height for whole-world jobs (the map, the water): read from the finished land, nothing is calculated twice */
   WD.hFast=(x,z)=>{const c=WD.chunks,fx=clamp(Math.floor((x+HALF)/CH),0,N-1),fz=clamp(Math.floor((z+HALF)/CH),0,N-1),q=c[fx*N+fz],S=q.seg,st=CH/S,u=clamp((x-q.x+CH/2)/st,0,S-.001),v=clamp((z-q.z+CH/2)/st,0,S-.001),i=Math.floor(u),j=Math.floor(v),a=q.m.geometry.attributes.position.array,M=S+1,tx=u-i,tz=v-j,at=(ii,jj)=>a[(jj*M+ii)*3+1];return lerp(lerp(at(i,j),at(i+1,j),tx),lerp(at(i,j+1),at(i+1,j+1),tx),tz)}};
 /* boulders and crags on the mountain sides */

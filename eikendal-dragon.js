@@ -201,7 +201,7 @@ function dmTakeoff(why){const a=DM.a;DM.state='takeoff';DM.t=0;const x=a?a.x:DM.
   if(first)setTimeout(()=>{try{WD.kingdom.card('💚 De Draakmoeder is verslagen!','Met een laatste brul valt de moeder van alle draken neer. Haar hart gloeit nog na. Iedereen in het land zal hierover praten.',null,10)}catch(e){}},1200)}}
 ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started||typeof MOTHER==='undefined'||!MOTHER.g)return;
   if(MOTHER.on&&MOTHER.life<1)DM.tried=false;
-  if(!DM.state){if(MOTHER.on&&!DM.tried&&!PL.inCave&&!PL.inside&&!PL.dead){const d=Math.hypot(MOTHER.p.x-PL.x,MOTHER.p.z-PL.z);if(d<380){DM.tried=true;if(Math.random()<.5)dmLand()}}return}
+  if(!DM.state){if(MOTHER.on&&!DM.tried&&!(window.featOn&&!featOn('moederdraak'))&&!PL.inCave&&!PL.inside&&!PL.dead){const d=Math.hypot(MOTHER.p.x-PL.x,MOTHER.p.z-PL.z);if(d<380){DM.tried=true;if(Math.random()<.5)dmLand()}}return}
   const g=MOTHER.g,m=MOTHER.m;
   if(DM.state==='land'){DM.t+=dt;const k=Math.min(1,DM.t/5.5),e=k*k*(3-2*k),F=DM.from,T0=DM.to;const x=F.x+(T0.x-F.x)*e,z=F.z+(T0.z-F.z)*e,y=T0.y+(F.y-T0.y)*(1-e)*(1-e);
     g.position.set(x,y,z);const look=k<.7?Math.atan2(T0.x-F.x,T0.z-F.z):Math.atan2(PL.x-x,PL.z-z);g.rotation.set(0,look,0);try{animHorse(m,dt,9)}catch(e){}if(k>=1)dmTouchdown();return}

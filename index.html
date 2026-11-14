@@ -292,6 +292,8 @@ function rayBlocked(ax,az,bx,bz){const n=Math.ceil(Math.hypot(bx-ax,bz-az)/1.2),
 /* ---------- Renderer, textures, materials, sky, weather ---------- */
 const renderer=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});
 renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.75));
+/* no error check after every shader: that made the browser wait for each one; the graphics card can now prepare them side by side */
+renderer.debug.checkShaderErrors=false;
 renderer.setSize(innerWidth,innerHeight);
 renderer.toneMapping=T.NoToneMapping;
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;
@@ -401,7 +403,9 @@ function updateEnv(dt,pp){
 }
 
 /* ---------- Terrain, water, roads, forests, rocks, grass ---------- */
-const tick=()=>new Promise(r=>setTimeout(r,0));
+/* a short pause between loading steps. In a tab you are not looking at, the browser makes every timer wait a whole second;
+   a message to ourselves is not slowed down, so the world keeps loading at full speed while you look at another tab */
+const tick=()=>new Promise(r=>{if(document.hidden){const c=new MessageChannel();c.port1.onmessage=()=>r();c.port2.postMessage(0)}else setTimeout(r,0)});
 const LDST=[['animaties',37],['draak',40],['terrein en bergen',49],['terrein',44],['water',52],['wegen',55],['bomen en rotsen',58],['bossen',61],['dorp',64],['gehucht',67],['Rivierhof',70],['stad',72],['burcht',75],['ruïne',77],['roverskamp',79],['grot',81],['geheime',83],['fantasie',85],['bloemen',88],['diepe',90],['kaart',92],['bewoners',94],['shaders',97],['goblin',96]];let ldPct=0;
 const setLoad=t=>{const e=$('ldgt');if(e)e.textContent=t;
   let p=ldPct+.4;const m=/(\d+)%/.exec(t);
@@ -3647,8 +3651,14 @@ async function boot(){
   {const ids=Object.keys(ITEMS);let k=0;const warm=()=>{if(!started){setTimeout(warm,1500);return}/* one icon at a time, when the computer has a moment, so playing never stutters */const step=()=>{itemIconUrl(ids[k++]);if(k<ids.length)setTimeout(warm,250)};if(window.requestIdleCallback)requestIdleCallback(step,{timeout:2000});else step()};setTimeout(warm,4000)}
   try{
     const sceneStart=scene.children.length;
-    await buildTerrain();buildWater();upgradeWater();buildRoads();await tick();setLoad('bomen en rotsen');buildForests();buildRocks();await tick();
+    await buildTerrain();
+    /* while the world is built, trees, flowers and buildings read the height from the land that was just made, instead of
+       working it out again from the noise (that was more than a million times and many seconds). The exact height
+       comes back before you play. */
+    const exactH=terrainH;let fastH=null;if(WD.hFast){const HF=WD.hFast,E=HALF-2;fastH=terrainH=function(x,z){return x>-E&&x<E&&z>-E&&z<E?HF(x,z):exactH(x,z)}}
+    buildWater();upgradeWater();buildRoads();await tick();setLoad('bomen en rotsen');buildForests();buildRocks();await tick();
     buildBridge();buildVillage();await tick();buildHamlet();buildFarm();buildTown();await tick();buildCastle();buildRuins();buildCamp();buildCave();buildSecrets();buildFantasy();finishWorld();buildGrass();buildFlora();buildSigns();buildGraveyard();buildSmoke();freezeStatic(sceneStart);await tick();
+    if(terrainH===fastH)terrainH=exactH;else if(fastH)console.warn('terrainH changed while loading');
     setLoad('kaart');await buildMapBase();populate();populateFantasy();
     PL.y=groundH(PL.x,PL.z);PL.discovered.village=true;
     /* draw the first picture now, behind the loading screen: sending every model and texture near the start to the
@@ -3666,9 +3676,12 @@ function startGame(cls,save){
   addLog('Welkom in Eikendal. Je bent vrij om te gaan waar je wilt.','#e0b04a');if(!save)addLog('Tip: praat met dorpelingen voor opdrachten. Druk F bij gouden prompts.');
   lock();
 }
+let sdt=0;
 function loop(now){
   requestAnimationFrame(loop);
   let dt=Math.min(.05,(now-last)/1000);last=now;if(!worldReady)return;
+  /* frame smoothing: a single slow frame is spread over the next few, so walking and the camera do not jump */
+  sdt=sdt?sdt+(dt-sdt)*.35:dt;dt=sdt;
   paused=!started||(anyModal()&&!(window.modalLive&&modalLive()));
   if(started&&!paused){
     WIND.value=PL.t;updatePlayer(dt);updateActors(dt);updateArrows(dt);updatePickups(dt);updateQuests(dt);updateWorldMisc(dt);updateGrass(PL.x,PL.z);

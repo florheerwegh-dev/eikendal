@@ -109,3 +109,44 @@ const _bfV=buildFantasy;buildFantasy=function(){_bfV();try{gate()}catch(e){conso
 const _pfV=populateFantasy;populateFantasy=function(){_pfV();try{buildElves()}catch(e){console.warn('elfenbos',e)}};
 const _sgV=startGame;startGame=function(...a){_sgV(...a);try{if(inD2(PL.x)){buildDwarves();PL.y=groundH(PL.x,PL.z)}}catch(e){console.warn('diepsteen load',e)}};
 })();
+
+/* ================= Nieuwe volken (a ready update, id 'volken') =================
+   Once the maker has put this update in the game (see 'Ready updates' in eikendal-ui.js):
+   - the elves become real elves: elf bodies with pointed ears and their own faces and hair, in their green clothes;
+   - near the Trollenmoeras lies Groentand, a small camp of FRIENDLY orcs: huts, a cauldron, a trader's stall, an orc cook,
+     an orc mother and two orc children. They are kind. The big bad orcs that were already in the game stay as they were.
+   Models: Quaternius, Characters - Fantasy Races (same skeleton as the people, so they use all the same animations). */
+(function(){
+const RACES=[['elfm','Elf_Male','elf_male'],['elff','Elf_Female','elf_female'],['orcm','Orc_Male','orc_male'],['orcf','Orc_Female','orc_female']];
+let RL=null;
+const load=()=>RL||(RL=(async()=>{if(!window.EIK_RACE||!window.asFetchBin)return false;for(const [k,n,f] of RACES){if(EIK_RACE.ready(k))continue;try{const buf=await asFetchBin('assets/volken/'+f+'.glb');const g=await new Promise((res,rej)=>new T.GLTFLoader().parse(buf,'',res,rej));
+    g.scene.traverse(m=>{if(!m.isMesh)return;for(const mm of Array.isArray(m.material)?m.material:[m.material]){if(mm.map)mm.map.encoding=T.LinearEncoding;mm.needsUpdate=true}});EIK_RACE.add(k,n,g.scene)}catch(e){console.warn('volk',k,e)}}const ok=EIK_RACE.ready('elfm');if(!ok)RL=null;return ok})());
+WD.volken={load};
+/* give an actor a new body of another people, keeping where it is and what it does */
+function reRace(a,kind,o){try{const h=makeHuman({...o,race:kind});if(!h||!h.sk||h.kind!==kind)return null;const old=a.root;if(old&&old.parent)old.parent.remove(old);a.h=h;a.root=h.g;scene.add(h.g);a._sp=null;placeActor(a);return h}catch(e){console.warn('volk',e);return null}}
+function elves(){for(const a of actors){if(a.dead||a.kind!=='npc'||!a.h||!a.h.sk||a.h.race)continue;const archer=a.name==='Elfenboogschutter';if(a.job!=='elf'&&!archer)continue;
+  const fem=!archer&&FEMALE.has(a.name),h=reRace(a,fem?'elff':'elfm',{tunic:0x3f8a6a,pants:0x2a4a3a,ranger:archer,scale:fem?.98:1.04});if(!h)continue;h.race=1;if(archer)try{setHeld(h,'bow_elven')}catch(e){}}}
+/* Groentand, the camp of the friendly orcs */
+LINES.lieveork=['Hallo! Wij zijn de lieve orks.','Niet alle orks zijn boos, hoor!','Wil je wat soep? Ik heb hem net gemaakt.','De grote orks in de burcht? Daar houden wij niet van.','Kijk uit voor het moeras, daar wonen trollen.','Mijn kinderen spelen graag verstoppertje.'];
+try{JOBN.lieveork='lieve ork'}catch(e){}
+let built=false;
+function camp(){if(built)return;const S=SITE.swamp;if(!S||!window.KIT)return;let best=null;
+  for(let i=0;i<48&&!best;i++){const an=i/48*6.283+2.2;for(const r of[150,175,200,230]){const x=S.x+Math.cos(an)*r,z=S.z+Math.sin(an)*r,y=groundH(x,z);
+    if(y<1.5||slopeAt(x,z)>.14||roadDist(x,z)<12||inBuilding(x,z,18)||siteAt(x,z)||Math.abs(groundH(x+12,z)-y)>1.6||Math.abs(groundH(x,z+12)-y)>1.6||Math.abs(groundH(x-12,z)-y)>1.6||Math.abs(groundH(x,z-12)-y)>1.6)continue;best={x,z,y,an};break}}
+  if(!best)return;built=true;const K=window.KIT,B=K.Bag(),G=new T.Group();scene.add(G);const {x:cx,z:cz}=best,gy=(x,z)=>groundH(x,z);
+  for(const [dx,dz,q] of[[-9,-5,1],[8,-6,3],[0,9,2]]){const x=cx+dx,z=cz+dz;K.kitHouse(B,x,gy(x,z)-.15,z,2,2,{q,wall:'UnevenBrick',tint:0x8a7a5a,roofTint:0x5a6a3a,floor:'Floor_WoodDark',chimney:false,win:'Wide_Flat'});addCircle(x,z,3)}
+  B.model('Cauldron',cx,gy(cx,cz),cz,0,1.6);addCircle(cx,cz,1);
+  for(const [dx,dz,n,s] of[[2.4,1.2,'Barrel',1.1],[-2.6,1.8,'Barrel',1],[3,-2,'Chest_Wood',1],[-5,3.5,'Bench',1],[5.5,3.8,'Stall_Empty',1]]){const x=cx+dx,z=cz+dz;B.model(n,x,gy(x,z),z,Math.atan2(cx-x,cz-z),s)}
+  B.build(G);
+  const orc=(name,kind,x,z,o)=>{try{const h=makeHuman({tunic:o.tunic||0x6a5a3a,pants:0x3a3020,race:kind,scale:o.scale||1});if(!h||!h.sk)return null;h.race=1;
+    const a=baseActor({job:'lieveork',name,h,look:{},root:h.g,x,z,hp:80,ai:o.ai||'wander',roam:{x:cx,z:cz},radius:o.radius||14,...(o.shop?{shop:o.shop}:{})});scene.add(a.root);placeActor(a);return a}catch(e){console.warn('lieve ork',e);return null}};
+  orc('Bromm de Kok','orcm',cx+1.6,cz-1.4,{ai:'stay',tunic:0x8a6a3a});
+  orc('Gnorr de Handelaar','orcm',cx+5.5,cz+2.6,{ai:'stay',tunic:0x4a6a3a,shop:['bread','meat','potion','arrow','elixir'].filter(id=>ITEMS[id])});
+  orc('Orkmoeder Grisha','orcf',cx-3,cz+4,{tunic:0x7a3a3a});
+  orc('Kleine Snik','orcm',cx-1,cz+6,{scale:.6,radius:10,tunic:0x5a7aa0});
+  orc('Kleine Mop','orcf',cx+2,cz+7,{scale:.58,radius:10,tunic:0xc07a3a});
+  WD.groentand={x:cx,z:cz}}
+/* when the update is on (or turns on while you play): load the peoples, then change the elves and build the camp */
+function go(){const run=()=>{if(typeof worldReady==='undefined'||!worldReady){setTimeout(run,2000);return}/* the animations must be ready first */load().then(ok=>{if(!ok)return;try{elves()}catch(e){console.warn('elfen',e)}try{camp()}catch(e){console.warn('groentand',e)}})};run()}
+addEventListener('load',()=>{if(window.featWhen)featWhen('volken',go);else go()});
+})();

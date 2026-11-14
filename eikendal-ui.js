@@ -436,7 +436,7 @@ const st=document.createElement('style');st.textContent=`#fbw{position:fixed;ins
 #fbp textarea{min-height:110px;resize:vertical}#fbp .fbrow{display:block;margin:12px 0;text-align:left;font-size:15px;color:inherit}#fbp .fbrow b{display:block;margin-bottom:5px}#fbp .chips button{margin:0 6px 6px 0}#fbp .chips button.on{background:#7a5a22;color:#fff;border-color:#e0b04a}
 #fbp .stars span{font-size:30px;cursor:pointer;color:#5a4a30;user-select:none}#fbp .stars span.on{color:#ffcc33}#fbp .card{background:rgba(255,240,200,.06);border:1px solid #4a3c22;border-radius:8px;padding:10px;margin:8px 0}
 #fbp .meta{color:#c9b48a;font-size:13px}#fbp img.fbimg{max-width:100%;max-height:260px;border-radius:6px;margin-top:6px;display:block}#fbp .msg{margin-top:8px;color:#9cc552}#fbp .err{color:#e5766a}
-#fbtoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:65;background:rgba(26,19,10,.95);border:1px solid #e0b04a;border-radius:8px;padding:8px 14px;color:#ffe6a0;font:15px var(--f-ui,serif);display:none;cursor:pointer}`;
+#fbtoast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);z-index:91;background:rgba(26,19,10,.95);border:1px solid #e0b04a;border-radius:8px;padding:8px 14px;color:#ffe6a0;font:15px var(--f-ui,serif);display:none;cursor:pointer}`;
 document.head.appendChild(st);
 const W=document.createElement('div');W.id='fbw';W.innerHTML='<div id="fbp"></div>';document.body.appendChild(W);
 /* typing in the panel must not move the hero */for(const ev of['keydown','keyup','keypress'])W.addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&e.code==='Escape')close()});
@@ -448,7 +448,7 @@ const _amF=anyModal;anyModal=function(){return _amF()||W.style.display==='flex'}
 async function call(method,path,body){if(!API())throw new Error('nosrv');const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),60000);
   try{const r=await fetch(API()+path,{method,headers:Object.assign({'Content-Type':'application/json'},tok?{'X-Admin-Token':tok}:{}),body:body?JSON.stringify(body):undefined,signal:ctl.signal});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||('fout '+r.status));return d}finally{clearTimeout(t)}}
 const offline=e=>/nosrv|Failed to fetch|NetworkError|Load failed|aborted/i.test(String(e&&e.message||e))?'De feedbackserver is niet bereikbaar. Feedback werkt in de online versie (GitHub of Render). Slaapt de server? Probeer het over een minuutje nog eens.':String(e.message||e);
-const when=t=>{try{return new Date(t*1000).toLocaleString('nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
+const when=t=>{try{return new Date(t*1000).toLocaleString(window.EIK_LANG&&EIK_LANG.cur==='en'?'en-GB':'nl-NL',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
 const imgURL=id=>API()+'/api/img/'+encodeURIComponent(id)+'?cid='+encodeURIComponent(cid)+(tok?'&tok='+encodeURIComponent(tok):'');
 function head(){return'<h2>💬 Feedback</h2><div class="tabs">'+[['give','✍ Geven'],['all','📋 Alle feedback'],['upd','📰 Updates'],['adm',tok?'🔑 Beheer (aan)':'🔑 Beheer']].map(([k,n])=>'<button class="btn'+(tab===k?' on':'')+'" data-tab="'+k+'">'+n+'</button>').join('')+'<button class="btn" data-x="1" style="margin-left:auto">✖ Sluiten</button></div>'}
 function wire(){P.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{tab=b.dataset.tab;render()});const x=P.querySelector('[data-x]');if(x)x.onclick=close}
@@ -469,6 +469,10 @@ function render(){
     const ni=P.querySelector('#fbnoimg');if(ni)ni.onclick=()=>{form.img=null;render()};
     P.querySelector('#fbsend').onclick=async()=>{const m=P.querySelector('#fbmsg');if((form.text||'').trim().length<3){m.innerHTML='<span class="err">Schrijf eerst wat er is.</span>';return}m.textContent='Versturen... (een slapende server kan even nodig hebben om wakker te worden)';
       try{await call('POST','/api/feedback',{cid,name:(typeof PL!=='undefined'&&PL.look&&PL.look.name)||'Speler',type:form.type,stars:form.stars,text:form.text,img:form.img,private:form.priv});form={type:'bug',stars:0,priv:false,img:null,text:''};render();P.querySelector('#fbmsg').textContent='✅ Bedankt! Je feedback is verstuurd.'}catch(e){m.innerHTML='<span class="err">'+E(offline(e))+'</span>'}};return}
+  if(tab==='app'){P.innerHTML=head()+'<div translate="no"><h3 style="font-family:var(--f-display,serif);color:#ffd27a;margin:4px 0 8px">'+L('📲 Speel Eikendal als app','📲 Play Eikendal as an app')+'</h3><div class="card">'+
+      L('1. Tik op de knop <b>Deel</b> (het vierkantje met het pijltje omhoog ⬆️): op een iPhone onderaan, op een iPad bovenaan.<br>2. Kies <b>Zet op beginscherm</b>.<br>3. Tik op <b>Voeg toe</b>.',
+        '1. Tap the <b>Share</b> button (the square with the arrow pointing up ⬆️): at the bottom on an iPhone, at the top on an iPad.<br>2. Choose <b>Add to Home Screen</b>.<br>3. Tap <b>Add</b>.')+
+      '</div><p>'+L('Open Eikendal voortaan met het icoon op je beginscherm. Dan speel je op het hele scherm, zonder de balken van Safari, net als een echte app.','From now on, open Eikendal with the icon on your home screen. Then you play full screen, without the Safari bars, just like a real app.')+'</p></div>';wire();return}
   if(tab==='all'){P.innerHTML=head()+'<div id="fbl">Laden...</div>';wire();call('GET','/api/feedback?cid='+encodeURIComponent(cid)).then(d=>{const L=d.items||[],box=P.querySelector('#fbl');if(!box)return;if(!L.length){box.textContent='Nog geen feedback. Wees de eerste!';return}
       box.innerHTML=L.map(i=>'<div class="card"><div class="meta">'+(TY[i.type]||TY.anders)[0]+' '+(TY[i.type]||TY.anders)[1]+' · '+'★'.repeat(i.stars||0)+'☆'.repeat(5-(i.stars||0))+' · '+E(i.name)+(i.mine?' (jij)':'')+' · '+when(i.t)+(i.private?' · 🔒 alleen voor de maker':'')+(i.banned?' · 🚫 verbannen':'')+'</div><div>'+E(i.text).replace(/\n/g,'<br>')+'</div>'+(i.img?'<img class="fbimg" loading="lazy" src="'+imgURL(i.img)+'">':'')+
         (d.admin?'<div style="margin-top:6px"><button class="btn" data-del="'+E(i.id)+'">🗑 Verwijderen</button> <button class="btn" data-ban="'+E(i.id)+'" data-on="'+(i.banned?1:0)+'">'+(i.banned?'✅ Weer toelaten':'🚫 Mag geen feedback meer sturen')+'</button></div>':'')+'</div>').join('');
@@ -476,13 +480,112 @@ function render(){
       box.querySelectorAll('[data-ban]').forEach(b=>b.onclick=async()=>{try{await call('POST',b.dataset.on==='1'?'/api/unban':'/api/ban',{id:b.dataset.ban});render()}catch(e){alert(offline(e))}})}).catch(e=>{const b=P.querySelector('#fbl');if(b)b.innerHTML='<span class="err">'+E(offline(e))+'</span>'});return}
   if(tab==='upd'){P.innerHTML=head()+(tok?'<div class="card"><b>Nieuwe update plaatsen</b><div class="fbrow"><input type="text" id="uptitle" maxlength="120" placeholder="Titel, bijvoorbeeld: Versie 61"></div><div class="fbrow"><textarea id="uptxt" maxlength="4000" placeholder="Wat is er nieuw?"></textarea></div><div class="fbrow"><input type="file" id="upfile" accept="image/*"></div><button class="btn pri" id="upsend">Plaatsen</button><div id="upmsg" class="msg"></div></div>':'')+'<div id="upl">Laden...</div>';wire();
     if(tok){let ui=null;P.querySelector('#upfile').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(f)try{ui=await shrink(f,1200)}catch(x){}};P.querySelector('#upsend').onclick=async()=>{const m=P.querySelector('#upmsg');try{await call('POST','/api/updates',{title:P.querySelector('#uptitle').value,text:P.querySelector('#uptxt').value,img:ui});render()}catch(e){m.innerHTML='<span class="err">'+E(offline(e))+'</span>'}}}
-    call('GET','/api/updates').then(d=>{const L=d.items||[],box=P.querySelector('#upl');if(!box)return;if(L[0])try{localStorage.setItem('eik_upd_seen',L[0].id)}catch(e){}box.innerHTML=L.length?L.map(u=>'<div class="card"><div style="font-family:var(--f-display,serif);font-size:20px;color:#ffd27a">'+E(u.title)+'</div><div class="meta">'+when(u.t)+'</div><div>'+E(u.text).replace(/\n/g,'<br>')+'</div>'+(u.img?'<img class="fbimg" loading="lazy" src="'+imgURL(u.img)+'">':'')+(tok?'<button class="btn" data-udel="'+E(u.id)+'" style="margin-top:6px">🗑 Verwijderen</button>':'')+'</div>').join(''):'Nog geen updates.';
+    call('GET','/api/updates').then(d=>{const L=d.items||[],box=P.querySelector('#upl');if(!box)return;if(L[0])try{localStorage.setItem('eik_upd_seen',L[0].id)}catch(e){}box.innerHTML=L.length?L.map(u=>{const en=EN()&&u.title_en,ti=en?u.title_en:u.title,tx=en?u.text_en:u.text,im=(EN()&&u.img_en)||u.img;return'<div class="card"'+(en?' translate="no"':'')+'><div style="font-family:var(--f-display,serif);font-size:20px;color:#ffd27a">'+E(ti)+'</div><div class="meta">'+when(u.t)+'</div><div>'+E(tx).replace(/\n/g,'<br>')+'</div>'+(im?'<img class="fbimg" loading="lazy" src="'+imgURL(im)+'">':'')+(tok?'<button class="btn" data-udel="'+E(u.id)+'" style="margin-top:6px">'+(en?'🗑 Delete':'🗑 Verwijderen')+'</button>':'')+'</div>'}).join(''):'Nog geen updates.';
       box.querySelectorAll('[data-udel]').forEach(b=>b.onclick=async()=>{if(!confirm('Deze update verwijderen?'))return;try{await call('DELETE','/api/updates/'+b.dataset.udel);render()}catch(e){alert(offline(e))}})}).catch(e=>{const b=P.querySelector('#upl');if(b)b.innerHTML='<span class="err">'+E(offline(e))+'</span>'});return}
-  if(tab==='adm'){P.innerHTML=head()+(tok?'<p>✅ Je bent <b>beheerder</b>. Je ziet nu ook de feedback die alleen voor jou is, je kunt feedback verwijderen, spelers stoppen met sturen en updates plaatsen.</p><button class="btn" id="admout">Uitloggen</button>'
+  if(tab==='adm'){P.innerHTML=head()+(tok?'<p>✅ Je bent <b>beheerder</b>. Je ziet nu ook de feedback die alleen voor jou is, je kunt feedback verwijderen, spelers stoppen met sturen en updates plaatsen.</p><button class="btn" id="admout">Uitloggen</button><h3 style="font-family:var(--f-display,serif);color:#ffd27a;margin:16px 0 4px">🧰 Klaargezette updates</h3><div class="meta">'+L('Klaar, maar nog niet in het spel. Kondig ze aan in de Updates (met een thumbnail) en kies na hoeveel dagen ze in het spel komen.','Finished, but not in the game yet. Announce them in the Updates (with a thumbnail) and choose after how many days they come into the game.')+'</div><div id="featl"></div>'
       :'<p>Alleen voor de maker van de game.</p><div class="fbrow"><input type="password" id="admpw" autocomplete="off" placeholder="Wachtwoord"></div><button class="btn pri" id="admin">Inloggen</button><div id="admmsg" class="msg"></div>');wire();
-    if(tok){P.querySelector('#admout').onclick=()=>{tok='';try{sessionStorage.removeItem('eik_adm')}catch(e){}render()};return}
+    if(tok){P.querySelector('#admout').onclick=()=>{tok='';try{sessionStorage.removeItem('eik_adm')}catch(e){}render()};featAdmin(P.querySelector('#featl'));return}
     const go=async()=>{const pw=P.querySelector('#admpw'),m=P.querySelector('#admmsg');m.textContent='Bezig...';try{const d=await call('POST','/api/admin/login',{password:pw.value});pw.value='';tok=d.token;try{sessionStorage.setItem('eik_adm',tok)}catch(e){}render()}catch(e){pw.value='';m.innerHTML='<span class="err">'+E(offline(e))+'</span>'}};
     P.querySelector('#admin').onclick=go;P.querySelector('#admpw').addEventListener('keydown',e=>{if(e.code==='Enter')go()})}}
+/* ================= Ready updates =================
+   A new part of the game can be finished but not in the world yet. The maker announces it under Updates, with a
+   YouTube-style thumbnail made from a real picture of the game, and picks the day it comes (for example in 3 days).
+   From that moment it is in everyone's game. The server keeps which ones are on (/api/features); the game asks again
+   every few minutes, so it also arrives while people are playing. Without a server (the private claude.ai copy)
+   everything is on. Every text here is in Dutch and English: L(dutch, english) picks the one of the chosen language. */
+const EN=()=>!!(window.EIK_LANG&&EIK_LANG.cur==='en'),L=(nl,en)=>EN()?en:nl,LOC=()=>EN()?'en-GB':'nl-NL';
+const FEAT={
+  gifvallei:{ico:'💚',pic:'assets/updates/gifvallei.jpg',focus:[.5,.42],zoom:1.3,col:'#b6ff3c',n:['De Gifvallei','The Poison Valley'],big:['GIFVALLEI','POISON VALLEY'],tag:['Een nieuwe wereld!','A whole new world!'],
+    lines:[['Een stinkende tunnel aan de rand van het Trollenmoeras','Giflucht, zuurmeren, gifspinnen en zuurorks','Alchemist Vira verkoopt gifmaskers en tegengif','Versla Gifdraak Virulax in zijn krater'],
+           ['A stinking tunnel at the edge of the Troll Swamp','Poison air, acid lakes, poison spiders and acid orcs','Alchemist Vira sells gas masks and antidote','Defeat Poison dragon Virulax in his crater']],
+    items:['gifmasker','tegengif','gifkristal','zuurzwaard','gifschild','amu_virulax','gifpantser'],mon:['gifspin','gifork']},
+  moederdraak:{ico:'🐉',pic:'assets/updates/moederdraak.jpg',focus:[.5,.56],zoom:1.7,col:'#6dffd6',n:['De Draakmoeder landt!','The Dragon Mother lands!'],big:['DRAAKMOEDER','DRAGON MOTHER'],tag:['Ze landt... vecht of ren!','She lands... fight or run!'],
+    lines:[['De reuzen-Draakmoeder landt soms vlak bij jou','Vecht tegen haar, of ren zo snel je kan weg','Win het Hart van de Draakmoeder'],
+           ['The giant Dragon Mother sometimes lands right next to you','Fight her, or run away as fast as you can','Win the Heart of the Dragon Mother']],
+    items:['moederhart'],mon:[]},
+  volken:{ico:'🧝',pic:'assets/updates/volken.jpg',col:'#ffb43a',focus:[.5,.55],zoom:1.25,n:['Nieuwe volken','New peoples'],big:['ELFEN & ORKS','ELVES & ORCS'],tag:['Echte elfen en lieve orks!','Real elves and friendly orcs!'],
+    lines:[['De elfen worden echte elfen, met puntoren','Groentand: een dorpje met lieve orks bij het Trollenmoeras','Een orkenkok, een handelaar en orkenkinderen','De grote boze orks blijven gewoon boos'],
+           ['The elves become real elves, with pointed ears','Groentand: a little village of friendly orcs near the Troll Swamp','An orc cook, a trader and orc children','The big bad orcs stay just as angry']],
+    items:[],mon:[]},
+  mobiel:{ico:'📱',pic:'assets/updates/mobiel.jpg',col:'#6fd0ff',dev:true,n:['Speel op iPhone en iPad','Play on iPhone and iPad'],big:['IPHONE & IPAD','IPHONE & IPAD'],tag:['Speel overal!','Play anywhere!'],
+    lines:[['Op een iPhone of iPad krijg je vanzelf de aanraakbediening','Zet Eikendal op je beginscherm: dan speel je op het hele scherm, net als een app','Een lichte versie, zodat het soepel loopt'],
+           ['On an iPhone or iPad you get the touch controls by themselves','Put Eikendal on your home screen: then you play full screen, just like an app','A light version, so it runs smoothly']],
+    items:[],mon:[]}};
+const nm=(F,k)=>F[k][EN()?1:0];
+let FS={};try{FS=JSON.parse(localStorage.getItem('eik_feat')||'{}')||{}}catch(e){}
+const nowS=()=>Date.now()/1000;
+function featOn(id){if(!FEAT[id]||!API())return true;const f=FS[id];return!!(f&&(f.on||(f.at&&nowS()>=f.at)))}
+window.featOn=featOn;
+window.featHidden=k=>{for(const id in FEAT){const F=FEAT[id];if((F.items.includes(k)||F.mon.includes(k))&&!featOn(id))return true}return false};
+const WAIT=[];window.featWhen=(id,fn)=>{if(featOn(id))fn();else WAIT.push([id,fn])};
+function featCheck(){for(let i=WAIT.length-1;i>=0;i--){const [id,fn]=WAIT[i];if(featOn(id)){WAIT.splice(i,1);try{fn()}catch(e){console.warn('update',id,e)}}}}
+function featLoad(){if(!API())return Promise.resolve();return call('GET','/api/features').then(d=>{FS=d.features||{};try{localStorage.setItem('eik_feat',JSON.stringify(FS))}catch(e){}featCheck()}).catch(()=>{})}
+featLoad();setInterval(featLoad,5*60000);setInterval(featCheck,30000);
+const dayOf=(t,en)=>{try{return new Date(t*1000).toLocaleDateString(en?'en-GB':'nl-NL',{weekday:'long',day:'numeric',month:'long'})}catch(e){return''}};
+const dayShort=(t,en)=>{try{return new Date(t*1000).toLocaleDateString(en?'en-GB':'nl-NL',{weekday:'short',day:'numeric',month:'short'}).replace(/\./g,'')}catch(e){return''}};
+const timeOf=t=>{try{return new Date(t*1000).toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit'})}catch(e){return''}};
+/* ---------- the thumbnail: big letters on a real picture of the game, like on YouTube ---------- */
+const imgOf=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+async function thumb(id,at,en){const F=FEAT[id],W2=1280,H2=720,c=document.createElement('canvas');c.width=W2;c.height=H2;const g=c.getContext('2d'),i=en?1:0;
+  /* the hooks of the language module must not touch these words: they are already in the right language */
+  const CP=CanvasRenderingContext2D.prototype,fill=CP.__o_fillText||CP.fillText,stroke=CP.__o_strokeText||CP.strokeText,meas=t=>(CP.__o_measureText||CP.measureText).call(g,t);
+  try{await Promise.all(['900 110px "Alegreya Sans"','700 40px "Alegreya Sans"','64px "IM Fell English"'].map(f=>document.fonts.load(f)))}catch(e){}
+  const im=await imgOf(F.pic);
+  if(F.dev){const gr=g.createLinearGradient(0,0,W2,H2);gr.addColorStop(0,'#2a0f4a');gr.addColorStop(.55,'#0f3a6e');gr.addColorStop(1,'#08b0c8');g.fillStyle=gr;g.fillRect(0,0,W2,H2);
+    if(im){/* a tablet and a phone, both showing the game */const scr=(x,y,w,h,r)=>{g.save();rr(g,x,y,w,h,r);g.clip();const k=Math.max(w/im.width,h/im.height);g.drawImage(im,x+(w-im.width*k)/2,y+(h-im.height*k)/2,im.width*k,im.height*k);g.restore()};
+      g.save();g.translate(780,330);g.rotate(-.06);g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=40;g.fillStyle='#111';rr(g,-290,-205,580,410,34);g.fill();g.shadowBlur=0;scr(-268,-183,536,366,18);g.restore();
+      g.save();g.translate(1105,445);g.rotate(.1);g.shadowColor='rgba(0,0,0,.65)';g.shadowBlur=36;g.fillStyle='#0c0c0c';rr(g,-112,-225,224,450,36);g.fill();g.shadowBlur=0;g.save();rr(g,-100,-212,200,424,26);g.clip();
+        const k=424/im.height;g.drawImage(im,-100-(im.width*k-200)*.62,-212,im.width*k,424);g.restore();g.fillStyle='#0c0c0c';rr(g,-34,-206,68,16,8);g.fill();g.restore()}}
+  else if(im){try{g.filter='saturate(1.35) contrast(1.12)'}catch(e){}/* the monster to the right of the words: its spot in the picture (focus) goes to 70% of the width */const fo=F.focus||[.5,.5],k=Math.max(W2/im.width,H2/im.height)*(F.zoom||1.15),w=im.width*k,h=im.height*k,cl=(v,a)=>Math.max(a,Math.min(0,v));g.drawImage(im,cl(W2*.7-fo[0]*w,W2-w),cl(H2*.56-fo[1]*h,H2-h),w,h);try{g.filter='none'}catch(e){}}
+  const sh=g.createLinearGradient(0,0,W2*.72,0);sh.addColorStop(0,'rgba(0,0,0,.82)');sh.addColorStop(.6,'rgba(0,0,0,.35)');sh.addColorStop(1,'rgba(0,0,0,0)');g.fillStyle=sh;g.fillRect(0,0,W2,H2);
+  const vg=g.createLinearGradient(0,H2*.6,0,H2);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,'rgba(0,0,0,.55)');g.fillStyle=vg;g.fillRect(0,0,W2,H2);
+  const big=(t,x,y,font,col,lw,ang)=>{g.save();g.translate(x,y);if(ang)g.rotate(ang);g.font=font;g.lineJoin='round';g.textAlign='left';g.textBaseline='alphabetic';g.shadowColor='rgba(0,0,0,.7)';g.shadowBlur=18;g.shadowOffsetY=6;
+    g.lineWidth=lw;g.strokeStyle='#000';stroke.call(g,t,0,0);g.shadowColor='transparent';g.fillStyle=col;fill.call(g,t,0,0);g.restore()};
+  /* the logo, top right */
+  g.save();g.font='64px "IM Fell English", Georgia, serif';g.textAlign='right';g.shadowColor='rgba(0,0,0,.9)';g.shadowBlur=16;g.lineWidth=6;g.strokeStyle='rgba(0,0,0,.8)';stroke.call(g,'Eikendal',W2-40,84);g.fillStyle='#ffd879';fill.call(g,'Eikendal',W2-40,84);g.restore();
+  /* the red NEW badge */
+  g.save();g.translate(64,128);g.rotate(-.07);g.fillStyle='#e8231c';g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=14;rr(g,0,-74,en?270:330,96,14);g.fill();g.shadowBlur=0;g.lineWidth=5;g.strokeStyle='#fff';rr(g,0,-74,en?270:330,96,14);g.stroke();
+    g.font='900 72px "Alegreya Sans", "Arial Black", Impact, sans-serif';g.fillStyle='#fff';g.lineWidth=8;g.strokeStyle='#7a0a06';g.lineJoin='round';stroke.call(g,en?'NEW!':'NIEUW!',22,0);fill.call(g,en?'NEW!':'NIEUW!',22,0);g.restore();
+  /* the name, as big as it fits, on one or two lines */
+  const words=F.big[i].split(' '),maxW=F.dev?640:760;let lines=[F.big[i]],size=150;const fnt=s=>'900 '+s+'px "Alegreya Sans", "Arial Black", Impact, sans-serif';
+  g.font=fnt(size);if(meas(lines[0]).width>maxW&&words.length>1){const h=Math.ceil(words.length/2);lines=[words.slice(0,h).join(' '),words.slice(h).join(' ')]}
+  /* laid out from the bottom up: the date label, above it the tagline, above that the name; all below the NEW badge */
+  const tagY=lines.length>1?560:470,top=()=>tagY-80-size*.92*(lines.length-1)-size*.74;
+  while(size>60){g.font=fnt(size);if(Math.max(...lines.map(l=>meas(l).width))<=maxW&&top()>=178)break;size-=6}
+  let y=tagY-80-size*.92*(lines.length-1);for(const l of lines){big(l,58,y,fnt(size),F.col,18,-.02);y+=size*.92}
+  big(F.tag[i],62,tagY,'700 50px "Alegreya Sans", "Arial Black", sans-serif','#ffffff',10,-.02);
+  /* when: a yellow label at the bottom */
+  const when=at?(en?'FROM ':'VANAF ')+dayShort(at,en).toUpperCase():(en?'PLAY IT NOW!':'NU TE SPELEN!');g.save();g.font='900 46px "Alegreya Sans", "Arial Black", sans-serif';const ww=meas(when).width+60;
+  g.translate(58,H2-118);g.rotate(-.02);g.fillStyle='#ffd21f';g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=16;rr(g,0,0,ww,74,12);g.fill();g.shadowBlur=0;g.lineWidth=4;g.strokeStyle='#000';rr(g,0,0,ww,74,12);g.stroke();g.fillStyle='#111';fill.call(g,when,30,54);g.restore();
+  let q=.9,u=c.toDataURL('image/jpeg',q);while(u.length>850000&&q>.4){q-=.08;u=c.toDataURL('image/jpeg',q)}return u}
+const errH=e=>'<span class="err">'+E(offline(e))+'</span>';
+function featState(id){const f=FS[id];if(!f)return['klaar',L('🕒 Klaar, nog niet in het spel','🕒 Ready, not in the game yet')];if(featOn(id))return['live',L('✅ Staat in het spel','✅ In the game')];
+  return['gepland',L('📣 Komt in het spel op ','📣 Comes into the game on ')+dayOf(f.at,EN())+L(' om ',' at ')+timeOf(f.at)]}
+function featAdmin(box){box.textContent=L('Laden...','Loading...');featLoad().then(()=>{if(!box.isConnected)return;
+  box.innerHTML=Object.entries(FEAT).map(([id,F])=>{const st=featState(id)[0];return'<div class="card" data-f="'+id+'" translate="no"><div style="font-family:var(--f-display,serif);font-size:21px;color:#ffd27a">'+F.ico+' '+E(nm(F,'n'))+'</div><div class="meta">'+featState(id)[1]+'</div><div>'+F.lines[EN()?1:0].map(E).join(' · ')+'</div><div style="margin-top:8px">'+
+    (st!=='live'?'<span style="white-space:nowrap">'+L('In het spel over','In the game in')+' <input type="number" min="0" max="60" value="3" data-days style="width:58px;background:#120d06;color:#f4e8c8;border:1px solid #6b5b3a;border-radius:6px;padding:5px"> '+L('dagen','days')+'</span> <button class="btn pri" data-ann>📣 '+L('Aankondigen','Announce')+'</button> ':'')+
+    '<button class="btn" data-post>🖼 '+L('Thumbnail maken','Make thumbnail')+'</button> '+(st!=='live'?'<button class="btn" data-now>▶ '+L('Nu aanzetten','Turn on now')+'</button> ':'')+(st!=='klaar'?'<button class="btn" data-off>⏸ '+L('Terug naar klaar','Back to ready')+'</button>':'')+'</div><div class="fpv"></div><div class="msg"></div></div>'}).join('');
+  box.querySelectorAll('[data-f]').forEach(c=>{const id=c.dataset.f,F=FEAT[id],q=x=>c.querySelector(x),m=q('.msg'),pv=q('.fpv');
+    const days=()=>{const i=q('[data-days]');return i?Math.max(0,Math.min(60,+i.value||0)):0},atOf=d=>d?Math.ceil((nowS()+d*86400)/3600)*3600:0;
+    const set=async(at,on)=>{await call('POST','/api/features',{id,at,on});featAdmin(box)};
+    if(q('[data-now]'))q('[data-now]').onclick=()=>{if(confirm(L(nm(F,'n')+' nu meteen in het spel zetten, voor iedereen?',nm(F,'n')+' into the game right now, for everyone?')))set(0,true).catch(e=>m.innerHTML=errH(e))};
+    if(q('[data-off]'))q('[data-off]').onclick=()=>{if(confirm(L(nm(F,'n')+' terug naar klaar zetten? Wie het spel opnieuw start, ziet het dan niet meer.','Put '+nm(F,'n')+' back to ready? Whoever starts the game again will not see it any more.')))set(0,false).catch(e=>m.innerHTML=errH(e))};
+    q('[data-post]').onclick=async()=>{m.textContent=L('Thumbnail maken...','Making the thumbnail...');try{const f=FS[id],at=featOn(id)?0:(f&&f.at)||atOf(days()),un=await thumb(id,at,false),ue=await thumb(id,at,true);
+      pv.innerHTML=[[un,'nl','🇳🇱 Nederlands'],[ue,'en','🇬🇧 English']].map(([u,k,t])=>'<div style="margin-top:8px"><b>'+t+'</b><img class="fbimg" src="'+u+'"><a class="btn" download="eikendal-'+id+'-'+k+'.jpg" href="'+u+'">⬇ '+L('Downloaden','Download')+'</a></div>').join('');m.textContent=''}catch(e){m.innerHTML=errH(e)}};
+    if(q('[data-ann]'))q('[data-ann]').onclick=async()=>{const d=days(),at=atOf(d);if(!confirm(L('Update "'+nm(F,'n')+'" aankondigen voor iedereen?\n'+(d?'Hij komt in het spel op '+dayOf(at,false)+' om '+timeOf(at)+'.':'Hij komt meteen in het spel.'),'Announce the update "'+nm(F,'n')+'" to everyone?\n'+(d?'It comes into the game on '+dayOf(at,true)+' at '+timeOf(at)+'.':'It comes into the game right away.'))))return;
+      m.textContent=L('Thumbnail maken en versturen...','Making the thumbnail and sending...');try{const img=await thumb(id,at,false),img_en=await thumb(id,at,true),txt=en=>{const k=en?1:0;return F.tag[k]+'\n\n'+F.lines[k].map(l=>'✦ '+l).join('\n')+'\n\n'+(d?(en?'In the game from '+dayOf(at,true)+' at ':'Vanaf '+dayOf(at,false)+' om ')+timeOf(at)+(en?'.':' in het spel.'):(en?'Play it now!':'Nu te spelen!'))};
+        await call('POST','/api/updates',{title:'Nieuwe update: '+F.n[0],text:txt(false),img,title_en:'New update: '+F.n[1],text_en:txt(true),img_en});
+        await set(at,!d)}catch(e){m.innerHTML=errH(e)}}})})}
+/* iPhone and iPad (when that update is on): on an iPhone or iPad that is not playing from the home screen yet, the start
+   screen shows how to put Eikendal there; started from the home screen it fills the whole screen, like an app. */
+(function(){const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),
+  app=()=>{try{return navigator.standalone||matchMedia('(display-mode: standalone)').matches}catch(e){return false}};
+  for(const [n,v] of[['apple-mobile-web-app-capable','yes'],['mobile-web-app-capable','yes'],['apple-mobile-web-app-status-bar-style','black-translucent'],['apple-mobile-web-app-title','Eikendal'],['theme-color','#07060a']]){if(!document.querySelector('meta[name="'+n+'"]')){const m=document.createElement('meta');m.name=n;m.content=v;document.head.appendChild(m)}}
+  if(!document.querySelector('link[rel="apple-touch-icon"]')){const l=document.createElement('link');l.rel='apple-touch-icon';l.href='assets/updates/icoon.png';document.head.appendChild(l)}
+  function btn(){if(!ios||app()||$('fb_app')||!featOn('mobiel'))return;const f=$('fb_title');if(!f)return;const b=document.createElement('button');b.id='fb_app';b.className=f.className;b.style.marginTop='6px';b.setAttribute('translate','no');
+    b.textContent=L('📲 Speel als app','📲 Play as an app');b.onclick=e=>{e.stopPropagation();tab='app';open()};f.parentNode.insertBefore(b,f.nextSibling)}
+  setInterval(btn,3000);window.__eikAppBtn=btn})();
 /* the button at the bottom */
 function fbBtn(){const q=$('qbar');if(!q||$('qb_fb'))return;const b=document.createElement('button');b.id='qb_fb';b.textContent='Feedback';b.onclick=()=>open('give');q.appendChild(b)}
 addEventListener('load',fbBtn);setTimeout(fbBtn,3000);setInterval(fbBtn,5000);
@@ -493,7 +596,7 @@ function fbTitle(){if($('fb_title'))return;const b=[...document.querySelectorAll
 addEventListener('load',()=>setTimeout(fbTitle,800));setInterval(fbTitle,4000);
 /* a new update from the maker: a small message at the bottom, click it to read */
 const toast=document.createElement('div');toast.id='fbtoast';document.body.appendChild(toast);toast.onclick=()=>{toast.style.display='none';open('upd')};
-let checked=false;setInterval(()=>{if(checked||typeof started==='undefined'||!started||!API())return;checked=true;call('GET','/api/updates').then(d=>{const u=(d.items||[])[0];let seen='';try{seen=localStorage.getItem('eik_upd_seen')||''}catch(e){}if(u&&u.id!==seen){toast.textContent='📰 Nieuw van de maker: '+(u.title||'een update')+' (klik om te lezen)';toast.style.display='block';setTimeout(()=>toast.style.display='none',15000)}}).catch(()=>{})},4000);
+let checked=false;setInterval(()=>{if(checked||!API())return;checked=true;call('GET','/api/updates').then(d=>{const u=(d.items||[])[0];let seen='';try{seen=localStorage.getItem('eik_upd_seen')||''}catch(e){}if(u&&u.id!==seen){toast.textContent=EN()&&u.title_en?'📰 New from the maker: '+u.title_en+' (click to read)':'📰 Nieuw van de maker: '+(u.title||'een update')+' (klik om te lezen)';if(EN()&&u.title_en)toast.setAttribute('translate','no');toast.style.display='block';setTimeout(()=>toast.style.display='none',15000)}}).catch(()=>{})},4000);
 addEventListener('load',()=>{try{WD.feedback={open}}catch(e){}});
 })();
 
@@ -557,7 +660,7 @@ function tr(s){if(s==null)return null;s=String(s);const t=s.trim();if(!t||t.leng
   if(v===undefined){const p=pieces(t);if(p!==t)v=p}if(v===undefined||v===t){if(CACHE.size>8000)CACHE.clear();CACHE.set(t,null);return null}if(CACHE.size>8000)CACHE.clear();CACHE.set(t,v);return s.replace(t,v)}
 const trS=s=>cur==='en'?(tr(s)??s):s;
 /* text drawn on canvases (the maps, the minimap, labels) and the little pop-up questions */
-{const C=CanvasRenderingContext2D.prototype;for(const fn of['fillText','strokeText']){const o=C[fn];C[fn]=function(t,...r){return o.call(this,cur==='en'&&typeof t==='string'?trS(t):t,...r)}}
+{const C=CanvasRenderingContext2D.prototype;for(const fn of['fillText','strokeText','measureText'])C['__o_'+fn]=C[fn];for(const fn of['fillText','strokeText']){const o=C[fn];C[fn]=function(t,...r){return o.call(this,cur==='en'&&typeof t==='string'?trS(t):t,...r)}}
   const mt=C.measureText;C.measureText=function(t){return mt.call(this,cur==='en'&&typeof t==='string'?trS(t):t)};
   for(const fn of['alert','confirm','prompt']){const o=window[fn];window[fn]=function(t,...r){return o.call(window,cur==='en'?trS(t):t,...r)}}}
 function node(n){if(n.nodeType===3){if(n.__en!==undefined&&n.nodeValue===n.__en)return;const v=tr(n.nodeValue);if(v!==null){n.__nl=n.nodeValue;n.__en=v;n.nodeValue=v}return}
