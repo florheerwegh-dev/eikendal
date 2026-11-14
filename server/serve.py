@@ -10,6 +10,10 @@ Only the Python standard library is used.
 import base64, hashlib, http.server, json, os, socket, struct, sys, threading, urllib.parse, webbrowser, itertools
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+try:
+    sys.stdout.reconfigure(line_buffering=True)   # so print() shows up in the Render logs right away
+except Exception:
+    pass
 GUID = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 ROOMS = {}            # room name -> {client id: Client}
 LOCK = threading.Lock()
@@ -79,6 +83,16 @@ GH_TOKEN = os.environ.get('EIK_GH_TOKEN', '').strip()
 SALT = os.environ.get('EIK_SALT', 'eikendal')
 TYPES = ('bug', 'glitch', 'idee', 'anders')
 SAVE_T = [None]
+GH_STATE = {'last': 'nog niets geprobeerd', 't': 0}   # last GitHub result, never holds the token
+
+
+def gh_err(e):
+    msg = str(e)
+    try:
+        msg += ' ' + json.loads(e.read().decode('utf-8', 'replace')).get('message', '')
+    except Exception:
+        pass
+    return msg[:200]
 IMG_CACHE = {}
 
 
@@ -113,8 +127,10 @@ def fb_load():
     if GH_REPO and GH_TOKEN:
         try:
             raw = gh('GET', 'feedback.json', raw=True)
+            GH_STATE.update(last='geladen', t=int(time.time()))
         except Exception as e:
-            print('feedback: niet geladen van GitHub:', e)
+            GH_STATE.update(last='laden: ' + gh_err(e), t=int(time.time()))
+            print('feedback: niet geladen van GitHub:', GH_STATE['last'])
     if raw is None:
         try:
             with open(os.path.join(DATA, 'feedback.json'), 'rb') as f:
@@ -141,8 +157,10 @@ def fb_save_now():
     if GH_REPO and GH_TOKEN:
         try:
             gh_put('feedback.json', data)
+            GH_STATE.update(last='bewaard', t=int(time.time()))
         except Exception as e:
-            print('feedback: niet naar GitHub:', e)
+            GH_STATE.update(last='bewaren: ' + gh_err(e), t=int(time.time()))
+            print('feedback: niet naar GitHub:', GH_STATE['last'])
 
 
 def fb_save():
@@ -304,6 +322,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 i.pop('cid', None)
                 i.pop('iph', None)
             return self.reply(200, {'items': items[::-1][:300], 'admin': adm})
+        if url.path == '/api/ghstatus':           # is feedback kept on GitHub? (no secrets in here)
+            return self.reply(200, {'repo': bool(GH_REPO), 'token': bool(GH_TOKEN), 'last': GH_STATE['last'], 't': GH_STATE['t']})
         if url.path == '/api/updates':
             with FB_LOCK:
                 ups = list(FB['updates'])
