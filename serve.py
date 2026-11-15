@@ -324,6 +324,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 i.pop('cid', None)
                 i.pop('iph', None)
             return self.reply(200, {'items': items[::-1][:300], 'admin': adm})
+        if url.path == '/api/admin/check':        # is this login still valid? (for the maker's creative mode)
+            return self.reply(200 if adm else 403, {'ok': adm})
         if url.path == '/api/features':           # which ready updates are in the game (or when they come)
             now = int(time.time())
             with FB_LOCK:

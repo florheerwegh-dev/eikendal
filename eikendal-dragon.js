@@ -96,7 +96,7 @@ const F={alt:0,vy:0,acc:.12};
 const SEATV=new T.Vector3();
 function seatPos(h){const m=h.model;if(m.seatB===undefined){m.seatB=null;m.g.traverse(o=>{if(o.isBone&&(o.name==='Bone002'||o.name==='spine_02'))m.seatB=o})}h.root.updateMatrixWorld(true);
   if(m.seatB){m.seatB.getWorldPosition(SEATV);SEATV.y+=.62*h.root.scale.y;return SEATV}return SEATV.set(h.root.position.x,h.root.position.y+3.3*h.root.scale.y,h.root.position.z)}
-const trueGround=(x,z)=>groundH(x,z);
+const trueGround=(x,z)=>WD.skyH?WD.skyH(x,z,PL.y):groundH(x,z);   /* on the floating island the ground is its top */
 function mountPet(){const P=PET;if(!P||P.grow<1||carrying())return;if(P.sleep>0){addLog('Vonk slaapt. Maak haar eerst wakker.');return}if((PL.inCave&&PL.x>-9000)||(WD.spider&&WD.spider.inside&&WD.spider.inside())){addLog('Hier is te weinig ruimte om te vliegen.');return}
   if(PL.mounted)dismount();PL.mounted=P;P.rider=true;F.alt=Math.max(P.y-.6,trueGround(P.x,P.z));F.vy=0;PL.x=P.x;PL.z=P.z;PL.rot=P.rot;
   F.acc=.12;addLog('Je klimt op Vonk. WASD = vliegen (ze trekt rustig op en gaat steeds sneller), Spatie = stijgen, Shift = dalen, F = landen en afstijgen.','#ffd27a');sfx('level')}
@@ -210,4 +210,58 @@ ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!started||typeof MOTHER==='un
   if(DM.state==='takeoff'){DM.t+=dt;const k=Math.min(1,DM.t/6),F=DM.from,dist=k*k*160,x=F.x+Math.cos(DM.dir)*dist,z=F.z+Math.sin(DM.dir)*dist,y=F.y+k*150;
     g.position.set(x,y,z);g.rotation.set(0,Math.atan2(Math.cos(DM.dir),Math.sin(DM.dir)),0);try{animHorse(m,dt,9)}catch(e){}
     if(k>=1){MOTHER.p.x=x;MOTHER.p.y=y;MOTHER.p.z=z;MOTHER.dir=DM.dir;MOTHER.life=46;MOTHER.roared=true;MOTHER.on=true;MOTHER.t=rnd(150,330);DM.state=null}}});
+})();
+
+/* ================= Het Zwevende Eiland (a ready update, id 'eiland') =================
+   High above the land between Eikendal and Zilverburg floats an island of rock: you see it hanging in the sky from
+   far away, and the only way up is on the back of Vonk, your dragon. On top: green grass, trees and flowers, a little
+   white chapel, the Hemelwachter Aeris who has waited there for ages, and the Hemelkist with the Crown of the Sky.
+   You cannot walk off the edge; to come down, fly off on Vonk. */
+(function(){
+const SK={x:160,z:-380,y:175,r:44,built:false};WD.skyIsle=SK;
+const inI=(x,z)=>{const dx=x-SK.x,dz=z-SK.z;return dx*dx+dz*dz<SK.r*SK.r};
+const topH=(x,z)=>{const d=Math.hypot(x-SK.x,z-SK.z);return SK.y+1.6*(1-smooth(SK.r*.45,SK.r,d))+(fbm((x-SK.x)*.07+3,(z-SK.z)*.07,2)-.5)*.7};
+WD.skyH=(x,z,y)=>{const g=groundH(x,z);return SK.built&&inI(x,z)&&y>SK.y-8?Math.max(g,topH(x,z)):g};
+Object.assign(ITEMS,{hemelkroon:{n:'Kroon van de Hemel',g:'head',def:14,fx:{hp:80,regen:2,stam:30},hat:'crown',hatc:0xbfe8ff,price:20000,ico:'👑',rar:'l',desc:'Een kroon van wolkenzilver. Alleen wie met een draak naar het Zwevende Eiland vloog, kan hem dragen.'}});
+LINES.hemel=['Welkom, drakenrijder. Al eeuwen kwam hier niemand.','Alleen een draak brengt je naar het Zwevende Eiland.','De Hemelkist is voor wie hier durft te komen.','Kijk naar beneden... daar ligt heel Eikendal.','Pas op bij de rand. Zonder je draak val je heel diep.'];
+try{JOBN.hemel='hemelwachter'}catch(e){}
+function build(){if(SK.built||!window.KIT||!AS.lib.CommonTree_1)return;SK.built=true;const G=new T.Group();scene.add(G);SK.g=G;
+  /* the top: a disc of grass */
+  const RN=14,SG=56,pos=[],col=[],uv=[],idx=[],c=new T.Color();
+  for(let i=0;i<=RN;i++)for(let j=0;j<SG;j++){const r=SK.r*(i/RN)*(1+(i===RN?(fbm(j*.3,1,2)-.5)*.12:0)),a=j/SG*6.283,x=SK.x+Math.cos(a)*r,z=SK.z+Math.sin(a)*r;pos.push(x,topH(x,z),z);uv.push(x/9,z/9);
+    const n=fbm(x*.05,z*.05,3);c.setRGB(.3+.12*n,.48+.14*n,.18+.05*n);col.push(c.r,c.g,c.b)}
+  for(let i=0;i<RN;i++)for(let j=0;j<SG;j++){const a=i*SG+j,b=i*SG+(j+1)%SG,d=(i+1)*SG+j,e=(i+1)*SG+(j+1)%SG;idx.push(a,d,b,b,d,e)}
+  const tg=new T.BufferGeometry();tg.setAttribute('position',new T.Float32BufferAttribute(pos,3));tg.setAttribute('color',new T.Float32BufferAttribute(col,3));tg.setAttribute('uv',new T.Float32BufferAttribute(uv,2));tg.setIndex(idx);tg.computeVertexNormals();
+  const top=new T.Mesh(tg,new T.MeshStandardMaterial({map:TEX.grass,vertexColors:true,roughness:1,side:T.DoubleSide}));top.receiveShadow=true;G.add(top);
+  /* the underside: rock hanging down to a point, rough and uneven */
+  const UR=12,up=[],uu=[],ui=[];for(let i=0;i<=UR;i++)for(let j=0;j<SG;j++){const t=i/UR,a=j/SG*6.283,wob=1+(fbm(j*.25+i*.4,i*.3,3)-.5)*.5,r=SK.r*Math.pow(1-t,1.3)*wob*(i?1:1.02),x=SK.x+Math.cos(a)*r,z=SK.z+Math.sin(a)*r;up.push(x,SK.y+.3-t*62-(fbm(j*.2,i*.5,2)-.5)*6*t,z);uu.push(j/SG*8,t*6)}
+  for(let i=0;i<UR;i++)for(let j=0;j<SG;j++){const a=i*SG+j,b=i*SG+(j+1)%SG,d=(i+1)*SG+j,e=(i+1)*SG+(j+1)%SG;ui.push(a,b,d,b,e,d)}
+  const ug=new T.BufferGeometry();ug.setAttribute('position',new T.Float32BufferAttribute(up,3));ug.setAttribute('uv',new T.Float32BufferAttribute(uu,2));ug.setIndex(ui);ug.computeVertexNormals();
+  const rt=(AS.tex&&AS.tex.rocks)||TEX.dirt;G.add(new T.Mesh(ug,new T.MeshStandardMaterial({map:rt,color:0x9a8f80,roughness:1,side:T.DoubleSide})));
+  /* rocks, trees, flowers and the chapel, all from the game's own models */
+  const B=KIT.Bag(),M=(n,x,z,ry,s,o,y)=>B.model(n,x,y===undefined?topH(x,z):y,z,ry||0,s||1,o||{});
+  for(let i=0;i<26;i++){const a=i/26*6.283+Math.random()*.2,r=SK.r*(.94+Math.random()*.08),x=SK.x+Math.cos(a)*r,z=SK.z+Math.sin(a)*r;M('Rock_Medium_'+(1+i%3),x,z,Math.random()*6,1.6+Math.random()*1.8,{tint:0x9a958a},topH(x,z)-1.2)}
+  for(let i=0;i<22;i++){const a=Math.random()*6.283,t=Math.random(),r=SK.r*Math.pow(1-t,1.2)*.9,x=SK.x+Math.cos(a)*r,z=SK.z+Math.sin(a)*r;M('Rock_Medium_'+(1+i%3),x,z,Math.random()*6,4+Math.random()*5,{tint:0x8a8278},SK.y-6-t*50)}
+  const free=(x,z)=>Math.hypot(x-SK.x-10,z-SK.z+4)>11&&Math.hypot(x-SK.x,z-SK.z)<SK.r-5;
+  for(let i=0,n=0;i<200&&n<16;i++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*SK.r,x=SK.x+Math.cos(a)*r,z=SK.z+Math.sin(a)*r;if(!free(x,z))continue;M(n%4===0?'TwistedTree_'+(1+n%5):'CommonTree_'+(1+n%5),x,z,Math.random()*6,.9+Math.random()*.5);n++}
+  for(let i=0;i<70;i++){const a=Math.random()*6.283,r=Math.sqrt(Math.random())*(SK.r-4),x=SK.x+Math.cos(a)*r,z=SK.z+Math.sin(a)*r;if(!free(x,z)&&i%2)continue;M(['Flower_3_Group','Flower_4_Group','Bush_Common_Flowers','Bush_Common'][i%4],x,z,Math.random()*6,1+Math.random()*.6)}
+  const hx=SK.x+10,hz=SK.z-4;KIT.kitHouse(B,hx,topH(hx,hz)-.15,hz,2,2,{q:2,wall:'Plaster',tint:0xf6f2ea,floor:'Floor_WoodLight',chimney:false});
+  M('Chest_Wood',hx,hz+5.2,Math.PI,1.3,{tint:0xbfe0ff});for(const dx of[-2.2,2.2])M('CandleStick_Stand',hx+dx,hz+5,0,1.3);M('Banner_2',hx-4,hz+3.5,0,1.4);M('Banner_2',hx+4,hz+3.5,0,1.4);
+  B.build(G);SK.chest={x:hx,z:hz+5.2};
+  /* the Hemelwachter: stays on the island (his height is the island's) */
+  try{const h=makeHuman({tunic:0xe8eef8,pants:0xc8d4e8,hat:'wizard',hatc:0x8ab8e8,hair:0xf0f0f0,beard:'full',scale:1.05,cape:0x8ab8e8});
+    const ax=hx-5,az=hz+6,a=baseActor({job:'hemel',name:'Hemelwachter Aeris',h,look:{},root:h.g,x:ax,z:az,hp:999,ai:'stay',line:'hemel',face:Math.PI*.8});a.aq=topH(ax,az);a.y=a.aq;scene.add(a.root);placeActor(a);SK.npc=a}catch(e){console.warn('hemelwachter',e)}}
+/* walking on the island: the ground is its top; at the edge a rim stops you (only Vonk flies off) */
+const _upI=updatePlayer;updatePlayer=function(dt){if(!SK.built||PL.y<SK.y-8||Math.abs(PL.x-SK.x)>SK.r+40||Math.abs(PL.z-SK.z)>SK.r+40)return _upI(dt);
+  const G=groundH,fly=!!(PL.mounted&&PL.mounted.flyM),hold=inI(PL.x,PL.z)&&!fly,E=SK.r-.6;
+  /* while you stand on it, just past the edge still counts as the island (so you never start to fall), and you slide along the rim */
+  groundH=(x,z)=>{const dx=x-SK.x,dz=z-SK.z,d=Math.hypot(dx,dz);if(d<SK.r)return Math.max(G(x,z),topH(x,z));if(hold&&d<SK.r+8){const k=E/d;return topH(SK.x+dx*k,SK.z+dz*k)}return G(x,z)};
+  try{_upI(dt)}finally{groundH=G}
+  if(hold){const dx=PL.x-SK.x,dz=PL.z-SK.z,d=Math.hypot(dx,dz);if(d>E){PL.x=SK.x+dx*E/d;PL.z=SK.z+dz*E/d}}};
+/* the Hemelkist */
+const _fiI=findInteract;findInteract=function(){const C=SK.chest;if(C&&PL.y>SK.y-4&&!PL.mounted&&Math.hypot(PL.x-C.x,PL.z-C.z)<2.6){PL.fx=PL.fx||{};if(!PL.fx.hemelkist)return{txt:'Open de Hemelkist',fn:()=>{PL.fx.hemelkist=1;giveItem('hemelkroon',1);PL.gold+=3000;try{giveItem('gem',5)}catch(e){}
+    try{WD.kingdom.card('👑 De Hemelkist','Je vond de Kroon van de Hemel, 3000 goud en 5 edelstenen. Alleen drakenrijders komen hier!')}catch(e){addLog('Je vond de Kroon van de Hemel!','#bfe8ff')}}}}return _fiI()};
+/* when the update is on: build it once the world is ready */
+function go(){const run=()=>{if(typeof worldReady==='undefined'||!worldReady){setTimeout(run,2000);return}try{build()}catch(e){console.warn('zwevend eiland',e)}};run()}
+addEventListener('load',()=>{if(window.featWhen)featWhen('eiland',go);else go()});
 })();

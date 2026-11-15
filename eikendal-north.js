@@ -21,6 +21,8 @@ const W=(lx,lz)=>[X2+lx,Z2+lz];
 const P={gate:{x:0,z:690,r:26,h:9,n:'De Noordpas'},ysdal:{x:-120,z:250,r:62,h:7,n:'Ysdal'},castle:{x:430,z:280,r:64,h:26,n:'De Oude Orkenburcht'},
   runes:{x:-420,z:-300,r:38,h:11,n:'De Runenkring'},den:{x:-560,z:150,r:32,h:10,n:'Het Wolvenhol'},glacier:{x:300,z:-540,r:52,h:38,n:'De Gletsjertop'},storm:{x:-170,z:-540,r:64,h:6,n:'De Stormvlakte'}};
 const LK={x:80,z:-60,r:140};
+/* a quiet snowy clearing in the north-west: the Christmas village Sneeuwklok is built here when the Christmas update is on */
+const KF={x:-330,z:470,r:52,h:9};
 const CF=(()=>{const l=Math.hypot(P.castle.x,P.castle.z);return{x:-P.castle.x/l,z:-P.castle.z/l}})();   /* the castle gate looks towards the middle of Noordheim */
 /* ---------- De Noordpas: two gorges that meet in the middle of a snowstorm ----------
    Each gorge has its own frame: o is the middle of the storm, u points towards Noordheim, n across the path.
@@ -50,6 +52,7 @@ function H2raw(x,z){const u=x-X2,v=z-Z2,r=Math.hypot(u,v);
   let h=16*fbm(u*.0035+50,v*.0035+50,4)+7*fbm(u*.011+9,v*.011-3,3)-6;
   const mr=RW-130+60*(fbm(u*.004+3,v*.004+8,2)-.5);h+=smooth(mr,mr+150,r)*(130+90*fbm(u*.009+3,v*.009+7,3));
   for(const k in P){const s=P[k],d=Math.hypot(u-s.x,v-s.z),R=s.r*(k==='glacier'?2.1:1.8);if(d<R)h=lerp(h,s.h,1-smooth(s.r*.85,R,d))}
+  {const d=Math.hypot(u-KF.x,v-KF.z),R=KF.r*1.8;if(d<R)h=lerp(h,KF.h,1-smooth(KF.r*.85,R,d))}
   const dl=Math.hypot(u-LK.x,v-LK.z);if(dl<LK.r+40)h=lerp(h,-3,1-smooth(LK.r-15,LK.r+40,dl));
   {const cu=u-P.castle.x,cv=v-P.castle.z,d=Math.hypot(cu,cv);if(d>44&&d<60&&!(cu*CF.x+cv*CF.z>0&&Math.abs(cu*CF.z-cv*CF.x)<6))h-=4.5*(1-smooth(2.6,4.6,Math.abs(d-51.5)))}
   return h+NH}
@@ -144,13 +147,13 @@ function build(){if(N.built)return;N.built=true;const G=new T.Group();N.g=G;scen
     const hole=new T.Mesh(new T.CircleGeometry(.5,16),new T.MeshBasicMaterial({color:0x103040}));hole.rotation.x=-Math.PI/2;hole.position.set(hx+2.6,NH+.08,hz+1);add(hole)}
   /* snowy pines, drawn near the player only */
   {const V=[1,2,3,4,5].map(i=>AS.lib&&AS.lib['Pine_'+i]).filter(Boolean),dm=new T.Object3D();
-    for(let i=0;i<9000&&N.trees.length<4200;i++){const u=rr(RW-150),v=rr(RW-150),r=Math.hypot(u,v);if(r>RW-150)continue;const x=X2+u,z=Z2+v;if(Object.values(P).some(s=>Math.hypot(u-s.x,v-s.z)<s.r*1.25)||Math.hypot(u-LK.x,v-LK.z)<LK.r+10||inGorge(FN,x,z,-PZ-30,PLN+16,PW_/2+16))continue;
+    for(let i=0;i<9000&&N.trees.length<4200;i++){const u=rr(RW-150),v=rr(RW-150),r=Math.hypot(u,v);if(r>RW-150)continue;const x=X2+u,z=Z2+v;if(Object.values(P).some(s=>Math.hypot(u-s.x,v-s.z)<s.r*1.25)||Math.hypot(u-KF.x,v-KF.z)<KF.r*1.25||Math.hypot(u-LK.x,v-LK.z)<LK.r+10||inGorge(FN,x,z,-PZ-30,PLN+16,PW_/2+16))continue;
       const f=fbm(u*.006+20,v*.006+40,3)+(u<-280?.12:0);if(f<.5)continue;const h=H2(x,z);if(h>110+NH||slopeAt(x,z)>.55)continue;N.trees.push({x,z,y:h,r:Math.random()*6,s:.9+Math.random()*.8,v:i%Math.max(1,V.length)});addCircle(x,z,.6)}
     V.forEach((src,vi)=>{src.updateMatrixWorld(true);const inv=new T.Matrix4().copy(src.matrixWorld).invert();const parts=[];src.traverse(o=>{if(!o.isMesh)return;const m=(Array.isArray(o.material)?o.material:[o.material]).map(mt=>frost(mt.clone(),mt.alphaTest>0?.4:.25));
       const im=new T.InstancedMesh(o.geometry,m.length>1?m:m[0],N.trees.filter(t=>t.v===vi).length+1);im.frustumCulled=false;im.castShadow=true;im.count=0;add(im);parts.push({im,local:new T.Matrix4().multiplyMatrices(inv,o.matrixWorld)})});N.tv.push(parts)});
     if(!V.length){const cone=new T.ConeGeometry(2.2,6,7),tm=mm(0x2a4a3a),im=new T.InstancedMesh(cone,tm,N.trees.length);N.trees.forEach((t,k)=>{dm.position.set(t.x,t.y+3*t.s,t.z);dm.scale.setScalar(t.s);dm.updateMatrix();im.setMatrixAt(k,dm.matrix)});im.frustumCulled=false;add(im)}}
   /* rocks */
-  {const R=[1,2,3].map(i=>AS.lib&&AS.lib['Rock_Medium_'+i]).filter(Boolean),dm=new T.Object3D();if(R.length)R.forEach((src,ri)=>{const list=[];for(let i=0;i<120;i++){const u=rr(RW-120),v=rr(RW-120);if(Math.hypot(u,v)>RW-120||Math.hypot(u-LK.x,v-LK.z)<LK.r)continue;if(Object.values(P).some(s=>Math.hypot(u-s.x,v-s.z)<s.r)||inGorge(FN,X2+u,Z2+v,-PZ-30,PLN+16,PW_/2+16))continue;list.push([X2+u,Z2+v])}
+  {const R=[1,2,3].map(i=>AS.lib&&AS.lib['Rock_Medium_'+i]).filter(Boolean),dm=new T.Object3D();if(R.length)R.forEach((src,ri)=>{const list=[];for(let i=0;i<120;i++){const u=rr(RW-120),v=rr(RW-120);if(Math.hypot(u,v)>RW-120||Math.hypot(u-LK.x,v-LK.z)<LK.r)continue;if(Object.values(P).some(s=>Math.hypot(u-s.x,v-s.z)<s.r)||Math.hypot(u-KF.x,v-KF.z)<KF.r||inGorge(FN,X2+u,Z2+v,-PZ-30,PLN+16,PW_/2+16))continue;list.push([X2+u,Z2+v])}
     src.traverse(o=>{if(!o.isMesh)return;const mt=frost(o.material.clone(),.38);const im=new T.InstancedMesh(o.geometry,mt,list.length);list.forEach(([x,z],k)=>{dm.position.set(x,H2(x,z)-.3,z);dm.rotation.set(0,Math.random()*6,0);dm.scale.setScalar(1.5+Math.random()*2.5);dm.updateMatrix();im.setMatrixAt(k,dm.matrix);addCircle(x,z,1.6)});im.frustumCulled=false;im.castShadow=true;add(im)})})}
   /* the northern lights */
   {const mat=new T.ShaderMaterial({transparent:true,depthWrite:false,blending:T.AdditiveBlending,side:T.DoubleSide,fog:false,uniforms:{t:{value:0},k:{value:0}},
@@ -301,8 +304,9 @@ function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(
     m.rotation.x=-Math.PI/2;m.position.y=-4.42;m.receiveShadow=true;g.add(m)}
   /* the courtyard: a polished floor, the throne, fire bowls, rune pillars */
   {const fl=new T.Mesh(new T.CircleGeometry(CR-4,48),floorM);fl.rotation.x=-Math.PI/2;fl.position.y=.05;fl.receiveShadow=true;g.add(fl)}
-  B.add(boxGeo(7,1,5),stone,MX(0,.5,4));B.add(boxGeo(5,2,3.6),ice,MX(0,2,4));B.add(boxGeo(5.4,8,1.2),ice,MX(0,5,2.4));B.add(boxGeo(1,2.6,3.6),pale,MX(-2.8,2.3,4));B.add(boxGeo(1,2.6,3.6),pale,MX(2.8,2.3,4));
-  for(let i=0;i<7;i++){const a=(i/6-.5)*1.8;B.add(new T.OctahedronGeometry(1,0),cry,MX(Math.sin(a)*3.4,8.6+Math.cos(a)*2.4,2.2,0,.5,2.2-Math.abs(i-3)*.3,.5,0,-a))}circ(0,4,3.4);
+  const THRONE_OLD=()=>{B.add(boxGeo(7,1,5),stone,MX(0,.5,4));B.add(boxGeo(5,2,3.6),ice,MX(0,2,4));B.add(boxGeo(5.4,8,1.2),ice,MX(0,5,2.4));B.add(boxGeo(1,2.6,3.6),pale,MX(-2.8,2.3,4));B.add(boxGeo(1,2.6,3.6),pale,MX(2.8,2.3,4))};
+  if(!(window.KIT&&window.AS&&AS.lib&&AS.lib.Stairs_Exterior_PlatformU))THRONE_OLD();
+  for(let i=0;i<7;i++){const a=(i/6-.5)*1.8;B.add(new T.OctahedronGeometry(1,0),cry,MX(Math.sin(a)*3.4,8.6+Math.cos(a)*2.4,2.2,0,.5,2.2-Math.abs(i-3)*.3,.5,0,-a))}if(!(window.KIT&&window.AS&&AS.lib&&AS.lib.Stairs_Exterior_PlatformU))circ(0,4,3.4);
   for(let i=0;i<6;i++){const a=(i/6)*6.283+.52,x=Math.sin(a)*27,z=Math.cos(a)*27;if(z<kz+12&&Math.abs(x)<17)continue;B.add(new T.CylinderGeometry(.8,1.1,2.4,10),stone,MX(x,1.2,z));B.add(new T.CylinderGeometry(1.5,.7,.9,14),pale,MX(x,2.85,z));FX.flames.push([x,3.4,z,1.2]);circ(x,z,1.3)}
   for(const [x,z] of[[-7,19],[7,19],[-7,31],[7,31]]){B.add(new T.CylinderGeometry(.55,1.25,9,4),deep,MX(x,4.5,z,.785));B.add(new T.OctahedronGeometry(.8,0),cry,MX(x,9.8,z,0,1,1.6,1));circ(x,z,1.3);}
   /* crystals growing on the hill and along the walls */
@@ -313,6 +317,11 @@ function buildIceCastle(add){const yy=H2(...CW(0,0)),g=new T.Group(),[ox,oz]=CW(
   {const K=window.KIT;if(K&&K.Bag&&window.AS&&AS.lib&&AS.lib.Barrel){const KB=K.Bag(),ly=(x,z)=>{const [wx,wz]=CW(x,z);return H2(wx,wz)-yy},M=(n,x,z,ry=0,s=1,o={},dy=0)=>KB.model(n,x,dy,z,ry,s,o);
     for(const [x,z,sc] of RUB){KB.model('Rock_Medium_'+(1+Math.floor(Math.random()*3)),x,ly(x,z)-.35*sc,z,Math.random()*6.3,sc,{tint:0x8a8478});if(sc>1.5)circ(x,z,sc*1.1)}
     for(const [x,z,q] of[[-28,14,1],[28,14,3],[-30,-10,1],[30,-10,3]]){K.kitHouse(KB,x,0,z,3,2,{q,wall:'UnevenBrick',tint:0x6a6258,roofTint:0x4a3e34,floor:'Floor_WoodDark',chimney:false,win:'Wide_Flat'});circ(x,z,3.4)}
+    /* the throne of Grukk: a stone dais of platform blocks with a stair, and a huge throne on it; whoever walks onto the
+       dais stands on it (WD_STAND), only the throne itself is in the way */
+    {const s=1.15,TOP=s;for(const i of[-1,0,1])for(const j of[0,1])KB.model('Stairs_Exterior_PlatformU',i*2*s,0,4+(j?-s:s),j?0:Math.PI,s,{tint:0x8a8a92});
+      KB.model('Stairs_Exterior_Straight',0,0,4+2*s+1.05*s,0,s,{tint:0x8a8a92});KB.model('Chair_1',0,TOP,3,0,4.2,{tint:0x9ac0d8});circ(0,3,1.1);
+      if(window.WD_STAND){const [wx,wz]=CW(0,4),[sx,sz]=CW(0,4+2*s+1.05*s);WD_STAND.rect(wx,wz,6*s,4*s,CTH,yy+TOP,.05);WD_STAND.stair(sx,sz,2*s,2.1*s,CTH,yy,yy+TOP)}}
     M('Cauldron',-14,10,0,1.6);FX.flames.push([-14,.15,10,.55]);circ(-14,10,1);for(let k=0;k<7;k++){const a=k/7*6.283;M('Rock_Medium_'+(1+k%3),-14+Math.sin(a)*1.5,10+Math.cos(a)*1.5,a,.16,{tint:0x4a4642})}
     for(const [x,z,ry] of[[20,-2,.3],[22.5,1.5,-.4],[19,3,1.1]]){M('Cage_Small',x,z,ry,2.2);circ(x,z,1)}
     for(const [x,z,ry] of[[-18,28,.6],[18,28,-.6],[16,10,-1.2]]){M('WeaponStand',x,z,ry,1.3);circ(x,z,.9)}
@@ -658,4 +667,63 @@ WD.northTravel=travel;
 const _bfN=buildFantasy;buildFantasy=function(){_bfN();try{buildPassMain()}catch(e){console.warn('noordpas',e)}};
 /* a saved game in Noordheim: build it before you appear there */
 const _sgN=startGame;startGame=function(...a){_sgN(...a);if(inN(PL.x)&&!N.built){try{build()}catch(e){console.warn('north',e)}PL.y=groundH(PL.x,PL.z)}};
+
+/* ================= Kerstdorp Sneeuwklok (the Christmas update, id 'kerst') =================
+   In the snowy clearing in the north-west of Noordheim: a giant Christmas tree full of baubles with presents under it,
+   snow-roofed houses with chimneys, a Christmas market with stalls, hot chocolate from the cauldron, Father Christmas
+   by his red sleigh with reindeer, little Christmas elves and people enjoying the feast. Father Christmas gives you a
+   present once a day. Everything is made of the game's own models. */
+ITEMS.chocomelk={n:'Warme chocolademelk',g:'food',heal:40,stam:40,price:12,ico:'☕',desc:'Warm, zoet en lekker. Daar kan je wel tegen een beetje sneeuw.'};
+ITEMS.kerstkoek={n:'Kerstkoekje',g:'food',heal:18,stam:10,price:5,ico:'🍪',desc:'Een koekje in de vorm van een ster, met suiker erop.'};
+ITEMS.kerstmuts={n:'Kerstmuts',g:'head',def:2,fx:{regen:.8},hat:'wizard',hatc:0xc0282a,price:80,ico:'🎅',rar:'r',desc:'Een rode muts, net als die van de Kerstman. Hij houdt je oren warm.'};
+LINES.kerstman=['Ho ho ho! Vrolijk kerstfeest!','Ben je dit jaar wel lief geweest?','Mijn rendieren zijn klaar voor de grote nacht.','Kom morgen terug, dan heb ik weer een cadeautje!','Een warme chocolademelk doet wonderen in de sneeuw.'];
+LINES.kerstvolk=['Vrolijk kerstfeest!','Wat een mooie boom, hè?','Heb je de Kerstman al gezien?','De chocolademelk is heerlijk vandaag!','Ik hoop op een cadeautje onder de boom.','Zalig kerstfeest!'];
+LINES.kerstelf=['Ik pak cadeautjes in!','Psst... de grote rode doos is voor jou!','Hihi, wij zijn de helpers van de Kerstman.','Nog drie nachtjes slapen!'];
+try{Object.assign(JOBN,{kerstman:'Kerstman',kerstvolk:'dorpeling',kerstelf:'kerstelf'})}catch(e){}
+const XM={built:false};N.xmas=XM;
+function xmas(){if(XM.built||!N.built||!window.KIT||!AS.lib.Pine_2)return;XM.built=true;const K=KIT,B=K.Bag(),G=new T.Group();N.g.add(G);
+  const cx=X2+KF.x,cz=Z2+KF.z,gy=(x,z)=>groundH(x,z),M=(n,x,z,ry,s,o,y)=>B.model(n,x,y===undefined?gy(x,z):y,z,ry||0,s||1,o||{});
+  /* the tree: a giant pine with baubles on its branches, a golden top, and presents underneath */
+  /* Pine_2 is the fullest pine: green from low on the trunk; the baubles hang on the outside of the green */
+  const tpl=AS.lib.Pine_2,bb=new T.Box3().setFromObject(tpl),sz=bb.getSize(new T.Vector3()),TS=18/Math.max(1,sz.y),y0=gy(cx,cz);
+  M('Pine_2',cx,cz,0,TS,{tint:0x4a8a52});addCircle(cx,cz,sz.x*TS*.3);
+  const COLS=[0xe02a2a,0xf6c830,0x2a6ae0,0xf0f0f8,0xd02ab0],TH=sz.y*TS,BR=Math.max(sz.x,sz.z)*TS*.5;
+  for(let i=0;i<60;i++){const t=.22+.68*(i/60),a=i*2.4,r=BR*((1-t)/.82)*.78+.2;M('Potion_'+(i%3?1:2),cx+Math.sin(a)*r,cz+Math.cos(a)*r,a,2.6+Math.random()*.8,{tint:COLS[i%COLS.length]},y0+TH*t-.4)}
+  M('Potion_2',cx,cz,0,6,{tint:0xffd84a},y0+TH*.98);
+  for(let i=0;i<14;i++){const a=i/14*6.283+.2,r=BR*.55+1+Math.random()*2.2,x=cx+Math.sin(a)*r,z=cz+Math.cos(a)*r;M(i%3?'Crate_Wooden':'Chest_Wood',x,z,Math.random()*6.3,.85+Math.random()*.45,{tint:COLS[i%4]})}
+  /* snow-roofed houses around the square, all looking at the tree */
+  for(const [dx,dz,q,c] of[[0,-34,0,0xc85a4a],[34,0,3,0xe8e0d0],[-34,0,1,0x5a8a6a],[-24,-24,0,0xe8e0d0],[24,-24,0,0x5a8a6a],[0,36,2,0xb04838]]){const x=cx+dx,z=cz+dz;
+    K.kitHouse(B,x,gy(x,z)-.1,z,3,2,{q,wall:'Plaster',tint:c,floor:'Floor_WoodLight',chimney:true});addCircle(x,z,3.6)}
+  /* the Christmas market */
+  const STALL=[[-14,22,0xc0282a],[-7,24,0x2a8a3a],[0,25,0xc0282a],[7,24,0x2a8a3a],[14,22,0xc0282a]];
+  for(const [dx,dz,c] of STALL){const x=cx+dx,z=cz+dz;M('Stall_Empty',x,z,Math.atan2(-dx,-dz),1.1,{tint:c});addCircle(x,z,1.4);M('Crate_Wooden',x+1.2,z+1.4,.3,.6)}
+  M('Cauldron',cx+18,cz+14,0,1.5);addCircle(cx+18,cz+14,1);M('Table_Large',cx+20.5,cz+12,1,1);M('Barrel',cx+21,cz+16,0,1);
+  /* lights and benches round the tree */
+  for(let i=0;i<10;i++){const a=i/10*6.283+.31,x=cx+Math.sin(a)*17,z=cz+Math.cos(a)*17;M('Torch_Metal',x,z,a,1.4);addCircle(x,z,.3)}
+  for(let i=0;i<4;i++){const a=i/4*6.283+.78,x=cx+Math.sin(a)*12,z=cz+Math.cos(a)*12;M('Bench',x,z,a+Math.PI,1.1)}
+  /* Father Christmas's sleigh with his reindeer, in a little fenced field */
+  const sx=cx+30,sz2=cz+22;M('Prop_Wagon',sx,sz2,Math.PI/2,1.2,{tint:0xb02020});addCircle(sx,sz2,2);
+  for(let i=0;i<8;i++){const a=i/8*6.283,x=sx+7+Math.sin(a)*8,z=sz2+Math.cos(a)*8;M('Prop_WoodenFence_Single',x,z,a+Math.PI/2,1.2,{tint:0xe8e8f0});addCircle(x,z,.6)}
+  B.build(G);
+  /* the people */
+  const npc=(job,name,x,z,o,look)=>{try{const a=spawnNPC(job==='kerstman'||job==='kerstelf'?'villager':job,x,z,{name,...o});if(look){a.job=job}return a}catch(e){console.warn('kerst npc',e)}};
+  /* Father Christmas: red coat, white beard, red hat */
+  try{const h=makeHuman({tunic:0xc0282a,pants:0xc0282a,sleeve:0xc0282a,hat:'wizard',hatc:0xc0282a,hair:0xf2f2f2,beard:'full',skin:SKINS[1],scale:1.1,build:1.3,cape:0xe8e8e8});
+    const a=baseActor({job:'kerstman',name:'De Kerstman',h,look:{},root:h.g,x:sx-3,z:sz2,hp:500,ai:'stay',face:-Math.PI/2,line:'kerstman'});scene.add(a.root);placeActor(a);XM.santa=a}catch(e){console.warn('kerstman',e)}
+  for(const [dx,dz,n,c] of[[-4,5,'Kerstelf Pip',0x2a8a3a],[5,-4,'Kerstelf Twinkel',0xc0282a],[-6,-5,'Kerstelf Hulst',0x2a8a3a]]){try{const fem=n!=='Kerstelf Pip',r=window.EIK_RACE&&EIK_RACE.ready(fem?'elff':'elfm')?(fem?'elff':'elfm'):null;
+    const h=makeHuman({tunic:c,pants:0x2a2a2a,hat:'wizard',hatc:c===0xc0282a?0x2a8a3a:0xc0282a,race:r||undefined,scale:.62,fem});const a=baseActor({job:'kerstelf',name:n,h,look:{},root:h.g,x:cx+dx,z:cz+dz,hp:60,roam:{x:cx,z:cz},radius:14});scene.add(a.root);placeActor(a)}catch(e){console.warn('kerstelf',e)}}
+  npc('merchant','Koekjesbakker Gerda',cx-14,cz+24.6,{ai:'stay',shop:['kerstkoek','chocomelk','bread'].filter(i=>ITEMS[i]),face:Math.PI});
+  npc('merchant','Speelgoedmaker Jules',cx+7,cz+26.6,{ai:'stay',shop:['kerstmuts','potion','elixir'].filter(i=>ITEMS[i]),face:Math.PI});
+  npc('innkeeper','Chocolademelk-Mies',cx+19.5,cz+14.8,{ai:'stay',shop:['chocomelk','kerstkoek'],face:Math.PI*1.2});
+  for(let i=0;i<6;i++){const a=npc('villager',pick(FIRST),cx+rr(18),cz+rr(18),{roam:{x:cx,z:cz},radius:24},true);if(a){a.job='kerstvolk';a.roam={x:cx,z:cz};a.radius=24}}
+  for(let i=0;i<3;i++){try{const r=spawnAnimal('elk',sx+7+rr(3),sz2+rr(3));if(r){r.name='Rendier';r.roam={x:sx+7,z:sz2};r.radius=5}}catch(e){}}
+  try{SITES.push(SITE.n_kerst={id:'n_kerst',name:'Kerstdorp Sneeuwklok',x:cx,z:cz,r:KF.r,h:KF.h+NH})}catch(e){}
+  XM.x=cx;XM.z=cz}
+/* build it once Noordheim stands and the update is on (it can also come while you are there) */
+ANIMS.push(()=>{if(XM.built||!N.built)return;if(window.featOn&&!featOn('kerst'))return;try{xmas()}catch(e){console.warn('kerstdorp',e)}});
+/* a present from Father Christmas, once a day */
+ANIMS.push(()=>{const a=XM.santa;if(!a||a.dead||!started||PL.dead)return;if(Math.abs(PL.x-a.x)>4||Math.abs(PL.z-a.z)>4)return;const day=Math.floor((ENV.day!==undefined?ENV.day:ENV.time/24));PL.fx=PL.fx||{};if(PL.fx.kerstDag===day)return;PL.fx.kerstDag=day;
+  const first=!PL.fx.kerstMuts,gifts=first?[['kerstmuts',1],['chocomelk',2]]:[pick([['chocomelk',3],['kerstkoek',5],['potion',2],['elixir',1]])];PL.fx.kerstMuts=1;
+  for(const [id,n] of gifts)if(ITEMS[id])giveItem(id,n);const gold=first?250:100+Math.floor(Math.random()*150);PL.gold+=gold;saySomething(a,'Ho ho ho! Vrolijk kerstfeest!',4);
+  try{WD.kingdom.card('🎁 Een cadeau van de Kerstman!','Je kreeg '+gifts.map(([id,n])=>n+'× '+ITEMS[id].n).join(', ')+' en '+gold+' goud. Kom morgen terug voor een nieuw cadeautje!')}catch(e){}});
 })();

@@ -92,7 +92,7 @@ function buildFair(){const p=findFair(),y=gy(p.x,p.z),cols=[0xc0392b,0xe0b04a,0x
     const ride=new T.Group();car.add(ride);ride.add(mesh(new T.CylinderGeometry(4.6,4.7,.35,24),MAT.wood,0,.3,0));ride.add(mesh(new T.CylinderGeometry(.5,.5,3.4,12),sm(0xc0392b),0,2,0));
     const HC=[[0xf2ece0,0xc0392b],[0x8a5a3a,0x2f6fa5],[0x2a2420,0xe0b04a],[0xf2ece0,0x3a8a3a],[0xb08a5a,0x8a3aa8],[0xf2ece0,0x2f6fa5],[0x5a3a28,0xc0392b],[0x2a2420,0x3a8a3a]];
     FAIR.horses=[];for(let i=0;i<8;i++){const a=i/8*6.283,hx=Math.sin(a)*3.5,hz=Math.cos(a)*3.5,h=horse(...HC[i]);h.position.set(hx,1.45,hz);h.rotation.y=a+Math.PI/2;ride.add(h);FAIR.horses.push(h)}
-    addCircle(p.x,p.z,4.8);FAIR.ride=ride;addInter(p.x+5.6,p.z,3.4,'Ritje in de draaimolen (2 goud)',()=>rideOn('carousel'))}
+    /* the turning floor is something you stand on, only the middle pole is in the way */if(window.WD_STAND){WD_STAND.circle(p.x,p.z,4.7,y+.48,.5);addCircle(p.x,p.z,.6)}else addCircle(p.x,p.z,4.8);FAIR.ride=ride;addInter(p.x+5.6,p.z,3.4,'Ritje in de draaimolen (2 goud)',()=>rideOn('carousel'))}
   /* the wooden wheel */
   {const q=P(22,-4),yy=gy(q.x,q.z),ry=face(q)+Math.PI/2,W=new T.Group();W.position.set(q.x,yy,q.z);W.rotation.y=ry;scene.add(W);const wood=MAT.wood,R=6.2,H=7.4;
     for(const sx of[-1,1])for(const sz of[-1.2,1.2]){const leg=mesh(new T.BoxGeometry(.3,H*1.08,.3),wood,sx*1.7,H/2,sz*1.6);leg.rotation.z=-sx*.0;leg.rotation.x=-Math.sign(sz)*.21;W.add(leg)}
@@ -115,10 +115,18 @@ function buildFair(){const p=findFair(),y=gy(p.x,p.z),cols=[0xc0392b,0xe0b04a,0x
     const pig=new T.Group();spit.add(pig);const pk=sm(0xc8805a);{const _m=mesh(new T.SphereGeometry(.45,12,10),pk,0,0,0);_m.scale.set(1.6,.8,.85);pig.add(_m)};pig.add(mesh(new T.SphereGeometry(.24,10,8),pk,.78,.05,0));{const _m=mesh(new T.CylinderGeometry(.1,.12,.16,8),pk,.98,.03,0);_m.rotation.z=Math.PI/2;pig.add(_m)};
     FAIR.spit=spit;FAIR.fire={x:q.x,y:yy+.3,z:q.z};addCircle(q.x,q.z,1.3);try{LAMPS.push({x:q.x,y:yy+.6,z:q.z,flame:null,fire:true})}catch(e){}}
   /* the stage */
-  {const q=P(16,14),yy=gy(q.x,q.z),ry=face(q),S0=new T.Group();S0.position.set(q.x,yy,q.z);S0.rotation.y=ry;scene.add(S0);S0.add(mesh(new T.BoxGeometry(7,.9,4.4),MAT.wood,0,.45,0));
-    for(const sx of[-3.3,3.3])S0.add(mesh(new T.BoxGeometry(.25,4.6,.25),MAT.wood,sx,2.3,-2));S0.add(mesh(new T.PlaneGeometry(6.6,3.2),sm(0x8a1a22,{side:T.DoubleSide}),0,2.8,-2.05));S0.add(mesh(new T.BoxGeometry(7,.3,.3),MAT.wood,0,4.5,-2));
+  {const q=P(16,14),yy=gy(q.x,q.z),ry=face(q),S0=new T.Group();S0.position.set(q.x,yy,q.z);S0.rotation.y=ry;scene.add(S0);
+    /* the stage itself: platform blocks with a plank floor on top and a stair at the front, all game models; people
+       standing on it stand on top (WD_STAND), and you can walk up the stair */
+    const K=window.KIT,cs=Math.cos(ry),sn=Math.sin(ry),Wp=(lx,lz)=>[q.x+lx*cs+lz*sn,q.z-lx*sn+lz*cs];let SH=.9;
+    if(K&&K.Bag&&window.AS&&AS.lib&&AS.lib.Stairs_Exterior_PlatformU){const B=K.Bag(),G=new T.Group();scene.add(G);SH=1;
+      for(const i of[-1,0,1])for(const j of[-1,1]){const [x,z]=Wp(i*2,j);B.model('Stairs_Exterior_PlatformU',x,yy,z,ry+(j<0?0:Math.PI),1,{tint:0x9a7050});B.model('Floor_WoodDark',x,yy+1.02,z,ry,1,{})}
+      {const [x,z]=Wp(2,3.04);B.model('Stairs_Exterior_Straight',x,yy,z,ry,1,{tint:0x9a7050})}
+      B.build(G);if(window.WD_STAND){WD_STAND.rect(q.x,q.z,6,4,ry,yy+1,.05);const [x,z]=Wp(2,3.04);WD_STAND.stair(x,z,2,2.1,ry,yy,yy+1)}}
+    else S0.add(mesh(new T.BoxGeometry(7,.9,4.4),MAT.wood,0,.45,0));
+    for(const sx of[-2.9,2.9])S0.add(mesh(new T.BoxGeometry(.25,4.6,.25),MAT.wood,sx,2.3,-2));S0.add(mesh(new T.PlaneGeometry(6.6,3.2),sm(0x8a1a22,{side:T.DoubleSide}),0,2.8,-2.05));S0.add(mesh(new T.BoxGeometry(7,.3,.3),MAT.wood,0,4.5,-2));
     for(let k=0;k<7;k++){const f=mesh(new T.PlaneGeometry(.7,.55),sm(cols[k%cols.length],{side:T.DoubleSide}),-3+k,4.15,-2);f.rotation.z=Math.PI;S0.add(f)}
-    addBox(q.x-3.6,q.z-3.6,q.x+3.6,q.z+3.6);const fx=Math.sin(ry),fz=Math.cos(ry);FAIR.stage={x:q.x,z:q.z,y:yy+.9,fx,fz};
+    if(SH<1)addBox(q.x-3.6,q.z-3.6,q.x+3.6,q.z+3.6);else for(const sx of[-2.9,2.9]){const [x,z]=Wp(sx,-2);addCircle(x,z,.3)}const fx=Math.sin(ry),fz=Math.cos(ry);FAIR.stage={x:q.x,z:q.z,y:yy+SH,fx,fz};
     FAIR.balls=[];for(let k=0;k<3;k++){const b=mesh(new T.SphereGeometry(.12,10,8),new T.MeshStandardMaterial({color:cols[k],emissive:cols[k],emissiveIntensity:.3}),0,0,0);scene.add(b);FAIR.balls.push(b)}}
   /* the strength tester */
   {const q=P(13,3),x=q.x,z=q.z,yy=gy(x,z);scene.add(mesh(new T.BoxGeometry(.6,6.2,.3),sm(0xf2ece0),x,yy+3.1,z));for(let k=0;k<7;k++)scene.add(mesh(new T.BoxGeometry(.62,.08,.32),sm(cols[k%cols.length]),x,yy+.8+k*.8,z));
@@ -229,4 +237,95 @@ ANIMS.push(()=>{if(!started||PL.dead||!PL.fx||!PL.fx.myBeetle||(myB&&!myB.dead))
 const _pfB=populateFantasy;populateFantasy=function(){_pfB();try{const dk=WD.great&&WD.great.desertK;if(!dk)return;let n=0;
   for(let t=0;t<600&&n<12;t++){const x=300+rr(360),z=1430+rr(300),h=terrainH(x,z);if(h<2||dk(x,z)<.6||siteAt(x,z)||roadDist(x,z)<6)continue;spawnBeetle('kever',x,z);n++}
   const P=SITE.piramide;if(P){for(let t=0;t<80;t++){const a=Math.random()*6.283,r=80+Math.random()*30,x=P.x+Math.cos(a)*r,z=P.z+Math.sin(a)*r;if(terrainH(x,z)>2){spawnBeetle('koningskever',x,z);break}}}}catch(e){console.warn('kevers',e)}};
+})();
+
+/* ================= Nieuwjaar! (a ready update, id 'nieuwjaar') =================
+   Beside Eikendal a New Year's square: a bonfire of old pallets, the oliebollen stall of Ome Kees with his pot of hot
+   oil, a drinks stall with children's champagne, long tables, lanterns, banners and the crates of fireworks. Every
+   midnight the town crier Bertus counts down from ten (time stands still for those ten seconds), the bells ring,
+   everybody runs to you shouting "Gelukkig nieuwjaar!" and the sky over the square fills with fireworks. The first
+   New Year you celebrate there the mayor gives you a lucky coin. And on New Year's morning, swim in the sea for the
+   Nieuwjaarsduik: you get the orange hat. */
+(function(){
+const NYS={built:false,fw:[],nextNight:true};WD.newYear=NYS;
+const rr=(a=1)=>(Math.random()*2-1)*a,card=(t,x,b,s)=>{try{WD.kingdom.card(t,x,b,s)}catch(e){addLog(t+': '+x)}};
+const YEAR=()=>{const d=new Date();return d.getMonth()>=6?d.getFullYear()+1:d.getFullYear()};   /* from July on we celebrate the coming year */
+Object.assign(ITEMS,{oliebol:{n:'Oliebol',g:'food',heal:25,stam:15,price:4,ico:'🍩',desc:'Warm, met poedersuiker. Nieuwjaar zonder oliebol is geen nieuwjaar.'},
+  appelflap:{n:'Appelflap',g:'food',heal:20,stam:10,price:4,ico:'🥐',desc:'Knapperig bladerdeeg met appel en kaneel.'},
+  kinderchampagne:{n:'Kinderchampagne',g:'food',heal:8,stam:60,price:6,ico:'🥂',desc:'Bruisend en zoet. Proost op het nieuwe jaar!'},
+  gelukspenning:{n:'Gelukspenning',g:'amulet',fx:{gold:.12,xp:.1,hp:20},col:0xffd24a,price:2500,ico:'🪙',rar:'e',desc:'Gekregen van de burgemeester bij het nieuwe jaar. Brengt geluk: meer goud en meer ervaring.'},
+  oranjemuts:{n:'Oranje muts',g:'head',def:2,fx:{regen:.6,stam:15},hat:'cap',hatc:0xff7a1a,price:300,ico:'🧡',rar:'r',desc:'Voor wie op nieuwjaarsochtend in de koude zee dook. Respect!'}});
+LINES.nieuwjaar=['Nog even en dan is het nieuwjaar!','Heb je al een oliebol gehad?','Volgend jaar ga ik elke dag sporten. Echt waar!','Wat ga jij volgend jaar doen?','Om middernacht is er vuurwerk, hoor!','Gelukkig nieuwjaar alvast!'];
+try{JOBN.nieuwjaar='dorpeling'}catch(e){}
+/* ---------- the square ---------- */
+function spot(){let best=null;for(let k=0;k<64&&!best;k++){const a=k*2.399,r=70+(k%6)*12,x=Math.cos(a)*r,z=Math.sin(a)*r;
+    if(groundH(x,z)<1||slopeAt(x,z)>.12||roadDist(x,z)<9||inBuilding(x,z,16))continue;const s=siteAt(x,z);if(s&&s.id!=='village')continue;if(Math.hypot(x-104,z-138)<45)continue;
+    let ok=true;for(const [dx,dz] of[[12,0],[-12,0],[0,12],[0,-12]])if(Math.abs(groundH(x+dx,z+dz)-groundH(x,z))>1.5||inBuilding(x+dx,z+dz,4))ok=false;if(ok)best={x,z}}return best}
+function build(){if(NYS.built||!window.KIT||!AS.lib.Stall_Empty)return;const p=spot();if(!p)return;NYS.built=true;NYS.x=p.x;NYS.z=p.z;const y0=groundH(p.x,p.z),gy=(x,z)=>groundH(x,z);
+  /* no trees or rocks on the square */
+  {const gone=(x,z)=>Math.hypot(x-p.x,z-p.z)<24;for(const t of TREES.oak.concat(TREES.pine))if(!t.cut&&gone(t.x,t.z)){t.cut=true;t.gone=true;if(t.col)t.col.off=true;try{if(t.lodM)asLow(t,false);else setInst(t.ii||[],false,[])}catch(e){}}
+    for(const q of ROCKS)if(!q.cut&&gone(q.x,q.z)){q.cut=true;if(q.col)q.col.off=true;try{q.inst.setMatrixAt(q.i,new T.Matrix4().makeScale(0,0,0));q.inst.instanceMatrix.needsUpdate=true}catch(e){}}try{asTreesUpdate(true)}catch(e){}}
+  const B=KIT.Bag(),G=new T.Group();scene.add(G);const M=(n,x,z,ry,s,o,y)=>B.model(n,p.x+x,y===undefined?gy(p.x+x,p.z+z):y,p.z+z,ry||0,s||1,o||{});
+  /* the bonfire: a stack of old pallets with stones round it */
+  for(let i=0;i<9;i++){const a=i/9*6.283;M('Rock_Medium_'+(1+i%3),Math.cos(a)*2.4,Math.sin(a)*2.4,a,.45,{tint:0x6a6660})}
+  for(let i=0;i<7;i++){const a=i*1.3,r=i<4?.7:.3;M('Crate_Wooden',Math.cos(a)*r,Math.sin(a)*r,a,.9-i*.05,{tint:0x5a3a22},y0+(i<4?0:.8)+(i>5?.7:0))}
+  addCircle(p.x,p.z,2.6);{const fl=mesh(new T.ConeGeometry(1.1,3.2,7),new T.MeshBasicMaterial({color:0xff8a2a}),p.x,y0+2.6,p.z,false);fl.userData.dyn=true;scene.add(fl);try{LAMPS.push({x:p.x,y:y0+3,z:p.z,flame:fl,fire:true})}catch(e){}}
+  /* the stalls */
+  M('Stall_Empty',-12,6,Math.atan2(12,-6),1.2,{tint:0xd8a040});M('Cauldron',-10.5,8.2,0,1.3);M('Barrel',-14,8.5,0,1);M('FarmCrate_Empty',-13.2,4.2,.4,1);addCircle(p.x-12,p.z+6,1.6);
+  M('Stall_Empty',12,6,Math.atan2(-12,-6),1.2,{tint:0x3a6ac0});M('Barrel',14,8.4,0,1);M('Barrel',13.2,9.4,0,.9);addCircle(p.x+12,p.z+6,1.6);
+  /* tables, benches, lanterns, banners and the fireworks crates */
+  for(const [dx,dz] of[[-7,-9],[0,-11],[7,-9]]){M('Table_Large',dx,dz,0,1);M('Bench',dx,dz-1.4,0,1);M('Bench',dx,dz+1.4,Math.PI,1);addCircle(p.x+dx,p.z+dz,1.2)}
+  for(let i=0;i<12;i++){const a=i/12*6.283+.26,x=Math.cos(a)*17,z=Math.sin(a)*17;M('Torch_Metal',x,z,a,1.5);addCircle(p.x+x,p.z+z,.3)}
+  for(const [dx,dz,c] of[[-17,0,0xffd24a],[17,0,0x2a5ac0],[0,17,0xffd24a],[-11,13,0x2a5ac0],[11,13,0xffd24a]])M('Banner_1',dx,dz,Math.atan2(-dx,-dz),1.6,{tint:c});
+  for(let i=0;i<6;i++){const x=20+(i%3)*1.4,z=-6+Math.floor(i/3)*1.4;M(i%2?'Crate_Wooden':'Barrel',x,z,i,.8,{tint:i%2?0xc0282a:0x2a8a3a})}NYS.launch={x:p.x+21,z:p.z-5.3};
+  B.build(G);
+  /* the people */
+  const sp=(job,name,x,z,o)=>{try{return spawnNPC(job,p.x+x,p.z+z,{name,...o})}catch(e){return null}};
+  NYS.crier=sp('villager','Omroeper Bertus',3,3,{ai:'stay',face:0});
+  sp('merchant','Ome Kees van de oliebollen',-12,7.8,{ai:'stay',shop:['oliebol','appelflap','kinderchampagne'],face:Math.atan2(12,-6)+Math.PI});
+  sp('merchant','Dranken-Doortje',12,7.8,{ai:'stay',shop:['kinderchampagne','ale','wine','oliebol'].filter(i=>ITEMS[i]),face:Math.atan2(-12,-6)+Math.PI});
+  for(let i=0;i<7;i++){const a=sp('villager',pick(FIRST),rr(14),rr(14),{roam:{x:p.x,z:p.z},radius:16});if(a)a.job='nieuwjaar'}
+  for(let i=0;i<3;i++){const k=sp('villager','Kind',rr(10),rr(10),{roam:{x:p.x,z:p.z},radius:14});if(k&&k.root){k.root.scale.setScalar(.66);k.job='nieuwjaar'}}
+}
+/* ---------- fireworks: a rocket climbs with a little trail, then bursts into a ball of sparks that fall and fade ---------- */
+/* a round, soft spark (drawn once) */
+let SPARK=null;const spark=()=>SPARK||(SPARK=(()=>{const c=document.createElement('canvas');c.width=c.height=32;const g=c.getContext('2d'),r=g.createRadialGradient(16,16,0,16,16,16);r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.35,'rgba(255,255,255,.75)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,32,32);return new T.CanvasTexture(c)})());
+const FWC=[[1,.82,.3],[1,.35,.3],[.4,.7,1],[.5,1,.5],[.9,.5,1],[1,1,1],[1,.6,.15]];
+function rocket(){const L=NYS.launch||{x:NYS.x,z:NYS.z},sx=L.x+rr(2),sz=L.z+rr(2),y0=groundH(sx,sz)+1,top=y0+48+Math.random()*30,tx=sx+rr(18),tz=sz+rr(18);
+  const c=FWC[Math.floor(Math.random()*FWC.length)],c2=Math.random()<.4?FWC[Math.floor(Math.random()*FWC.length)]:c,N=220,pos=new Float32Array(N*3),col=new Float32Array(N*3),vel=new Float32Array(N*3);
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(pos,3));g.setAttribute('color',new T.BufferAttribute(col,3));
+  const m=new T.PointsMaterial({size:2.2,map:spark(),vertexColors:true,transparent:true,opacity:1,blending:T.AdditiveBlending,depthWrite:false,sizeAttenuation:true});
+  const pts=new T.Points(g,m);pts.frustumCulled=false;pts.userData.dyn=true;scene.add(pts);
+  NYS.fw.push({pts,g,m,pos,col,vel,N,t:0,up:1.3,sx,sz,y0,top,tx,tz,c,c2,burst:false});try{sfx('fire')}catch(e){}}
+function burstOf(f){f.burst=true;f.t=0;const big=Math.random()<.3?1.4:1;for(let i=0;i<f.N;i++){const u=Math.random()*2-1,a=Math.random()*6.283,s=Math.sqrt(1-u*u),sp=(14+Math.random()*6)*big;
+    f.vel[i*3]=Math.cos(a)*s*sp;f.vel[i*3+1]=u*sp;f.vel[i*3+2]=Math.sin(a)*s*sp;f.pos[i*3]=f.tx;f.pos[i*3+1]=f.top;f.pos[i*3+2]=f.tz;const cc=i%3?f.c:f.c2;f.col[i*3]=cc[0];f.col[i*3+1]=cc[1];f.col[i*3+2]=cc[2]}
+  f.g.attributes.position.needsUpdate=true;f.g.attributes.color.needsUpdate=true;f.m.size=3;try{sfx('boom')}catch(e){}}
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;for(let k=NYS.fw.length-1;k>=0;k--){const f=NYS.fw[k];f.t+=dt;
+  if(!f.burst){const q=Math.min(1,f.t/f.up),x=f.sx+(f.tx-f.sx)*q,y=f.y0+(f.top-f.y0)*(1-(1-q)*(1-q)),z=f.sz+(f.tz-f.sz)*q;for(let i=0;i<12;i++){const b=Math.max(0,q-i*.02);f.pos[i*3]=f.sx+(f.tx-f.sx)*b;f.pos[i*3+1]=f.y0+(f.top-f.y0)*(1-(1-b)*(1-b));f.pos[i*3+2]=f.sz+(f.tz-f.sz)*b;f.col[i*3]=1;f.col[i*3+1]=.8;f.col[i*3+2]=.5}
+    for(let i=12;i<f.N;i++){f.pos[i*3]=x;f.pos[i*3+1]=y;f.pos[i*3+2]=z;f.col[i*3]=f.col[i*3+1]=f.col[i*3+2]=0}f.g.attributes.position.needsUpdate=true;f.g.attributes.color.needsUpdate=true;if(q>=1)burstOf(f);continue}
+  const drag=Math.pow(.25,dt);for(let i=0;i<f.N;i++){f.vel[i*3]*=drag;f.vel[i*3+1]=f.vel[i*3+1]*drag-7*dt;f.vel[i*3+2]*=drag;f.pos[i*3]+=f.vel[i*3]*dt;f.pos[i*3+1]+=f.vel[i*3+1]*dt;f.pos[i*3+2]+=f.vel[i*3+2]*dt}
+  f.g.attributes.position.needsUpdate=true;f.m.opacity=Math.max(0,1-f.t/2.6)*(.75+Math.random()*.25);if(f.t>2.7){scene.remove(f.pts);f.g.dispose();f.m.dispose();NYS.fw.splice(k,1)}}
+  if(NYS.show>0){NYS.show-=dt;NYS.next=(NYS.next||0)-dt;if(NYS.next<=0){rocket();if(Math.random()<.35)rocket();NYS.next=.5+Math.random()*1.1}}});
+NYS.fireworks=sec=>{NYS.show=sec||45;NYS.next=0};
+/* ---------- midnight: count down, bells, cheering, fireworks, and the lucky coin ---------- */
+ANIMS.push(dt=>{dt=typeof dt==='number'?dt:.016;if(!NYS.built||!started||PL.dead||PL.inCave)return;const t=ENV.time,d=Math.hypot(PL.x-NYS.x,PL.z-NYS.z);
+  if(t>12&&t<23)NYS.nextNight=true;
+  if(NYS.count===undefined&&NYS.nextNight&&t>=23.9&&d<140){NYS.nextNight=false;NYS.count=10;NYS.cT=0;NYS.spd=ENV.speed;ENV.speed=0;ENV.time=23.99;try{const c=NYS.crier;if(c)saySomething(c,'Het is bijna middernacht! Aftellen!',2)}catch(e){}}
+  if(NYS.count!==undefined){NYS.cT-=dt;if(NYS.cT<=0){NYS.cT=1;const c=NYS.crier;
+      if(NYS.count>0){try{if(c)saySomething(c,NYS.count+'!',1);for(const a of actors)if(a.kind==='npc'&&!a.dead&&a!==c&&Math.hypot(a.x-NYS.x,a.z-NYS.z)<40&&Math.random()<.35)saySomething(a,NYS.count+'!',1);sfx('click')}catch(e){}NYS.count--}
+      else{NYS.count=undefined;ENV.time=.01;ENV.speed=NYS.spd||1/60;midnight(d)}}}
+  /* a bit further away (but still in sight) there is no countdown, but you do see the fireworks */
+  else if(NYS.nextNight&&t>=23.95&&d>=140&&d<600){NYS.nextNight=false;NYS.fireworks(40)}});
+function midnight(d){const yr=YEAR();NYS.fireworks(55);try{WD.homecoming.bells()}catch(e){}try{WD.homecoming.confetti(6)}catch(e){}
+  const c=NYS.crier;try{if(c)saySomething(c,'Gelukkig '+yr+'!',5)}catch(e){}
+  const ppl=actors.filter(a=>a.kind==='npc'&&!a.dead&&!a.guard&&a.h&&!a.cheer&&a!==c&&Math.hypot(a.x-PL.x,a.z-PL.z)<60).slice(0,14),a0=Math.random()*6.283;
+  ppl.forEach((a,i)=>{a.cheer={t:26,ang:a0+i/Math.max(1,ppl.length)*6.283,r:3.5+(i%3)*1.8,delay:.2+i*.15,lines:['Gelukkig nieuwjaar!','Gelukkig '+yr+'!','Proost!','Hoera! Een nieuw jaar!','De beste wensen!'],gift:i<4?{id:pick(['oliebol','appelflap','kinderchampagne']),n:1}:null};a.talk=null;a.wp=null});
+  PL.fx=PL.fx||{};if(PL.fx.nyYear!==yr&&d<140){PL.fx.nyYear=yr;giveItem('gelukspenning',1);giveItem('oliebol',5);PL.gold+=200;
+    setTimeout(()=>card('🎆 Gelukkig nieuwjaar!','Gelukkig '+yr+'! De burgemeester geeft iedereen op het plein een Gelukspenning, en jij krijgt er 5 oliebollen en 200 goud bij. Tip: duik morgenochtend in de zee voor de Nieuwjaarsduik!',null,12),1500)}}
+/* ---------- the Nieuwjaarsduik: the morning after, a swim in the sea ---------- */
+ANIMS.push(()=>{if(!NYS.built||!started||!PL.swim||PL.dead)return;PL.fx=PL.fx||{};const yr=YEAR();if(PL.fx.nyYear!==yr||PL.fx.nyDuik===yr)return;const t=ENV.time;if(t<6||t>13)return;if(!(WD.inSea&&WD.inSea(PL.x,PL.z))&&Math.hypot(PL.x,PL.z)<500)return;
+  PL.fx.nyDuik=yr;giveItem('oranjemuts',1);try{sfx('splash')}catch(e){}card('🧡 Nieuwjaarsduik!','Brrr! Je dook op nieuwjaarsochtend in de ijskoude zee. Je krijgt de Oranje muts. Respect!',null,10)});
+/* when the update is on: build the square once the world is ready */
+function go(){const run=()=>{if(typeof worldReady==='undefined'||!worldReady){setTimeout(run,2000);return}try{build()}catch(e){console.warn('nieuwjaar',e)}};run()}
+addEventListener('load',()=>{if(window.featWhen)featWhen('nieuwjaar',go);else go()});
 })();

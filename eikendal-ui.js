@@ -482,10 +482,10 @@ function render(){
     if(tok){let ui=null;P.querySelector('#upfile').onchange=async e=>{const f=e.target.files&&e.target.files[0];if(f)try{ui=await shrink(f,1200)}catch(x){}};P.querySelector('#upsend').onclick=async()=>{const m=P.querySelector('#upmsg');try{await call('POST','/api/updates',{title:P.querySelector('#uptitle').value,text:P.querySelector('#uptxt').value,img:ui});render()}catch(e){m.innerHTML='<span class="err">'+E(offline(e))+'</span>'}}}
     call('GET','/api/updates').then(d=>{const L=d.items||[],box=P.querySelector('#upl');if(!box)return;if(L[0])try{localStorage.setItem('eik_upd_seen',L[0].id)}catch(e){}box.innerHTML=L.length?L.map(u=>{const en=EN()&&u.title_en,ti=en?u.title_en:u.title,tx=en?u.text_en:u.text,im=(EN()&&u.img_en)||u.img;return'<div class="card"'+(en?' translate="no"':'')+'><div style="font-family:var(--f-display,serif);font-size:20px;color:#ffd27a">'+E(ti)+'</div><div class="meta">'+when(u.t)+'</div><div>'+E(tx).replace(/\n/g,'<br>')+'</div>'+(im?'<img class="fbimg" loading="lazy" src="'+imgURL(im)+'">':'')+(tok?'<button class="btn" data-udel="'+E(u.id)+'" style="margin-top:6px">'+(en?'🗑 Delete':'🗑 Verwijderen')+'</button>':'')+'</div>'}).join(''):'Nog geen updates.';
       box.querySelectorAll('[data-udel]').forEach(b=>b.onclick=async()=>{if(!confirm('Deze update verwijderen?'))return;try{await call('DELETE','/api/updates/'+b.dataset.udel);render()}catch(e){alert(offline(e))}})}).catch(e=>{const b=P.querySelector('#upl');if(b)b.innerHTML='<span class="err">'+E(offline(e))+'</span>'});return}
-  if(tab==='adm'){P.innerHTML=head()+(tok?'<p>✅ Je bent <b>beheerder</b>. Je ziet nu ook de feedback die alleen voor jou is, je kunt feedback verwijderen, spelers stoppen met sturen en updates plaatsen.</p><button class="btn" id="admout">Uitloggen</button><h3 style="font-family:var(--f-display,serif);color:#ffd27a;margin:16px 0 4px">🧰 Klaargezette updates</h3><div class="meta">'+L('Klaar, maar nog niet in het spel. Kondig ze aan in de Updates (met een thumbnail) en kies na hoeveel dagen ze in het spel komen.','Finished, but not in the game yet. Announce them in the Updates (with a thumbnail) and choose after how many days they come into the game.')+'</div><div id="featl"></div>'
+  if(tab==='adm'){P.innerHTML=head()+(tok?'<p>✅ Je bent <b>beheerder</b>. Je ziet nu ook de feedback die alleen voor jou is, je kunt feedback verwijderen, spelers stoppen met sturen en updates plaatsen.</p><button class="btn" id="admout">Uitloggen</button> <button class="btn pri" id="crgo">🎨 '+L('Creative mode','Creative mode')+'</button><div class="meta">'+L('In het spel: de knop 🎨 onderaan of de toets ` (naast de 1).','In the game: the 🎨 button at the bottom or the ` key (next to 1).')+'</div><h3 style="font-family:var(--f-display,serif);color:#ffd27a;margin:16px 0 4px">🧰 Klaargezette updates</h3><div class="meta">'+L('Klaar, maar nog niet in het spel. Kondig ze aan in de Updates (met een thumbnail) en kies na hoeveel dagen ze in het spel komen.','Finished, but not in the game yet. Announce them in the Updates (with a thumbnail) and choose after how many days they come into the game.')+'</div><div id="featl"></div>'
       :'<p>Alleen voor de maker van de game.</p><div class="fbrow"><input type="password" id="admpw" autocomplete="off" placeholder="Wachtwoord"></div><button class="btn pri" id="admin">Inloggen</button><div id="admmsg" class="msg"></div>');wire();
-    if(tok){P.querySelector('#admout').onclick=()=>{tok='';try{sessionStorage.removeItem('eik_adm')}catch(e){}render()};featAdmin(P.querySelector('#featl'));return}
-    const go=async()=>{const pw=P.querySelector('#admpw'),m=P.querySelector('#admmsg');m.textContent='Bezig...';try{const d=await call('POST','/api/admin/login',{password:pw.value});pw.value='';tok=d.token;try{sessionStorage.setItem('eik_adm',tok)}catch(e){}render()}catch(e){pw.value='';m.innerHTML='<span class="err">'+E(offline(e))+'</span>'}};
+    if(tok){P.querySelector('#admout').onclick=()=>{tok='';CR.ok=false;CR.fly=false;CR.god=false;CR.speed=1;try{sessionStorage.removeItem('eik_adm');sessionStorage.removeItem('eik_preview')}catch(e){}render()};const cb=P.querySelector('#crgo');if(cb)cb.onclick=()=>{if(!started){cb.textContent=L('Start eerst een spel, dan kan het.','Start a game first, then it works.');return}close();crOpen()};featAdmin(P.querySelector('#featl'));return}
+    const go=async()=>{const pw=P.querySelector('#admpw'),m=P.querySelector('#admmsg');m.textContent='Bezig...';try{const d=await call('POST','/api/admin/login',{password:pw.value});pw.value='';tok=d.token;try{sessionStorage.setItem('eik_adm',tok)}catch(e){}crCheck();render()}catch(e){pw.value='';m.innerHTML='<span class="err">'+E(offline(e))+'</span>'}};
     P.querySelector('#admin').onclick=go;P.querySelector('#admpw').addEventListener('keydown',e=>{if(e.code==='Enter')go()})}}
 /* ================= Ready updates =================
    A new part of the game can be finished but not in the world yet. The maker announces it under Updates, with a
@@ -507,6 +507,18 @@ const FEAT={
     lines:[['De elfen worden echte elfen, met puntoren','Groentand: een dorpje met lieve orks bij het Trollenmoeras','Een orkenkok, een handelaar en orkenkinderen','De grote boze orks blijven gewoon boos'],
            ['The elves become real elves, with pointed ears','Groentand: a little village of friendly orcs near the Troll Swamp','An orc cook, a trader and orc children','The big bad orcs stay just as angry']],
     items:[],mon:[]},
+  kerst:{ico:'🎄',pic:'assets/updates/kerst.jpg',col:'#ff5a4a',focus:[.5,.5],zoom:1.2,n:['Kerstdorp Sneeuwklok','Snowbell Christmas Village'],big:['KERSTDORP','CHRISTMAS VILLAGE'],tag:['Vrolijk kerstfeest in Noordheim!','Merry Christmas in Noordheim!'],
+    lines:[['Een reuzenkerstboom vol ballen en cadeaus in de sneeuw','Een kerstmarkt met koekjes, chocolademelk en kerstmutsen','De Kerstman met zijn slee en rendieren','Elke dag een cadeautje van de Kerstman'],
+           ['A giant Christmas tree full of baubles and presents in the snow','A Christmas market with cookies, hot chocolate and Santa hats','Father Christmas with his sleigh and reindeer','A present from Father Christmas every day']],
+    items:['chocomelk','kerstkoek','kerstmuts'],mon:[]},
+  eiland:{ico:'🏝',pic:'assets/updates/eiland.jpg',col:'#8ad8ff',focus:[.5,.4],zoom:1.15,n:['Het Zwevende Eiland','The Floating Island'],big:['ZWEVEND EILAND','FLOATING ISLAND'],tag:['Alleen te bereiken met Vonk!','Only reachable on Vonk!'],
+    lines:[['Hoog boven Eikendal zweeft een eiland in de lucht','Je komt er alleen op met Vonk, je draak','Hemelwachter Aeris en een witte kapel','De Hemelkist met de Kroon van de Hemel'],
+           ['High above Eikendal an island floats in the sky','You can only get there on Vonk, your dragon','Aeris the Sky Guardian and a white chapel','The Sky Chest with the Crown of the Sky']],
+    items:['hemelkroon'],mon:[]},
+  nieuwjaar:{ico:'🎆',pic:'assets/updates/nieuwjaar.jpg',col:'#ffd24a',focus:[.5,.45],zoom:1.1,n:['Nieuwjaar!','New Year!'],big:['NIEUWJAAR!','NEW YEAR!'],tag:['Vuurwerk, oliebollen en aftellen!','Fireworks, oliebollen and the countdown!'],
+    lines:[['Een nieuwjaarsplein bij Eikendal met een vreugdevuur','Oliebollen, appelflappen en kinderchampagne','Om middernacht aftellen, klokken en vuurwerk','Een gelukspenning, en de Nieuwjaarsduik voor een oranje muts'],
+           ['A New Year square near Eikendal with a bonfire','Oliebollen, apple turnovers and children\'s champagne','At midnight a countdown, bells and fireworks','A lucky coin, and the New Year\'s dive for an orange hat']],
+    items:['oliebol','appelflap','kinderchampagne','gelukspenning','oranjemuts'],mon:[]},
   mobiel:{ico:'📱',pic:'assets/updates/mobiel.jpg',col:'#6fd0ff',dev:true,n:['Speel op iPhone en iPad','Play on iPhone and iPad'],big:['IPHONE & IPAD','IPHONE & IPAD'],tag:['Speel overal!','Play anywhere!'],
     lines:[['Op een iPhone of iPad krijg je vanzelf de aanraakbediening','Zet Eikendal op je beginscherm: dan speel je op het hele scherm, net als een app','Een lichte versie, zodat het soepel loopt'],
            ['On an iPhone or iPad you get the touch controls by themselves','Put Eikendal on your home screen: then you play full screen, just like an app','A light version, so it runs smoothly']],
@@ -514,7 +526,9 @@ const FEAT={
 const nm=(F,k)=>F[k][EN()?1:0];
 let FS={};try{FS=JSON.parse(localStorage.getItem('eik_feat')||'{}')||{}}catch(e){}
 const nowS=()=>Date.now()/1000;
-function featOn(id){if(!FEAT[id]||!API())return true;const f=FS[id];return!!(f&&(f.on||(f.at&&nowS()>=f.at)))}
+/* the maker can play the ready updates already (creative mode, only in his own browser tab) */
+const PREVIEW=()=>{try{return!!tok&&sessionStorage.getItem('eik_preview')==='1'}catch(e){return false}};
+function featOn(id){if(!FEAT[id]||!API()||PREVIEW())return true;const f=FS[id];return!!(f&&(f.on||(f.at&&nowS()>=f.at)))}
 window.featOn=featOn;
 window.featHidden=k=>{for(const id in FEAT){const F=FEAT[id];if((F.items.includes(k)||F.mon.includes(k))&&!featOn(id))return true}return false};
 const WAIT=[];window.featWhen=(id,fn)=>{if(featOn(id))fn();else WAIT.push([id,fn])};
@@ -586,6 +600,85 @@ function featAdmin(box){box.textContent=L('Laden...','Loading...');featLoad().th
   function btn(){if(!ios||app()||$('fb_app')||!featOn('mobiel'))return;const f=$('fb_title');if(!f)return;const b=document.createElement('button');b.id='fb_app';b.className=f.className;b.style.marginTop='6px';b.setAttribute('translate','no');
     b.textContent=L('📲 Speel als app','📲 Play as an app');b.onclick=e=>{e.stopPropagation();tab='app';open()};f.parentNode.insertBefore(b,f.nextSibling)}
   setInterval(btn,3000);window.__eikAppBtn=btn})();
+/* ================= Creative mode for the maker =================
+   Only for a logged-in maker (the server checks the login). A panel with everything: fly (Space up, Shift down), your
+   speed, never die, any item or armour, go to any place, time and weather, call up monsters, and play the ready updates
+   before they are out. Open it with the 🎨 button at the bottom or the key ` (next to 1). Nothing here works for
+   other players: without a valid login the button is not there. */
+const CR={ok:false,fly:false,fy:null,speed:1,god:false,tab:'me',q:'',pq:'',mq:''};addEventListener('load',()=>{try{WD.creative=CR}catch(e){}});
+function crCheck(){if(!tok||!API()){CR.ok=false;return Promise.resolve(false)}return call('GET','/api/admin/check').then(d=>(CR.ok=!!(d&&d.ok))).catch(e=>{if(/geen beheerder|403/.test(String(e&&e.message))){tok='';try{sessionStorage.removeItem('eik_adm')}catch(x){}}return CR.ok=false})}
+setTimeout(crCheck,2500);setInterval(()=>{if(tok&&!CR.ok)crCheck()},20000);
+const cst=document.createElement('style');cst.textContent=`#crw{position:fixed;inset:0;z-index:92;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.45)}
+#crp{width:min(820px,95vw);max-height:90vh;overflow:auto;background:rgba(20,16,30,.97);border:1px solid #8a76c8;border-radius:10px;padding:14px 16px;color:#efe8ff;font:15px/1.45 var(--f-ui,serif);box-shadow:0 10px 40px rgba(0,0,0,.6)}
+#crp h2{margin:0 0 8px;font-family:var(--f-display,serif);color:#d8c2ff;font-size:26px}#crp .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}#crp .tabs button.on,#crp button.on{background:#5a3aa0;color:#fff;border-color:#c8a8ff}
+#crp .crow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0}#crp input[type=text]{width:100%;box-sizing:border-box;background:#0e0a16;color:#f0e8ff;border:1px solid #5a4a8a;border-radius:6px;padding:7px}
+#crp .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin-top:8px}#crp .it{display:flex;align-items:center;gap:6px;background:rgba(200,180,255,.06);border:1px solid #3a2e5a;border-radius:7px;padding:5px 7px}
+#crp .it span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#crp .it button{padding:3px 8px;font-size:13px}#crp .meta{color:#b8a8d8;font-size:13px}#crp input[type=range]{width:220px}
+#qb_cr{background:linear-gradient(#6a4ab0,#3a2470)!important;color:#fff!important}`;document.head.appendChild(cst);
+const CW=document.createElement('div');CW.id='crw';CW.innerHTML='<div id="crp"></div>';document.body.appendChild(CW);const CP=CW.querySelector('#crp');
+for(const ev of['keydown','keyup','keypress'])CW.addEventListener(ev,e=>{e.stopPropagation();if(ev==='keydown'&&(e.code==='Escape'||e.code==='Backquote'))crClose()});
+CW.addEventListener('mousedown',e=>{if(e.target===CW)crClose()});
+const _amC=anyModal;anyModal=function(){return _amC()||CW.style.display==='flex'};
+function crOpen(t){if(!CR.ok)return;if(t)CR.tab=t;CW.style.display='flex';try{document.exitPointerLock()}catch(e){}crRender()}
+function crClose(){CW.style.display='none';try{if(started&&!PL.dead)lock()}catch(e){}}
+CR.open=crOpen;
+addEventListener('keydown',e=>{if(e.code==='Backquote'&&CR.ok&&started&&CW.style.display!=='flex'&&W.style.display!=='flex'){e.preventDefault();crOpen()}});
+/* where you can go: every named place of the world, the way stones, the new places, and the doors of the other worlds */
+function places(){const L2=[],seen=new Set(),add=(n,x,z)=>{if(!n||!isFinite(x)||!isFinite(z))return;const k=n.toLowerCase();if(seen.has(k))return;seen.add(k);L2.push([n,x,z])};
+  try{for(const s of SITES)if(s.name&&s.id!=='bridge')add(s.name,s.x,s.z+(s.r||10)*.6)}catch(e){}
+  try{for(const w of WAYDEF)add(w[1],w[2],w[3]+3)}catch(e){}
+  try{const P=WD.great&&WD.great.places;if(P)for(const k in P){const p=P[k];if(p&&(p.name||p.n))add(p.name||p.n,p.x,p.z)}}catch(e){}
+  try{if(WD.groentand)add('Groentand',WD.groentand.x,WD.groentand.z+9)}catch(e){}
+  try{if(WD.gif&&WD.gif.ent)add(L('Tunnel naar de Gifvallei','Tunnel to the Poison Valley'),WD.gif.ent.x-WD.gif.ent.ox*4,WD.gif.ent.z-WD.gif.ent.oz*4)}catch(e){}
+  return L2.sort((a,b)=>a[0].localeCompare(b[0]))}
+function goTo(x,z){const f=()=>{try{if(PL.mounted)dismount()}catch(e){}PL.inside=null;PL.x=x;PL.z=z;PL.y=groundH(x,z)+.3;PL.vy=0;CR.fy=CR.fly?PL.y+2:null;try{grassLast.x=1e9}catch(e){}};crClose();if(WD.fadeGo)WD.fadeGo(f);else f()}
+function fwd(d){return[PL.x+Math.sin(PL.yaw)*d,PL.z+Math.cos(PL.yaw)*d]}
+function crRender(){const T2=[['me','🧍 '+L('Speler','Player')],['items','🎒 '+L('Spullen','Items')],['go','📍 '+L('Plekken','Places')],['world','🌍 '+L('Wereld','World')],['mon','👹 '+L('Monsters','Monsters')],['upd','🧪 '+L('Updates','Updates')]];
+  let h='<h2>🎨 Creative mode</h2><div class="tabs">'+T2.map(([k,n])=>'<button class="btn'+(CR.tab===k?' on':'')+'" data-ct="'+k+'">'+n+'</button>').join('')+'<button class="btn" data-cx style="margin-left:auto">✖ '+L('Sluiten','Close')+'</button></div>';
+  const tg=(k,on,t)=>'<button class="btn'+(on?' on':'')+'" data-tg="'+k+'">'+(on?'✅ ':'⬜ ')+t+'</button>';
+  if(CR.tab==='me')h+='<div class="crow">'+tg('fly',CR.fly,'🕊 '+L('Vliegen','Fly'))+tg('god',CR.god,'🛡 '+L('Onsterfelijk','Never die'))+'</div><div class="meta">'+L('Vliegen: spatie = omhoog, Shift = omlaag.','Flying: Space = up, Shift = down.')+'</div>'+
+    '<div class="crow"><b>'+L('Snelheid','Speed')+'</b><input type="range" min="1" max="12" step=".5" value="'+CR.speed+'" data-spd><span data-spdv>'+CR.speed+'×</span></div>'+
+    '<div class="crow"><button class="btn" data-a="heal">❤️ '+L('Helemaal genezen','Heal fully')+'</button><button class="btn" data-a="lvl">⭐ '+L('+1 niveau','+1 level')+'</button><button class="btn" data-a="lvl10">🌟 '+L('+10 niveaus','+10 levels')+'</button><button class="btn" data-a="gold">💰 '+L('+10.000 goud','+10,000 gold')+'</button></div>'+
+    '<div class="meta">'+L('Niveau','Level')+' '+(PL.lvl||1)+' · '+L('Goud','Gold')+' '+Math.round(PL.gold||0)+' · '+L('Leven','Health')+' '+Math.round(PL.hp||0)+'/'+Math.round(PL.hpMax||0)+'</div>';
+  if(CR.tab==='items'){const q=CR.q.toLowerCase(),ids=Object.keys(ITEMS).filter(id=>{const it=ITEMS[id];if(!it||!it.n)return false;if(!q)return true;const en=window.EIK_LANG&&EIK_LANG.items&&EIK_LANG.items[id];return(it.n+' '+id+' '+(it.g||'')+' '+(typeof en==='string'?en:'')).toLowerCase().includes(q)}).slice(0,120);
+    h+='<input type="text" data-q placeholder="'+L('Zoek een ding, wapen of harnas...','Search for an item, weapon or armour...')+'" value="'+E(CR.q)+'"><div class="meta">'+L('Klik Geef om het in je rugzak te krijgen, of Draag om het meteen aan te trekken.','Click Give to get it in your backpack, or Wear to put it on right away.')+'</div><div class="grid">'+
+      ids.map(id=>{const it=ITEMS[id],wear=/^(weapon|armor|shield|head|boots|cloak|ring|amulet)$/.test(it.g||'');return'<div class="it"><span title="'+E(it.n)+'">'+(it.ico||'•')+' '+E(it.n)+'</span><button class="btn" data-give="'+E(id)+'">'+L('Geef','Give')+'</button>'+(wear?'<button class="btn" data-wear="'+E(id)+'">'+L('Draag','Wear')+'</button>':'')+'</div>'}).join('')+'</div>'}
+  if(CR.tab==='go'){const q=CR.pq.toLowerCase(),P2=places().filter(p=>!q||p[0].toLowerCase().includes(q));
+    h+='<input type="text" data-pq placeholder="'+L('Zoek een plek...','Search for a place...')+'" value="'+E(CR.pq)+'"><div class="grid">'+P2.map((p,i)=>'<div class="it"><span>📍 '+E(p[0])+'</span><button class="btn" data-go="'+i+'">'+L('Ga','Go')+'</button></div>').join('')+'</div>';CR._pl=P2}
+  if(CR.tab==='world'){const t=((ENV.time%24)+24)%24;h+='<div class="crow"><b>'+L('Tijd','Time')+'</b><input type="range" min="0" max="23.9" step=".1" value="'+t.toFixed(1)+'" data-time><span data-tv>'+String(Math.floor(t)).padStart(2,'0')+':'+String(Math.floor(t%1*60)).padStart(2,'0')+'</span></div>'+
+    '<div class="crow">'+tg('stop',CR.stopT,'⏸ '+L('Tijd stilzetten','Stop the time'))+'</div><div class="crow"><b>'+L('Weer','Weather')+'</b>'+[['clear','☀️',L('Zon','Sun')],['cloudy','⛅',L('Bewolkt','Cloudy')],['rain','🌧',L('Regen','Rain')],['storm','⛈',L('Storm','Storm')],['fog','🌫',L('Mist','Fog')]].map(([k,i,n])=>'<button class="btn'+(ENV.weather===k?' on':'')+'" data-wx="'+k+'">'+i+' '+n+'</button>').join('')+'</div>'+
+    '<div class="crow"><button class="btn" data-a="clear">⚔️ '+L('Versla alle vijanden in de buurt','Defeat all enemies nearby')+'</button></div>'}
+  if(CR.tab==='mon'){const q=CR.mq.toLowerCase(),ts=Object.keys(MON).filter(t=>MON[t]&&(!q||((MON[t].n||t)+' '+t).toLowerCase().includes(q))).sort((a,b)=>(MON[a].n||a).localeCompare(MON[b].n||b));
+    h+='<input type="text" data-mq placeholder="'+L('Zoek een monster of eindbaas...','Search for a monster or boss...')+'" value="'+E(CR.mq)+'"><div class="meta">'+L('Het monster verschijnt een eindje voor je.','The monster appears a little in front of you.')+'</div><div class="grid">'+
+      ts.map(t=>'<div class="it"><span>'+(MON[t].boss?'👑 ':'👹 ')+E(MON[t].n||t)+'</span><button class="btn" data-mon="'+E(t)+'">'+L('Roep','Call')+'</button></div>').join('')+'</div>'}
+  if(CR.tab==='upd'){h+='<div class="crow">'+tg('prev',PREVIEW(),'🧪 '+L('Klaargezette updates al spelen (alleen voor jou)','Play the ready updates already (only for you)'))+'</div><div class="meta">'+
+    L('Zo speel jij de Gifvallei, de landende Draakmoeder, de nieuwe volken en de rest al voordat ze voor iedereen uitkomen. Uitzetten werkt na het herladen van de pagina.','This way you play the Poison Valley, the landing Dragon Mother, the new peoples and the rest before they are out for everyone. Turning it off works after reloading the page.')+'</div><div class="crow">'+
+    Object.entries(FEAT).map(([id,F])=>'<span class="it" style="flex:none">'+F.ico+' '+E(nm(F,'n'))+' · '+(featOn(id)?'✅':'⏳')+'</span>').join('')+'</div>'}
+  CP.innerHTML=h;
+  CP.querySelectorAll('[data-ct]').forEach(b=>b.onclick=()=>{CR.tab=b.dataset.ct;crRender()});CP.querySelector('[data-cx]').onclick=crClose;
+  CP.querySelectorAll('[data-tg]').forEach(b=>b.onclick=()=>{const k=b.dataset.tg;if(k==='fly'){CR.fly=!CR.fly;CR.fy=CR.fly?PL.y+1.5:null}else if(k==='god')CR.god=!CR.god;else if(k==='stop'){CR.stopT=!CR.stopT;if(CR.stopT){CR.envSpd=ENV.speed;ENV.speed=0}else ENV.speed=CR.envSpd||1/60}
+    else if(k==='prev'){const on=!PREVIEW();try{if(on)sessionStorage.setItem('eik_preview','1');else sessionStorage.removeItem('eik_preview')}catch(e){}if(on)featCheck()}crRender()});
+  const sp=CP.querySelector('[data-spd]');if(sp)sp.oninput=()=>{CR.speed=+sp.value;CP.querySelector('[data-spdv]').textContent=CR.speed+'×'};
+  const tm=CP.querySelector('[data-time]');if(tm)tm.oninput=()=>{ENV.time=Math.floor(ENV.time/24)*24+(+tm.value);const t=+tm.value;CP.querySelector('[data-tv]').textContent=String(Math.floor(t)).padStart(2,'0')+':'+String(Math.floor(t%1*60)).padStart(2,'0')};
+  CP.querySelectorAll('[data-wx]').forEach(b=>b.onclick=()=>{ENV.weather=b.dataset.wx;ENV.wxT=600;try{$('wx').textContent=WXN[ENV.weather]}catch(e){}crRender()});
+  CP.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;try{if(a==='heal'){PL.hp=PL.hpMax;PL.st=PL.stMax;PL.poisonT=0}else if(a==='lvl'||a==='lvl10'){for(let i=0;i<(a==='lvl'?1:10);i++)giveXp(Math.max(1,xpNeed(PL.lvl)-PL.xp))}else if(a==='gold')PL.gold=(PL.gold||0)+10000;
+    else if(a==='clear'){let n=0;for(const x of actors)if(!x.dead&&x.kind==='enemy'&&Math.hypot(x.x-PL.x,x.z-PL.z)<70){try{killActor(x,true);n++}catch(e){}}addLog(L(n+' vijanden verslagen.',n+' enemies defeated.'),'#c8a8ff')}}catch(e){console.warn('creative',e)}crRender()});
+  const q1=CP.querySelector('[data-q]');if(q1){q1.oninput=()=>{CR.q=q1.value;crRender();const n=CP.querySelector('[data-q]');n.focus();n.setSelectionRange(n.value.length,n.value.length)}}
+  const q2=CP.querySelector('[data-pq]');if(q2){q2.oninput=()=>{CR.pq=q2.value;crRender();const n=CP.querySelector('[data-pq]');n.focus();n.setSelectionRange(n.value.length,n.value.length)}}
+  const q3=CP.querySelector('[data-mq]');if(q3){q3.oninput=()=>{CR.mq=q3.value;crRender();const n=CP.querySelector('[data-mq]');n.focus();n.setSelectionRange(n.value.length,n.value.length)}}
+  CP.querySelectorAll('[data-give]').forEach(b=>b.onclick=()=>{try{giveItem(b.dataset.give,1);refreshHot()}catch(e){}b.textContent='✓'});
+  CP.querySelectorAll('[data-wear]').forEach(b=>b.onclick=()=>{const id=b.dataset.wear;try{if(!hasItem(id))giveItem(id,1,true);equipItem(id);rebuildPlayer();refreshHot()}catch(e){console.warn('wear',e)}b.textContent='✓'});
+  CP.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const p=CR._pl[+b.dataset.go];if(p)goTo(p[1],p[2])});
+  CP.querySelectorAll('[data-mon]').forEach(b=>b.onclick=()=>{const [x,z]=fwd(9);try{spawnMonster(b.dataset.mon,x,z)}catch(e){console.warn('spawn',e)}b.textContent='✓'})}
+/* flying, speed and never dying, on top of the normal walking */
+{const _upC=updatePlayer;updatePlayer=function(dt){const on=CR.ok&&started&&!PL.dead&&!paused,x0=PL.x,z0=PL.z;_upC(dt);if(!on)return;
+  if(CR.speed!==1&&!PL.mounted){PL.x=x0+(PL.x-x0)*CR.speed;PL.z=z0+(PL.z-z0)*CR.speed}
+  if(CR.fly&&!PL.mounted){const up=(KEYS.Space?1:0)-(KEYS.ShiftLeft||KEYS.ShiftRight?1:0),g=groundH(PL.x,PL.z);if(CR.fy===null)CR.fy=PL.y;CR.fy=Math.min(900,Math.max(g,CR.fy+up*10*Math.max(1,CR.speed*.6)*dt));PL.y=CR.fy;PL.vy=0;PL.onGround=CR.fy<=g+.05}
+  if(CR.god){PL.hp=PL.hpMax;PL.st=PL.stMax}}}
+{const _pdC=playerDie;playerDie=function(...a){if(CR.ok&&CR.god){PL.hp=PL.hpMax;PL.dead=false;return}return _pdC.apply(this,a)}}
+/* the 🎨 button at the bottom, only for the maker */
+function crBtn(){const q=$('qbar'),b=$('qb_cr');if(!CR.ok){if(b)b.remove();return}if(!q||b)return;const n=document.createElement('button');n.id='qb_cr';n.textContent='🎨 Creative';n.onclick=()=>crOpen();q.appendChild(n)}
+setInterval(crBtn,3000);
 /* the button at the bottom */
 function fbBtn(){const q=$('qbar');if(!q||$('qb_fb'))return;const b=document.createElement('button');b.id='qb_fb';b.textContent='Feedback';b.onclick=()=>open('give');q.appendChild(b)}
 addEventListener('load',fbBtn);setTimeout(fbBtn,3000);setInterval(fbBtn,5000);

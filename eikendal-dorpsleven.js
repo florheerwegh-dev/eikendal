@@ -255,3 +255,23 @@ async function build(){if(!window.EX||!EX.loadLR)return;const P=place(),cell=320
   WD.props={made};console.log('Literock props placed:',made)}
 let go=false;const iv=setInterval(()=>{if(go||typeof worldReady==='undefined'||!worldReady||typeof BUILDINGS==='undefined'||!BUILDINGS.length)return;if(WD.tidy&&WD.tidy.n===undefined)return;go=true;clearInterval(iv);setTimeout(()=>build().catch(e=>console.warn('props',e)),12000)},2000);
 })();
+
+/* ================= People are afraid of monsters =================
+   When a monster comes close, people who are not guards or soldiers run away from it, shouting, and come back to where
+   they were when it is gone (or beaten). Guards still fight. */
+(function(){
+const FEAR=['Help! Een monster!','Wegwezen!','Aaah! Rennen!','Een monster! Help!','Mama!','Red jezelf!'];
+const brave=a=>a.guard||a.bt||a.prot||a.ruler||a.boss||a.noFear||a.inHome||a.kind!=='npc';
+function scary(a){let b=null,bd=18;for(const e of actors){if(e.kind!=='enemy'||e.dead||e.tame||e.pet||e.friendly)continue;const dx=e.x-a.x;if(dx>18||dx<-18)continue;const dz=e.z-a.z;if(dz>18||dz<-18)continue;const d=Math.hypot(dx,dz);if(d<bd){bd=d;b=e}}return b}
+const _uNF=updateNPC;updateNPC=function(a,dt){
+  if(!a||a.dead||brave(a))return _uNF(a,dt);
+  a.fearC=(a.fearC||0)-dt;if(a.fearC<=0){a.fearC=.35+Math.random()*.3;const m=scary(a);if(m)a.fearOf=m;else if(a.fearOf&&(a.fearOf.dead||Math.hypot(a.fearOf.x-a.x,a.fearOf.z-a.z)>26))a.fearOf=null}
+  const m=a.fearOf;
+  if(m&&!m.dead){if(!a.scared){a.scared=true;a.back=a.back||{x:a.x,z:a.z};a.talk=null;a.wp=null;saySomething(a,pick(FEAR),2.5)}
+    if(a.sayT>0){a.sayT-=dt;if(a.sayT<=0)a.say=''}
+    const ang=Math.atan2(a.x-m.x,a.z-m.z)+Math.sin(PL.t*1.1+a.id)*.5;stepTo(a,dt,a.x+Math.sin(ang)*10,a.z+Math.cos(ang)*10,5.6,.1);if(a.h)animHuman(a.h,dt,a.vel,{});return}
+  if(a.scared){a.scared=false;a.fearOf=null;a.t=0}
+  /* back to where they were, then on with the day */
+  if(a.back){if(a.sayT>0){a.sayT-=dt;if(a.sayT<=0)a.say=''}if(stepTo(a,dt,a.back.x,a.back.z,2.6,.6)||a.stuck>3){a.back=null;a.stuck=0;a.vel=0}if(a.h)animHuman(a.h,dt,a.vel,{});return}
+  return _uNF(a,dt)};
+})();
