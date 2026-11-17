@@ -323,7 +323,11 @@ function render(){const M=REALMS.filter(R=>R.throne&&mine(R));if(!M.length){KW.s
   h+='<div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-bottom:4px"><select id="kgdest">'+dests(R).map(([v,n])=>'<option value="'+v+'"'+(v===keepDest?' selected':'')+'>'+esc(n)+'</option>').join('')+'</select><button class="btn pri" data-k="all" data-v="goto">Allen erheen</button><button class="btn" data-k="all" data-v="follow">Allen: volg mij</button><button class="btn" data-k="all" data-v="post">Allen naar post</button></div><div class="kl">';
   ks.forEach((a,i)=>{h+='<div class="kr"><span><b>'+esc(a.name)+'</b> <span style="color:var(--mute)">♥'+Math.ceil(a.hp)+' · '+esc(statusOf(a))+'</span></span><span style="white-space:nowrap"><button class="btn" data-k="one" data-v="goto" data-i="'+i+'">Stuur</button><button class="btn" data-k="one" data-v="follow" data-i="'+i+'">Volg</button><button class="btn" data-k="one" data-v="post" data-i="'+i+'">Post</button><button class="btn" data-k="one" data-v="spec" data-i="'+i+'">👁</button></span></div>'});
   if(!ks.length)h+='<p style="color:var(--mute)">Je hebt nog geen ridders. Koop er een.</p>';
-  h+='</div></div></div>';KW.innerHTML=h;KW._ks=ks}
+  h+='</div></div></div>';
+  /* the panel is rebuilt every second: remember the scroll position of the panel and of every list, or it jumps back to the top */
+  const sTop=KW.scrollTop,lTop=[...KW.querySelectorAll('.kl')].map(e=>e.scrollTop);
+  KW.innerHTML=h;KW._ks=ks;
+  KW.scrollTop=sTop;KW.querySelectorAll('.kl').forEach((e,i)=>{if(lTop[i])e.scrollTop=lTop[i]})}
 KW.addEventListener('mousedown',e=>e.stopPropagation());
 KW.addEventListener('click',e=>{const b=e.target.closest('button');if(!b||!cur)return;const R=cur,st=S(R),k=b.dataset.k,v=b.dataset.v,ks=KW._ks||[];
   if(k==='close'){toggle();return}
